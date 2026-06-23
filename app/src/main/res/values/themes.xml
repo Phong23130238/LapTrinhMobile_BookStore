@@ -1,0 +1,33 @@
+<resources>
+    <style name="Theme.BookStore" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">@color/navy_medium</item>
+        <item name="colorPrimaryDark">@color/navy_dark</item>
+        <item name="colorAccent">@color/gold</item>
+        <item name="android:windowBackground">@color/cream</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <style name="GoldButton" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@color/gold</item>
+        <item name="android:textColor">@color/navy_dark</item>
+        <item name="android:textStyle">bold</item>
+        <item name="cornerRadius">10dp</item>
+        <item name="android:letterSpacing">0.05</item>
+    </style>
+
+    <style name="NavyButton" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@color/navy_medium</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textStyle">bold</item>
+        <item name="cornerRadius">10dp</item>
+    </style>
+
+    <style name="OutlinedInput" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <item name="boxStrokeColor">@color/navy_medium</item>
+        <item name="hintTextColor">@color/navy_medium</item>
+        <item name="boxCornerRadiusTopStart">10dp</item>
+        <item name="boxCornerRadiusTopEnd">10dp</item>
+        <item name="boxCornerRadiusBottomStart">10dp</item>
+        <item name="boxCornerRadiusBottomEnd">10dp</item>
+    </style>
+</resources>
