@@ -10,18 +10,35 @@
         android:theme="@style/Theme.BookStore">
 
         <activity
-            android:name=".activity.HomeActivity"
-            android:exported="true">
+            android:name=".activity.LoginActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <activity android:name=".activity.LoginActivity"
-            android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".activity.RegisterActivity"
-            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".activity.HomeActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".activity.RegisterActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false" />
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="false" />
+
+        <activity android:name=".activity.OrdersActivity" android:exported="false" />
+        <activity android:name=".activity.ProfileActivity" android:exported="false" />
+        <activity android:name=".activity.CartActivity" android:exported="false" />
+        <activity android:name=".activity.BookDetailActivity" android:exported="false" />
+        <activity android:name=".activity.CheckoutActivity" android:exported="false" />
+        <activity android:name=".activity.AdminDashboardActivity" android:exported="false" />
+        <activity android:name=".activity.ManageBooksActivity" android:exported="false" />
 
     </application>
 </manifest>
