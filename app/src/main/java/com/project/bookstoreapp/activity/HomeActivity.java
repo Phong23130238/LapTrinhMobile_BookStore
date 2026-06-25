@@ -39,6 +39,16 @@ public class HomeActivity extends AppCompatActivity {
 
         // Nạp dữ liệu vào Adapter và gắn vào RecyclerView
         bookAdapter = new BookAdapter(mockList);
+        // Gắn sự kiện lắng nghe để mở trang Chi tiết
+        bookAdapter.setOnItemClickListener(new BookAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(Book book) {
+                // Đây chính là đoạn code Intent của nhánh main được dời ra ngoài
+                Intent intent = new Intent(HomeActivity.this, BookDetailActivity.class);
+                intent.putExtra("BOOK_ID", book.getId());
+                startActivity(intent);
+            }
+        });
         rvBooks.setAdapter(bookAdapter);
         // ------------------------
 
