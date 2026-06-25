@@ -24,15 +24,13 @@ public class AdminDashboardActivity extends AppCompatActivity {
             startActivity(new Intent(AdminDashboardActivity.this, ManageBooksActivity.class));
         });
 
-        // Chuyển sang trang Quản lý đơn hàng (Bỏ comment khi bạn tạo file ManageOrdersActivity)
-        // btnManageOrders.setOnClickListener(v -> {
-        //     startActivity(new Intent(AdminDashboardActivity.this, ManageOrdersActivity.class));
-        // });
+         btnManageOrders.setOnClickListener(v -> {
+             startActivity(new Intent(AdminDashboardActivity.this, ManageOrdersActivity.class));
+         });
 
-        // Chuyển sang trang Quản lý người dùng (Bỏ comment khi bạn tạo file ManageUsersActivity)
-        // btnManageUsers.setOnClickListener(v -> {
-        //     startActivity(new Intent(AdminDashboardActivity.this, ManageUsersActivity.class));
-        // });
+         btnManageUsers.setOnClickListener(v -> {
+             startActivity(new Intent(AdminDashboardActivity.this, ManageUsersActivity.class));
+        });
 
         // Đăng xuất quay về Login
         btnAdminLogout.setOnClickListener(v -> {
