@@ -13,7 +13,6 @@ import java.text.DecimalFormat;
 import java.util.List;
 
 public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder> {
-
     private List<Book> bookList;
 
     public BookAdapter(List<Book> bookList) {
@@ -41,6 +40,19 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
 
         // Gắn ảnh tạm thời (sử dụng icon mặc định của app làm mock data)
         holder.ivCover.setImageResource(R.mipmap.ic_launcher);
+        if (book.isHidden()) {
+            // Nếu sách bị ẩn, làm mờ toàn bộ khung giao diện của cuốn sách đó đi 50%
+            holder.itemView.setAlpha(0.5f);
+        } else {
+            // Sách hiển thị bình thường
+            holder.itemView.setAlpha(1.0f);
+        }
+        // BẮT SỰ KIỆN CLICK
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onItemClick(book); // Gửi cuốn sách bị bấm về cho Activity
+            }
+        });
     }
 
     @Override
@@ -63,4 +75,14 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
             tvPrice = itemView.findViewById(R.id.tvItemBookPrice);
         }
     }
+
+    // Bắt sự kiện click vào cuốn sách
+    public interface OnItemClickListener {
+        void onItemClick(Book book);
+    }
+    private OnItemClickListener listener;
+    public void setOnItemClickListener(OnItemClickListener listener) {
+        this.listener = listener;
+    }
+
 }
