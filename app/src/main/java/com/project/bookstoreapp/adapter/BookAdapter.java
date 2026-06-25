@@ -1,5 +1,7 @@
 package com.project.bookstoreapp.adapter;
 
+import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -8,6 +10,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.project.bookstoreapp.R;
+import com.project.bookstoreapp.activity.BookDetailActivity;
 import com.project.bookstoreapp.model.Book;
 import java.text.DecimalFormat;
 import java.util.List;
@@ -26,7 +29,6 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_book, parent, false);
         return new BookViewHolder(view);
     }
-
     @Override
     public void onBindViewHolder(@NonNull BookViewHolder holder, int position) {
         Book book = bookList.get(position);
@@ -35,12 +37,30 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
         holder.tvTitle.setText(book.getTitle());
         holder.tvAuthor.setText(book.getAuthor());
 
-        // Định dạng tiền tệ VND
         DecimalFormat formatter = new DecimalFormat("###,###,###");
         holder.tvPrice.setText(formatter.format(book.getPrice()) + " đ");
 
         // Gắn ảnh tạm thời (sử dụng icon mặc định của app làm mock data)
         holder.ivCover.setImageResource(R.mipmap.ic_launcher);
+
+        holder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Lấy bối cảnh (context) từ itemView để chạy Intent
+                Context context = holder.itemView.getContext();
+
+                // Chuẩn bị mở BookDetailActivity
+                Intent intent = new Intent(context, BookDetailActivity.class);
+
+                // Nhét ID của quyển sách này vào Intent
+                // LƯU Ý: Chữ "BOOK_ID" là chiếc chìa khóa bí mật, bên kia phải dùng đúng chữ này để mở
+                intent.putExtra("BOOK_ID", book.getId());
+
+                // Mở màn hình chi tiết
+                context.startActivity(intent);
+            }
+        });
+        // ==========================================
     }
 
     @Override
