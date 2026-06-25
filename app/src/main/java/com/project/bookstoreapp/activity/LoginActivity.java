@@ -14,6 +14,9 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
+        // Đã seed dữ liệu xong, comment lại để không bị trùng lặp dữ liệu mỗi lần mở app
+        // com.project.bookstoreapp.utils.DatabaseSeeder.seedData();
+
         // Ánh xạ các thành phần từ giao diện XML
         TextView tvRegister = findViewById(R.id.tvRegister);
 
@@ -37,5 +40,6 @@ public class LoginActivity extends AppCompatActivity {
                 finish();
             });
         }
+
     }
 }

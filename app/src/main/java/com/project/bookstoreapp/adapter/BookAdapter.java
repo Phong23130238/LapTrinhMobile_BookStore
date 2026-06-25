@@ -13,7 +13,6 @@ import java.text.DecimalFormat;
 import java.util.List;
 
 public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder> {
-
     private List<Book> bookList;
 
     public BookAdapter(List<Book> bookList) {
@@ -35,20 +34,29 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
         holder.tvTitle.setText(book.getTitle());
         holder.tvAuthor.setText(book.getAuthor());
 
-        // Định dạng tiền tệ VND
         DecimalFormat formatter = new DecimalFormat("###,###,###");
         holder.tvPrice.setText(formatter.format(book.getPrice()) + " đ");
 
-        // Gắn ảnh tạm thời (sử dụng icon mặc định của app làm mock data)
         holder.ivCover.setImageResource(R.mipmap.ic_launcher);
+
+        // Code làm mờ sách bị ẩn
+        if (book.isHidden()) {
+            holder.itemView.setAlpha(0.5f);
+        } else {
+            holder.itemView.setAlpha(1.0f);
+        }
+
+        // Bắt sự kiện click và đẩy ra ngoài qua Interface
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onItemClick(book);
+            }
+        });
     }
 
     @Override
     public int getItemCount() {
-        if (bookList != null) {
-            return bookList.size();
-        }
-        return 0;
+        return bookList != null ? bookList.size() : 0;
     }
 
     public static class BookViewHolder extends RecyclerView.ViewHolder {
@@ -62,5 +70,15 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
             tvAuthor = itemView.findViewById(R.id.tvItemBookAuthor);
             tvPrice = itemView.findViewById(R.id.tvItemBookPrice);
         }
+    }
+
+    public interface OnItemClickListener {
+        void onItemClick(Book book);
+    }
+    
+    private OnItemClickListener listener;
+    
+    public void setOnItemClickListener(OnItemClickListener listener) {
+        this.listener = listener;
     }
 }
