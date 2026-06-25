@@ -4,63 +4,62 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/cream">
+    android:padding="24dp"
+    android:background="@color/cream"
+    android:gravity="center_horizontal">
 
-    <com.google.android.material.appbar.AppBarLayout
+    <ImageView
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:src="@mipmap/ic_launcher"
+        android:layout_marginTop="32dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Trang Quản Trị Hệ Thống"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="@color/navy_dark"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="40dp"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnManageBooks"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-        <com.google.android.material.appbar.MaterialToolbar
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="@color/navy_dark"
-            app:title="Quản trị viên"
-            app:titleTextColor="@color/white" />
-    </com.google.android.material.appbar.AppBarLayout>
+        android:layout_height="60dp"
+        android:text="Quản lý Sản phẩm (Sách)"
+        android:textSize="16sp"
+        app:cornerRadius="8dp"
+        app:backgroundTint="@color/navy_medium"
+        android:layout_marginBottom="16dp"/>
 
-    <LinearLayout
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnManageOrders"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:padding="20dp"
-        android:gravity="center_vertical">
+        android:layout_height="60dp"
+        android:text="Quản lý Đơn hàng"
+        android:textSize="16sp"
+        app:cornerRadius="8dp"
+        app:backgroundTint="@color/navy_medium"
+        android:layout_marginBottom="16dp"/>
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Xin chào, Admin!"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:textColor="@color/navy_dark"
-            android:gravity="center"
-            android:layout_marginBottom="40dp"/>
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnManageUsers"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Quản lý Người dùng"
+        android:textSize="16sp"
+        app:cornerRadius="8dp"
+        app:backgroundTint="@color/navy_medium"
+        android:layout_marginBottom="32dp"/>
 
-        <Button
-            android:id="@+id/btnManageBooks"
-            android:layout_width="match_parent"
-            android:layout_height="80dp"
-            android:text="QUẢN LÝ KHO SÁCH"
-            android:textSize="18sp"
-            android:layout_marginBottom="20dp"
-            android:backgroundTint="@color/navy_medium"
-            app:cornerRadius="12dp"/>
+    <Button
+        android:id="@+id/btnAdminLogout"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Đăng xuất khỏi hệ thống"
+        android:textColor="@color/red_danger"/>
 
-        <Button
-            android:id="@+id/btnManageOrders"
-            android:layout_width="match_parent"
-            android:layout_height="80dp"
-            android:text="QUẢN LÝ ĐƠN HÀNG"
-            android:textSize="18sp"
-            android:backgroundTint="@color/navy_medium"
-            app:cornerRadius="12dp"/>
-
-        <Button
-            android:id="@+id/btnLogoutAdmin"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_marginTop="60dp"
-            android:text="Đăng xuất"
-            android:textColor="@color/red_danger"
-            style="@style/Widget.MaterialComponents.Button.TextButton" />
-    </LinearLayout>
 </LinearLayout>

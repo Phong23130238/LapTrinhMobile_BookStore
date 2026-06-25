@@ -39,6 +39,6 @@
         <activity android:name=".activity.CheckoutActivity" android:exported="false" />
         <activity android:name=".activity.AdminDashboardActivity" android:exported="false" />
         <activity android:name=".activity.ManageBooksActivity" android:exported="false" />
-
+        <activity android:name=".activity.AddEditBookActivity" android:exported="false" />
     </application>
 </manifest>
