@@ -6,36 +6,24 @@
     android:background="@color/cream">
 
     <com.google.android.material.appbar.AppBarLayout
-        android:id="@+id/appBarManageBooks"
+        android:id="@+id/appBarManageUsers"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
         <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbarManageBooks"
+            android:id="@+id/toolbarManageUsers"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:background="@color/navy_dark"
-            app:title="Quản lý Sản phẩm"
+            app:title="Quản lý Người dùng"
             app:titleTextColor="@color/white" />
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvAdminBooks"
+        android:id="@+id/rvAdminUsers"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/appBarManageBooks"
-        android:padding="8dp"
-        android:clipToPadding="false" />
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabAddBook"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentEnd="true"
-        android:layout_margin="24dp"
-        android:src="@android:drawable/ic_input_add"
-        app:backgroundTint="@color/gold"
-        app:tint="@color/navy_dark" />
-
+        android:layout_below="@id/appBarManageUsers"
+        android:paddingVertical="8dp"
+        android:clipToPadding="false"/>
 </RelativeLayout>
