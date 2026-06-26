@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@color/cream"
+    android:gravity="center_horizontal">
+
+    <ImageView
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:src="@mipmap/ic_launcher"
+        android:layout_marginTop="32dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Trang Quản Trị Hệ Thống"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="@color/navy_dark"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="40dp"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnManageBooks"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Quản lý Sản phẩm (Sách)"
+        android:textSize="16sp"
+        app:cornerRadius="8dp"
+        app:backgroundTint="@color/navy_medium"
+        android:layout_marginBottom="16dp"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnManageOrders"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Quản lý Đơn hàng"
+        android:textSize="16sp"
+        app:cornerRadius="8dp"
+        app:backgroundTint="@color/navy_medium"
+        android:layout_marginBottom="16dp"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnManageUsers"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Quản lý Người dùng"
+        android:textSize="16sp"
+        app:cornerRadius="8dp"
+        app:backgroundTint="@color/navy_medium"
+        android:layout_marginBottom="32dp"/>
+
+    <Button
+        android:id="@+id/btnAdminLogout"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Đăng xuất khỏi hệ thống"
+        android:textColor="@color/red_danger"/>
+
+</LinearLayout>
