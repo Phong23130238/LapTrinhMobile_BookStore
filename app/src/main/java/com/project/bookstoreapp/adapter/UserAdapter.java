@@ -36,36 +36,53 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         User user = userList.get(position);
         if (user == null) return;
 
-        holder.tvUserName.setText(user.getFullName());
-        holder.tvUserEmail.setText(user.getEmail());
-        holder.tvUserPhone.setText("SĐT: " + user.getPhone());
-        holder.tvUserRole.setText(user.getRole());
+        // 1. BẢO VỆ NULL: Tên người dùng
+        String name = user.getName();
+        if (name == null || name.trim().isEmpty()) {
+            name = "Chưa cập nhật tên";
+        }
+        holder.tvUserName.setText(name);
 
-        // Thay đổi màu sắc dựa trên quyền
-        if (user.getRole().equalsIgnoreCase("Admin")) {
-            holder.tvUserRole.setBackgroundColor(0xFF2196F3); // Màu xanh dương cho Admin
+        // 2. BẢO VỆ NULL: Email
+        String email = user.getEmail();
+        if (email == null || email.trim().isEmpty()) {
+            email = "Chưa có email";
+        }
+        holder.tvUserEmail.setText(email);
+
+        // 3. BẢO VỆ NULL: Số điện thoại
+        String phone = user.getPhone();
+        if (phone == null || phone.trim().isEmpty()) {
+            holder.tvUserPhone.setText("SĐT: Chưa cập nhật");
+        } else {
+            holder.tvUserPhone.setText("SĐT: " + phone);
+        }
+
+        // Lệnh check "admin".equalsIgnoreCase(user.getRole()) của bạn đã
+        // rất an toàn với NullPointerException rồi, giữ nguyên!
+        if ("admin".equalsIgnoreCase(user.getRole())) {
+            holder.tvUserRole.setText("Quản trị viên");
+            holder.tvUserRole.setBackgroundColor(0xFF2196F3);
             holder.tvUserRole.setTextColor(0xFFFFFFFF);
         } else {
-            // Giữ màu vàng gold cho khách hàng
+            holder.tvUserRole.setText("Khách hàng");
             holder.tvUserRole.setBackgroundColor(0xFFFFC107);
             holder.tvUserRole.setTextColor(0xFF000000);
         }
 
-        // Thay đổi màu sắc và chữ dựa trên trạng thái Khóa
+        // Trạng thái Khóa
         if (user.isLocked()) {
             holder.tvUserStatus.setText("Đã bị khóa");
-            holder.tvUserStatus.setBackgroundColor(0xFFD32F2F); // Đỏ cảnh báo
-            holder.itemView.setAlpha(0.6f); // Làm mờ thẻ một chút
+            holder.tvUserStatus.setBackgroundColor(0xFFD32F2F);
+            holder.itemView.setAlpha(0.6f);
         } else {
             holder.tvUserStatus.setText("Đang hoạt động");
-            holder.tvUserStatus.setBackgroundColor(0xFF388E3C); // Xanh lá
+            holder.tvUserStatus.setBackgroundColor(0xFF388E3C);
             holder.itemView.setAlpha(1.0f);
         }
 
         holder.itemView.setOnClickListener(v -> {
-            if (listener != null) {
-                listener.onUserClick(user);
-            }
+            if (listener != null) listener.onUserClick(user);
         });
     }
 

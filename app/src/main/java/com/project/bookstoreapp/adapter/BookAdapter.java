@@ -31,15 +31,29 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
         Book book = bookList.get(position);
         if (book == null) return;
 
-        holder.tvTitle.setText(book.getTitle());
-        holder.tvAuthor.setText(book.getAuthor());
+        // 1. BẢO VỆ NULL: Tên sách
+        String title = book.getTitle();
+        if (title == null || title.trim().isEmpty()) {
+            title = "Đang cập nhật tên sách";
+        }
+        holder.tvTitle.setText(title);
 
+        // 2. BẢO VỆ NULL: Tên tác giả
+        String author = book.getAuthor();
+        if (author == null || author.trim().isEmpty()) {
+            author = "Đang cập nhật tác giả";
+        }
+        holder.tvAuthor.setText(author);
+
+        // Giá tiền (Kiểu double mặc định là 0.0 nên không bị lỗi Null)
         DecimalFormat formatter = new DecimalFormat("###,###,###");
         holder.tvPrice.setText(formatter.format(book.getPrice()) + " đ");
 
+        // Gắn ảnh tạm thời
+        // Tương lai: Nhóm bạn sẽ dùng thư viện Glide hoặc Picasso để load ảnh từ book.getImageUrl() vào ivCover
         holder.ivCover.setImageResource(R.mipmap.ic_launcher);
 
-        // Code làm mờ sách bị ẩn
+        // Code làm mờ sách bị ẩn (Phục vụ nhánh của Admin)
         if (book.isHidden()) {
             holder.itemView.setAlpha(0.5f);
         } else {
@@ -75,9 +89,9 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
     public interface OnItemClickListener {
         void onItemClick(Book book);
     }
-    
+
     private OnItemClickListener listener;
-    
+
     public void setOnItemClickListener(OnItemClickListener listener) {
         this.listener = listener;
     }

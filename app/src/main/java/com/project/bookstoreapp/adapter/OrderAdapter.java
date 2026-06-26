@@ -37,27 +37,46 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         Order order = orderList.get(position);
         if (order == null) return;
 
-        holder.tvOrderId.setText(order.getOrderId());
-        holder.tvOrderDate.setText(order.getOrderDate());
-        holder.tvCustomerName.setText("Khách hàng: " + order.getCustomerName());
+        holder.tvOrderId.setText("#DH" + order.getOrderId());
 
+        // 1. BẢO VỆ LỖI NULL NGÀY THÁNG (Bị thiếu ở Order #1 trong DB)
+        String date = order.getCreatedAt();
+        if (date == null || date.isEmpty()) {
+            date = "Chưa cập nhật ngày";
+        }
+        holder.tvOrderDate.setText(date);
+
+        // Tạm thời hiển thị Mã KH. Khi nối với Firebase, bạn có thể gọi API User để lấy tên.
+        holder.tvCustomerName.setText("Mã KH: " + order.getUserId());
+
+        // Tổng tiền (Nếu DB thiếu, kiểu double trong Java sẽ mặc định là 0.0 nên không lo lỗi Null)
         DecimalFormat formatter = new DecimalFormat("###,###,###");
-        holder.tvTotalAmount.setText("Tổng tiền: " + formatter.format(order.getTotalAmount()) + " đ");
+        holder.tvTotalAmount.setText("Tổng tiền: " + formatter.format(order.getTotalPrice()) + " đ");
 
-        holder.tvPaymentStatus.setText(order.getPaymentStatus());
-        holder.tvShippingStatus.setText(order.getShippingStatus());
-
-        // Thay đổi màu sắc nhãn tùy theo trạng thái thanh toán để tăng tính trực quan
-        if (order.getPaymentStatus().contains("Chưa")) {
-            holder.tvPaymentStatus.setBackgroundColor(0xFFD32F2F); // Màu đỏ danger
+        // 2. BẢO VỆ PHƯƠNG THỨC THANH TOÁN
+        if ("banking".equalsIgnoreCase(order.getPaymentMethod())) {
+            holder.tvPaymentStatus.setText("Đã TT (VNPay)");
+            holder.tvPaymentStatus.setBackgroundColor(0xFF388E3C);
         } else {
-            holder.tvPaymentStatus.setBackgroundColor(0xFF388E3C); // Màu xanh lá thành công
+            holder.tvPaymentStatus.setText("COD (Chưa TT)");
+            holder.tvPaymentStatus.setBackgroundColor(0xFFD32F2F);
         }
 
-        holder.itemView.setOnClickListener(v -> {
-            if (listener != null) {
-                listener.onOrderClick(order);
+        // 3. BẢO VỆ TRẠNG THÁI STATUS (Dùng toLowerCase để chống lỗi in hoa/in thường)
+        String statusText = "Chờ xác nhận"; // Mặc định nếu null
+        if (order.getStatus() != null) {
+            switch(order.getStatus().toLowerCase()) {
+                case "pending": statusText = "Chờ xác nhận"; break;
+                case "confirmed": statusText = "Đã xác nhận"; break;
+                case "shipping": statusText = "Đang giao"; break;
+                case "delivered": statusText = "Đã giao"; break;
+                case "cancelled": statusText = "Đã hủy"; break;
             }
+        }
+        holder.tvShippingStatus.setText(statusText);
+
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) listener.onOrderClick(order);
         });
     }
 
