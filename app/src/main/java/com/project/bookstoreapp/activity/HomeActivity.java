@@ -30,15 +30,25 @@ public class HomeActivity extends AppCompatActivity {
 
         // Tạo danh sách dữ liệu ảo (Mock Data)
         List<Book> mockList = new ArrayList<>();
-        mockList.add(new Book(1, "Đắc Nhân Tâm", "Dale Carnegie", 85000, 0));
-        mockList.add(new Book(2, "Nhà Giả Kim", "Paulo Coelho", 79000, 0));
-        mockList.add(new Book(3, "Tôi Thấy Hoa Vàng Trên Cỏ Xanh", "Nguyễn Nhật Ánh", 120000, 0));
-        mockList.add(new Book(4, "Muôn Kiếp Nhân Sinh", "Nguyên Phong", 168000, 0));
-        mockList.add(new Book(5, "Tuổi Trẻ Đáng Giá Bao Nhiêu", "Rosie Nguyễn", 95000, 0));
-        mockList.add(new Book(6, "Cây Cam Ngọt Của Tôi", "José Mauro de Vasconcelos", 108000, 0));
+// Khách hàng chỉ thấy các sách có isHidden = false
+        mockList.add(new Book(1, "Đắc Nhân Tâm", "Dale Carnegie", 85000, 0, false));
+        mockList.add(new Book(2, "Nhà Giả Kim", "Paulo Coelho", 79000, 0, false));
+        mockList.add(new Book(3, "Tôi Thấy Hoa Vàng Trên Cỏ Xanh", "Nguyễn Nhật Ánh", 120000, 0, false));
+        mockList.add(new Book(5, "Tuổi Trẻ Đáng Giá Bao Nhiêu", "Rosie Nguyễn", 95000, 0, false));
+        mockList.add(new Book(6, "Cây Cam Ngọt Của Tôi", "José Mauro de Vasconcelos", 108000, 0, false));
 
         // Nạp dữ liệu vào Adapter và gắn vào RecyclerView
         bookAdapter = new BookAdapter(mockList);
+        // Gắn sự kiện lắng nghe để mở trang Chi tiết
+        bookAdapter.setOnItemClickListener(new BookAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(Book book) {
+                // Đây chính là đoạn code Intent của nhánh main được dời ra ngoài
+                Intent intent = new Intent(HomeActivity.this, BookDetailActivity.class);
+                intent.putExtra("BOOK_ID", book.getId());
+                startActivity(intent);
+            }
+        });
         rvBooks.setAdapter(bookAdapter);
         // ------------------------
 
