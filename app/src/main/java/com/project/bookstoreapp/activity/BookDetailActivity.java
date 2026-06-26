@@ -41,6 +41,7 @@ public class BookDetailActivity extends AppCompatActivity {
     private List<Review> reviewList;
 
     private String currentBookId = "";
+    private int currentBookIdInt = -1;
     private String loadedImageUrl = "";
 
     @Override
@@ -54,13 +55,15 @@ public class BookDetailActivity extends AppCompatActivity {
             btnBack.setOnClickListener(v -> finish());
         }
 
-        // Lấy ID từ trang chủ
-        currentBookId = getIntent().getStringExtra("BOOK_ID");
-        // currentBookId = "1"; // Để test tĩnh, hãy comment dòng này nếu dùng thật
+        // ===== TEST MODE: hardcode bookId = 7 =====
+        // currentBookIdInt = getIntent().getIntExtra("BOOK_ID", -1); // Dùng khi chạy thật
+        currentBookIdInt = 7; // TODO: Xóa dòng này khi chạy thật
+        // ============================================
+        currentBookId = String.valueOf(currentBookIdInt);
 
-        if (currentBookId != null && !currentBookId.isEmpty()) {
-            loadBookData(currentBookId);
-            loadReviews(currentBookId); // Đã chuyển qua dùng Node.js API
+        if (currentBookIdInt != -1) {
+            loadBookData(currentBookIdInt);
+            loadReviews(currentBookId);
         } else {
             Toast.makeText(this, "Lỗi: Không tìm thấy sách!", Toast.LENGTH_SHORT).show();
         }
@@ -111,79 +114,108 @@ public class BookDetailActivity extends AppCompatActivity {
         }
     }
 
-    private void loadBookData(String bookId) {
+    private void loadBookData(int bookId) {
+        String docId = String.valueOf(bookId);
+        android.util.Log.d("FIRESTORE", "==> Đang query books/" + docId);
+
+        // Cách 1: Dùng document ID trực tiếp (hoạt động khi Firestore dùng "1","2","7"... làm document ID)
         FirebaseFirestore.getInstance()
                 .collection("books")
-                .document(bookId)
+                .document(docId)
                 .get()
                 .addOnSuccessListener(documentSnapshot -> {
+                    android.util.Log.d("FIRESTORE", "==> exists=" + documentSnapshot.exists() + " | data=" + documentSnapshot.getData());
                     if (documentSnapshot.exists()) {
-                        String title = documentSnapshot.getString("title");
-                        String author = documentSnapshot.getString("author");
-                        Double price = documentSnapshot.getDouble("price");
-                        Double originalPrice = documentSnapshot.getDouble("originalPrice");
-                        String description = documentSnapshot.getString("description");
-                        loadedImageUrl = documentSnapshot.getString("imageUrl");
-                        
-                        String category = documentSnapshot.getString("category");
-                        Double rating = documentSnapshot.getDouble("rating");
-                        Double reviewCount = documentSnapshot.getDouble("reviewCount");
-                        Double sold = documentSnapshot.getDouble("sold");
-                        Double stock = documentSnapshot.getDouble("stock");
-                        String publisher = documentSnapshot.getString("publisher");
-                        Double publishedYear = documentSnapshot.getDouble("publishedYear");
-
-                        if (title != null) tvTitle.setText(title);
-                        if (author != null) tvAuthor.setText(author);
-                        if (description != null) tvDescription.setText(description);
-                        if (category != null && tvCategory != null) tvCategory.setText(" " + category + " ");
-                        
-                        java.text.DecimalFormat formatter = new java.text.DecimalFormat("###,###,###");
-
-                        if (price != null && tvPrice != null) {
-                            tvPrice.setText(formatter.format(price) + " đ");
-                        }
-                        
-                        if (originalPrice != null && originalPrice > 0 && originalPrice > (price != null ? price : 0) && tvOriginalPrice != null) {
-                            tvOriginalPrice.setText(formatter.format(originalPrice) + " đ");
-                            tvOriginalPrice.setVisibility(android.view.View.VISIBLE);
-                        } else if (tvOriginalPrice != null) {
-                            tvOriginalPrice.setVisibility(android.view.View.GONE);
-                        }
-                        
-                        double rat = rating != null ? rating : 0;
-                        int rCount = reviewCount != null ? reviewCount.intValue() : 0;
-                        if (tvRating != null) tvRating.setText(String.valueOf(rat));
-                        if(tvReviewCount != null) {
-                            tvReviewCount.setText(rCount + " đánh giá");
-                        }
-                        
-                        int soldCount = sold != null ? sold.intValue() : 0;
-                        if (tvSold != null) tvSold.setText(String.valueOf(soldCount));
-
-                        int stockCount = stock != null ? stock.intValue() : 0;
-                        if (tvStock != null) tvStock.setText(String.valueOf(stockCount));
-                        
-                        String pub = publisher != null && !publisher.trim().isEmpty() ? publisher.trim() : "Đang cập nhật";
-                        String year = publishedYear != null ? String.valueOf(publishedYear.intValue()) : "";
-                        if (!year.isEmpty()) pub += " (" + year + ")";
-                        if (tvPublisher != null) tvPublisher.setText("Nhà xuất bản: " + pub);
-
-                        if (loadedImageUrl != null && !loadedImageUrl.isEmpty()) {
-                            Glide.with(this).load(loadedImageUrl).into(ivCover);
-                            if (ivCoverBg != null) {
-                                Glide.with(this).load(loadedImageUrl).into(ivCoverBg);
-                            }
-                        }
-
+                        bindBookData(documentSnapshot);
                     } else {
-                        Toast.makeText(this, "Cuốn sách này không còn tồn tại!", Toast.LENGTH_SHORT).show();
+                        // Cách 2: Fallback - query theo field bookId (cast sang long)
+                        android.util.Log.d("FIRESTORE", "==> Document ID không tồn tại, thử whereEqualTo bookId=(long)" + bookId);
+                        FirebaseFirestore.getInstance()
+                                .collection("books")
+                                .whereEqualTo("bookId", (long) bookId)
+                                .limit(1)
+                                .get()
+                                .addOnSuccessListener(querySnapshot -> {
+                                    android.util.Log.d("FIRESTORE", "==> whereEqualTo kết quả: " + querySnapshot.size() + " docs");
+                                    if (!querySnapshot.isEmpty()) {
+                                        bindBookData(querySnapshot.getDocuments().get(0));
+                                    } else {
+                                        Toast.makeText(this, "Không tìm thấy sách ID=" + bookId, Toast.LENGTH_LONG).show();
+                                    }
+                                })
+                                .addOnFailureListener(e -> {
+                                    android.util.Log.e("FIRESTORE", "==> Lỗi whereEqualTo: " + e.getMessage());
+                                    Toast.makeText(this, "Lỗi mạng: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                });
                     }
                 })
                 .addOnFailureListener(e -> {
+                    android.util.Log.e("FIRESTORE", "==> Lỗi get document: " + e.getMessage());
                     Toast.makeText(this, "Lỗi mạng: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
+
+    private void bindBookData(com.google.firebase.firestore.DocumentSnapshot documentSnapshot) {
+        String title = documentSnapshot.getString("title");
+        String author = documentSnapshot.getString("author");
+        Double price = documentSnapshot.getDouble("price");
+        Double originalPrice = documentSnapshot.getDouble("originalPrice");
+        String description = documentSnapshot.getString("description");
+        loadedImageUrl = documentSnapshot.getString("imageUrl");
+
+        Double rating = documentSnapshot.getDouble("rating");
+        Double reviewCount = documentSnapshot.getDouble("reviewCount");
+        Double sold = documentSnapshot.getDouble("sold");
+        Double stock = documentSnapshot.getDouble("stock");
+        String publisher = documentSnapshot.getString("publisher");
+        Double publishedYear = documentSnapshot.getDouble("publishedYear");
+
+        android.util.Log.d("FIRESTORE", "title=" + title + " | author=" + author + " | price=" + price + " | imageUrl=" + loadedImageUrl);
+
+        if (title != null) tvTitle.setText(title);
+        if (author != null) tvAuthor.setText(author);
+        if (description != null) tvDescription.setText(description);
+
+        Double categoryId = documentSnapshot.getDouble("categoryId");
+        if (categoryId != null && tvCategory != null) tvCategory.setText(" #" + categoryId.intValue() + " ");
+
+        java.text.DecimalFormat formatter = new java.text.DecimalFormat("###,###,###");
+
+        if (price != null && tvPrice != null) {
+            tvPrice.setText(formatter.format(price) + " đ");
+        }
+
+        if (originalPrice != null && originalPrice > 0 && originalPrice > (price != null ? price : 0) && tvOriginalPrice != null) {
+            tvOriginalPrice.setText(formatter.format(originalPrice) + " đ");
+            tvOriginalPrice.setVisibility(android.view.View.VISIBLE);
+        } else if (tvOriginalPrice != null) {
+            tvOriginalPrice.setVisibility(android.view.View.GONE);
+        }
+
+        double rat = rating != null ? rating : 0;
+        int rCount = reviewCount != null ? reviewCount.intValue() : 0;
+        if (tvRating != null) tvRating.setText(String.valueOf(rat));
+        if (tvReviewCount != null) tvReviewCount.setText(rCount + " đánh giá");
+
+        int soldCount = sold != null ? sold.intValue() : 0;
+        if (tvSold != null) tvSold.setText(String.valueOf(soldCount));
+
+        int stockCount = stock != null ? stock.intValue() : 0;
+        if (tvStock != null) tvStock.setText(String.valueOf(stockCount));
+
+        String pub = publisher != null && !publisher.trim().isEmpty() ? publisher.trim() : "Đang cập nhật";
+        String year = publishedYear != null ? String.valueOf(publishedYear.intValue()) : "";
+        if (!year.isEmpty()) pub += " (" + year + ")";
+        if (tvPublisher != null) tvPublisher.setText("Nhà xuất bản: " + pub);
+
+        if (loadedImageUrl != null && !loadedImageUrl.isEmpty()) {
+            Glide.with(this).load(loadedImageUrl).into(ivCover);
+            if (ivCoverBg != null) {
+                Glide.with(this).load(loadedImageUrl).into(ivCoverBg);
+            }
+        }
+    }
+
 
     private void loadReviews(String bookId) {
         ApiService apiService = RetrofitClient.getClient().create(ApiService.class);
@@ -219,13 +251,16 @@ public class BookDetailActivity extends AppCompatActivity {
     }
 
     private void checkPurchaseAndReview() {
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        if (currentUser == null) {
-            Toast.makeText(this, "Vui lòng đăng nhập để đánh giá", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        String uid = currentUser.getUid();
-        
+        // ===== TEST MODE: hardcode userId = "3" =====
+        // FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        // if (currentUser == null) {
+        //     Toast.makeText(this, "Vui lòng đăng nhập để đánh giá", Toast.LENGTH_SHORT).show();
+        //     return;
+        // }
+        // String uid = currentUser.getUid();
+        String uid = "3"; // TODO: Xoá dòng này khi chạy thật
+        // =============================================
+
         HashMap<String, Object> body = new HashMap<>();
         body.put("userId", uid);
         body.put("bookId", currentBookId);
@@ -313,7 +348,7 @@ public class BookDetailActivity extends AppCompatActivity {
                     dialog.dismiss();
                     loadReviews(currentBookId);
                     // Tải lại thông tin sách để cập nhật rating mới hiển thị
-                    loadBookData(currentBookId);
+                    loadBookData(currentBookIdInt);
                 } else {
                     Toast.makeText(BookDetailActivity.this, "Lỗi khi gửi đánh giá từ server", Toast.LENGTH_SHORT).show();
                 }
