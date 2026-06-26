@@ -6,7 +6,6 @@
     android:layout_height="match_parent"
     android:background="@color/cream">
 
-    <!-- AppBar -->
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -20,7 +19,6 @@
             android:background="@color/navy_dark"
             app:contentInsetStart="20dp">
 
-            <!-- Logo text -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -44,7 +42,6 @@
                     android:letterSpacing="0.08" />
             </LinearLayout>
 
-            <!-- Avatar icon -->
             <androidx.appcompat.widget.AppCompatImageButton
                 android:id="@+id/btnAccount"
                 android:layout_width="40dp"
@@ -58,7 +55,6 @@
         </com.google.android.material.appbar.MaterialToolbar>
     </com.google.android.material.appbar.AppBarLayout>
 
-    <!-- Scrollable content -->
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -69,7 +65,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Hero Banner -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="200dp"
@@ -114,7 +109,6 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Search Bar -->
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -123,6 +117,7 @@
                 android:hint="Tìm kiếm sách..."
                 app:startIconDrawable="@android:drawable/ic_menu_search"
                 app:startIconTint="@color/navy_medium"
+                app:hintTextColor="@color/navy_dark"
                 style="@style/OutlinedInput">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -130,10 +125,11 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:imeOptions="actionSearch"
-                    android:inputType="text" />
+                    android:inputType="text"
+                    android:textColor="@color/navy_dark"
+                    android:textColorHint="@color/navy_medium" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Category chips -->
             <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -182,7 +178,6 @@
                 </com.google.android.material.chip.ChipGroup>
             </HorizontalScrollView>
 
-            <!-- Section: Sách nổi bật -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -211,7 +206,6 @@
                     android:focusable="true" />
             </LinearLayout>
 
-            <!-- Book list placeholder -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvBooks"
                 android:layout_width="match_parent"
