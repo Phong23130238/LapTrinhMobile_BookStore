@@ -2,10 +2,14 @@ package com.project.bookstoreapp.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
+import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.project.bookstoreapp.R;
 import com.project.bookstoreapp.adapter.BookAdapter;
 import com.project.bookstoreapp.model.Book;
@@ -16,43 +20,35 @@ public class HomeActivity extends AppCompatActivity {
 
     private RecyclerView rvBooks;
     private BookAdapter bookAdapter;
+    private List<Book> bookList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
-        // --- CODE MỚI THÊM VÀO ---
         rvBooks = findViewById(R.id.rvBooks);
 
         // Tạo giao diện lưới (Grid) 2 cột giống các app bán hàng
         rvBooks.setLayoutManager(new GridLayoutManager(this, 2));
 
-        // Tạo danh sách dữ liệu ảo (Mock Data)
-        List<Book> mockList = new ArrayList<>();
-// Khách hàng chỉ thấy các sách có isHidden = false
-        mockList.add(new Book(1, "Đắc Nhân Tâm", "Dale Carnegie", 85000, 0, false));
-        mockList.add(new Book(2, "Nhà Giả Kim", "Paulo Coelho", 79000, 0, false));
-        mockList.add(new Book(3, "Tôi Thấy Hoa Vàng Trên Cỏ Xanh", "Nguyễn Nhật Ánh", 120000, 0, false));
-        mockList.add(new Book(5, "Tuổi Trẻ Đáng Giá Bao Nhiêu", "Rosie Nguyễn", 95000, 0, false));
-        mockList.add(new Book(6, "Cây Cam Ngọt Của Tôi", "José Mauro de Vasconcelos", 108000, 0, false));
+        // 1. Khởi tạo danh sách rỗng và gắn Adapter NGAY LẬP TỨC để tránh lỗi văng app
+        bookList = new ArrayList<>();
+        bookAdapter = new BookAdapter(bookList);
 
-        // Nạp dữ liệu vào Adapter và gắn vào RecyclerView
-        bookAdapter = new BookAdapter(mockList);
-        // Gắn sự kiện lắng nghe để mở trang Chi tiết
-        bookAdapter.setOnItemClickListener(new BookAdapter.OnItemClickListener() {
-            @Override
-            public void onItemClick(Book book) {
-                // Đây chính là đoạn code Intent của nhánh main được dời ra ngoài
-                Intent intent = new Intent(HomeActivity.this, BookDetailActivity.class);
-                intent.putExtra("BOOK_ID", book.getId());
-                startActivity(intent);
-            }
+        // Bắt sự kiện lắng nghe để mở trang Chi tiết
+        bookAdapter.setOnItemClickListener(book -> {
+            Intent intent = new Intent(HomeActivity.this, BookDetailActivity.class);
+            intent.putExtra("BOOK_ID", book.getId()); // Lưu ý: book.getId() bây giờ là String
+            startActivity(intent);
         });
-        rvBooks.setAdapter(bookAdapter);
-        // ------------------------
 
-        // Ánh xạ thanh Bottom Navigation (Giữ nguyên code cũ của bạn)
+        rvBooks.setAdapter(bookAdapter);
+
+        // 2. Gọi hàm lấy dữ liệu thật từ Firebase
+        loadBooksFromFirebase();
+
+        // Ánh xạ thanh Bottom Navigation
         BottomNavigationView bottomNav = findViewById(R.id.bottomNav);
         bottomNav.setSelectedItemId(R.id.nav_home);
         bottomNav.setOnItemSelectedListener(item -> {
@@ -73,6 +69,36 @@ public class HomeActivity extends AppCompatActivity {
                 return true;
             }
             return false;
+        });
+    }
+
+    private void loadBooksFromFirebase() {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.collection("books").get().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                bookList.clear(); // Xóa sạch dữ liệu cũ mỗi lần tải lại
+
+                for (QueryDocumentSnapshot document : task.getResult()) {
+                    Book book = document.toObject(Book.class);
+
+                    // Dự phòng trường hợp ID không nằm trong field mà nằm ở tên Document
+                    if (book.getBookId() == null) {
+                        book.setBookId(document.getId());
+                    }
+
+                    // LỌC DỮ LIỆU: Khách hàng chỉ thấy các sách đang mở bán (isHidden = false)
+                    if (!book.isHidden()) {
+                        bookList.add(book);
+                    }
+                }
+
+                // Báo cho Adapter biết dữ liệu đã tải xong để hiển thị lên màn hình
+                bookAdapter.notifyDataSetChanged();
+            } else {
+                Toast.makeText(HomeActivity.this, "Lỗi khi tải dữ liệu sách", Toast.LENGTH_SHORT).show();
+                Log.e("Firebase_Error", "Lỗi tải sách HomeActivity: ", task.getException());
+            }
         });
     }
 }
