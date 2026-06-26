@@ -56,7 +56,7 @@ public class ManageUsersActivity extends AppCompatActivity {
                 }
                 userAdapter.notifyDataSetChanged();
             } else {
-                Toast.makeText(this, "Lỗi tải Người dùng", Toast.LENGTH_SHORT).show();
+                Toast.makeText(ManageUsersActivity.this, "Lỗi tải Người dùng", Toast.LENGTH_SHORT).show();
                 Log.e("Firebase_Error", "Error getting users: ", task.getException());
             }
         });

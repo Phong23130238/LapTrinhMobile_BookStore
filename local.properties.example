@@ -1,0 +1,7 @@
+# File mẫu cấu hình IP cho nhóm
+# HƯỚNG DẪN: 
+# Copy dòng SERVER_IP bên dưới và dán vào file local.properties của máy bạn.
+# Nếu chạy Máy ảo (Emulator): giữ nguyên 10.0.2.2
+# Nếu cắm Cáp chạy điện thoại thật: Sửa thành IP máy tính (VD: 192.168.1.5)
+
+SERVER_IP=10.0.2.2
