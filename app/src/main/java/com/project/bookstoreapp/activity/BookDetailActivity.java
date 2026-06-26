@@ -55,17 +55,22 @@ public class BookDetailActivity extends AppCompatActivity {
             btnBack.setOnClickListener(v -> finish());
         }
 
-        // ===== TEST MODE: hardcode bookId = 7 =====
-        // currentBookIdInt = getIntent().getIntExtra("BOOK_ID", -1); // Dùng khi chạy thật
-        currentBookIdInt = 7; // TODO: Xóa dòng này khi chạy thật
-        // ============================================
+        // Lấy bookId từ Intent được truyền từ HomeActivity
+        String bookIdStr = getIntent().getStringExtra("BOOK_ID");
+        if (bookIdStr != null) {
+            try {
+                currentBookIdInt = Integer.parseInt(bookIdStr);
+            } catch (NumberFormatException e) {
+                currentBookIdInt = -1;
+            }
+        }
         currentBookId = String.valueOf(currentBookIdInt);
 
         if (currentBookIdInt != -1) {
             loadBookData(currentBookIdInt);
             loadReviews(currentBookId);
         } else {
-            Toast.makeText(this, "Lỗi: Không tìm thấy sách!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(BookDetailActivity.this, "Lỗi: Không tìm thấy sách!", Toast.LENGTH_SHORT).show();
         }
         
         ivCover.setOnClickListener(v -> {
@@ -140,18 +145,18 @@ public class BookDetailActivity extends AppCompatActivity {
                                     if (!querySnapshot.isEmpty()) {
                                         bindBookData(querySnapshot.getDocuments().get(0));
                                     } else {
-                                        Toast.makeText(this, "Không tìm thấy sách ID=" + bookId, Toast.LENGTH_LONG).show();
+                                        Toast.makeText(BookDetailActivity.this, "Không tìm thấy sách ID=" + bookId, Toast.LENGTH_LONG).show();
                                     }
                                 })
                                 .addOnFailureListener(e -> {
                                     android.util.Log.e("FIRESTORE", "==> Lỗi whereEqualTo: " + e.getMessage());
-                                    Toast.makeText(this, "Lỗi mạng: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(BookDetailActivity.this, "Lỗi mạng: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                                 });
                     }
                 })
                 .addOnFailureListener(e -> {
                     android.util.Log.e("FIRESTORE", "==> Lỗi get document: " + e.getMessage());
-                    Toast.makeText(this, "Lỗi mạng: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(BookDetailActivity.this, "Lỗi mạng: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
 
@@ -251,15 +256,12 @@ public class BookDetailActivity extends AppCompatActivity {
     }
 
     private void checkPurchaseAndReview() {
-        // ===== TEST MODE: hardcode userId = "3" =====
-        // FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        // if (currentUser == null) {
-        //     Toast.makeText(this, "Vui lòng đăng nhập để đánh giá", Toast.LENGTH_SHORT).show();
-        //     return;
-        // }
-        // String uid = currentUser.getUid();
-        String uid = "3"; // TODO: Xoá dòng này khi chạy thật
-        // =============================================
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            Toast.makeText(BookDetailActivity.this, "Vui lòng đăng nhập để đánh giá", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String uid = currentUser.getUid();
 
         HashMap<String, Object> body = new HashMap<>();
         body.put("userId", uid);
@@ -310,7 +312,7 @@ public class BookDetailActivity extends AppCompatActivity {
             String comment = etComment.getText().toString().trim();
             
             if (comment.isEmpty()) {
-                Toast.makeText(this, "Vui lòng nhập nội dung đánh giá", Toast.LENGTH_SHORT).show();
+                Toast.makeText(BookDetailActivity.this, "Vui lòng nhập nội dung đánh giá", Toast.LENGTH_SHORT).show();
                 return;
             }
             

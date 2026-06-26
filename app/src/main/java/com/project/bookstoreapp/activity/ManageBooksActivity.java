@@ -79,7 +79,7 @@ public class ManageBooksActivity extends AppCompatActivity {
                 // Báo cho Adapter biết dữ liệu đã thay đổi để vẽ lại giao diện
                 adminBookAdapter.notifyDataSetChanged();
             } else {
-                Toast.makeText(this, "Lỗi khi tải danh sách Sách!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(ManageBooksActivity.this, "Lỗi khi tải danh sách Sách!", Toast.LENGTH_SHORT).show();
                 Log.e("Firebase_Error", "Error getting books: ", task.getException());
             }
         });

@@ -39,7 +39,7 @@ public class HomeActivity extends AppCompatActivity {
         // Bắt sự kiện lắng nghe để mở trang Chi tiết
         bookAdapter.setOnItemClickListener(book -> {
             Intent intent = new Intent(HomeActivity.this, BookDetailActivity.class);
-            intent.putExtra("BOOK_ID", book.getId()); // Lưu ý: book.getId() bây giờ là String
+            intent.putExtra("BOOK_ID", book.getId()); // Truyền String bookId
             startActivity(intent);
         });
 

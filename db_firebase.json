@@ -1272,6 +1272,7 @@
       "phone": 328005656,
       "address": "kp33, linh trung, tp HCM",
       "role": "admin",
+      "password": "202cb962ac59075b964b07152d234b70",
       "createdAt": "26/6/2025"
     },
     "2": {
@@ -1281,6 +1282,7 @@
       "phone": 987654321,
       "address": "Quận 1, TP. HCM",
       "role": "customer",
+      "password": "202cb962ac59075b964b07152d234b70",
       "createdAt": "15/01/2026"
     },
     "3": {
@@ -1290,6 +1292,7 @@
       "phone": 912345678,
       "address": "Quận Cầu Giấy, Hà Nội",
       "role": "customer",
+      "password": "202cb962ac59075b964b07152d234b70",
       "createdAt": "20/02/2026"
     },
     "4": {
@@ -1299,6 +1302,7 @@
       "phone": 909090909,
       "address": "Quận Đống Đa, Hà Nội",
       "role": "customer",
+      "password": "202cb962ac59075b964b07152d234b70",
       "createdAt": "01/01/2024"
     },
     "5": {
@@ -1308,6 +1312,7 @@
       "phone": 933445566,
       "address": "Quận Hải Châu, Đà Nẵng",
       "role": "customer",
+      "password": "202cb962ac59075b964b07152d234b70",
       "createdAt": "10/03/2026"
     },
     "6": {
@@ -1317,6 +1322,7 @@
       "phone": 988776655,
       "address": "Quận 7, TP. HCM",
       "role": "customer",
+      "password": "202cb962ac59075b964b07152d234b70",
       "createdAt": "05/04/2026"
     }
   },
