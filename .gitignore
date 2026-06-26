@@ -17,3 +17,7 @@ local.properties
 # Node.js
 node_modules/
 .env
+
+# Android Studio IDE
+.idea/
+*.iml
