@@ -61,9 +61,18 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
-
     implementation(platform("com.google.firebase:firebase-bom:34.15.0"))
     implementation("com.google.firebase:firebase-analytics")
-
     implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-storage")
+}
+
+tasks.register<Copy>("copyFirebaseData") {
+    from("../db_firebase.json")
+    into("src/main/assets")
+}
+
+tasks.named("preBuild") {
+    dependsOn("copyFirebaseData")
 }

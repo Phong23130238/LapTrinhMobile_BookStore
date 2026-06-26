@@ -1,102 +1,124 @@
 package com.project.bookstoreapp.utils;
 
+import android.content.Context;
 import android.util.Log;
 
 import com.google.firebase.firestore.FirebaseFirestore;
+import org.json.JSONObject;
 
-import java.util.Arrays;
+import java.io.InputStream;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 public class DatabaseSeeder {
 
     private static final String TAG = "DatabaseSeeder";
 
-    public static void seedData() {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
+    public static void seedDataFromJson(Context context) {
+        new Thread(() -> {
+            try {
+                InputStream is = context.getAssets().open("db_firebase.json");
+                int size = is.available();
+                byte[] buffer = new byte[size];
+                is.read(buffer);
+                is.close();
+                String jsonStr = new String(buffer, "UTF-8");
 
-        seedCategories(db);
-        seedBooks(db);
-        // Note: You can add seedUsers(), seedOrders() etc. here if needed
-    }
+                JSONObject root = new JSONObject(jsonStr);
+                FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-    private static void seedCategories(FirebaseFirestore db) {
-        Map<String, Object> cat1 = new HashMap<>();
-        cat1.put("name", "Văn học");
-        cat1.put("imageUrl", "");
-        cat1.put("bookCount", 2);
+                // 1. Seed Categories
+                Map<String, String> catMap = new HashMap<>();
+                if (root.has("CATEGORIES")) {
+                    JSONObject categories = root.getJSONObject("CATEGORIES");
+                    Iterator<String> catKeys = categories.keys();
+                    while (catKeys.hasNext()) {
+                        String key = catKeys.next();
+                        JSONObject cat = categories.getJSONObject(key);
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("categoryId", key);
+                        map.put("name", cat.optString("name"));
+                        map.put("bookCount", cat.optInt("bookCount", 0));
+                        if (cat.has("imageUrl")) {
+                            map.put("imageUrl", cat.optString("imageUrl"));
+                        }
+                        db.collection("categories").document(key).set(map);
+                        
+                        catMap.put(key, cat.optString("name"));
+                    }
+                    Log.d(TAG, "Categories seeded from JSON");
+                }
 
-        Map<String, Object> cat2 = new HashMap<>();
-        cat2.put("name", "Kỹ năng sống");
-        cat2.put("imageUrl", "");
-        cat2.put("bookCount", 1);
+                // 2. Parse SERIES to a map for easy lookup
+                Map<String, String> seriesMap = new HashMap<>();
+                if (root.has("SERIES")) {
+                    JSONObject series = root.getJSONObject("SERIES");
+                    Iterator<String> serKeys = series.keys();
+                    while (serKeys.hasNext()) {
+                        String key = serKeys.next();
+                        JSONObject ser = series.getJSONObject(key);
+                        seriesMap.put(key, ser.optString("name"));
+                    }
+                }
 
-        db.collection("categories").add(cat1);
-        db.collection("categories").add(cat2);
-        Log.d(TAG, "Categories seeded");
-    }
+                // 3. Seed Books
+                if (root.has("BOOKS")) {
+                    JSONObject books = root.getJSONObject("BOOKS");
+                    Iterator<String> bookKeys = books.keys();
+                    while (bookKeys.hasNext()) {
+                        String key = bookKeys.next();
+                        JSONObject book = books.getJSONObject(key);
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("bookId", key);
+                        map.put("title", book.optString("title"));
+                        map.put("author", book.optString("author"));
+                        map.put("price", book.optDouble("price", 0));
+                        map.put("originalPrice", book.optDouble("originalPrice", 0));
+                        map.put("description", book.optString("description"));
+                        map.put("imageUrl", book.optString("imageUrl"));
+                        map.put("stock", book.optInt("stock", 0));
+                        map.put("sold", book.optInt("sold", 0));
+                        map.put("rating", book.optDouble("rating", 0));
+                        map.put("reviewCount", book.optInt("reviewCount", 0));
+                        if (book.has("publisher")) {
+                            map.put("publisher", book.optString("publisher"));
+                        }
+                        if (book.has("publishedYear")) {
+                            map.put("publishedYear", book.optInt("publishedYear"));
+                        }
+                        
+                        // category string lookup
+                        String catId = String.valueOf(book.optInt("categoryId"));
+                        if (catMap.containsKey(catId)) {
+                            map.put("category", catMap.get(catId));
+                        } else {
+                            map.put("category", "");
+                        }
 
-    private static void seedBooks(FirebaseFirestore db) {
-        // Book 1: Harry Potter series (Tập 1)
-        Map<String, Object> book1 = new HashMap<>();
-        book1.put("title", "Harry Potter và Hòn Đá Phù Thủy");
-        book1.put("author", "J.K. Rowling");
-        book1.put("category", "Văn học");
-        book1.put("series", "Harry Potter");
-        book1.put("volume", 1);
-        book1.put("price", 85000);
-        book1.put("originalPrice", 120000);
-        book1.put("description", "Tập đầu tiên của bộ truyện phép thuật nổi tiếng...");
-        book1.put("imageUrl", "https://upload.wikimedia.org/wikipedia/vi/a/a3/Harry_Potter_v%C3%A0_H%C3%B2n_%C4%91%C3%A1_Ph%C3%B9_th%E1%BB%A7y.jpg");
-        book1.put("stock", 50);
-        book1.put("sold", 12);
-        book1.put("rating", 4.5);
-        book1.put("reviewCount", 128);
-        book1.put("publisher", "NXB Trẻ");
-        book1.put("publishedYear", 2023);
-        book1.put("createdAt", new java.util.Date());
+                        // series string lookup
+                        if (book.has("seriesId")) {
+                            String serId = String.valueOf((int)book.optDouble("seriesId")); 
+                            if (seriesMap.containsKey(serId)) {
+                                map.put("series", seriesMap.get(serId));
+                            }
+                        }
+                        if (book.has("volume")) {
+                            map.put("volume", book.optInt("volume"));
+                        }
+                        
+                        map.put("createdAt", new java.util.Date());
 
-        // Book 2: Harry Potter series (Tập 2)
-        Map<String, Object> book2 = new HashMap<>();
-        book2.put("title", "Harry Potter và Phòng Chứa Bí Mật");
-        book2.put("author", "J.K. Rowling");
-        book2.put("category", "Văn học");
-        book2.put("series", "Harry Potter");
-        book2.put("volume", 2);
-        book2.put("price", 90000);
-        book2.put("originalPrice", 125000);
-        book2.put("description", "Tập thứ hai của bộ truyện...");
-        book2.put("imageUrl", "https://upload.wikimedia.org/wikipedia/vi/7/7c/Harry_Potter_v%C3%A0_Ph%C3%B2ng_ch%E1%BB%A9a_B%C3%AD_m%E1%BA%ADt.jpg");
-        book2.put("stock", 40);
-        book2.put("sold", 8);
-        book2.put("rating", 4.8);
-        book2.put("reviewCount", 95);
-        book2.put("publisher", "NXB Trẻ");
-        book2.put("publishedYear", 2023);
-        book2.put("createdAt", new java.util.Date());
+                        db.collection("books").document(key).set(map);
+                    }
+                    Log.d(TAG, "Books seeded from JSON");
+                }
+                
+                Log.d(TAG, "Full data seeding completed successfully!");
 
-        // Book 3: Standalone book (Không có series)
-        Map<String, Object> book3 = new HashMap<>();
-        book3.put("title", "Đắc Nhân Tâm");
-        book3.put("author", "Dale Carnegie");
-        book3.put("category", "Kỹ năng sống");
-        // Không thêm series và volume
-        book3.put("price", 75000);
-        book3.put("originalPrice", 90000);
-        book3.put("description", "Cuốn sách về nghệ thuật thu phục lòng người...");
-        book3.put("imageUrl", "https://upload.wikimedia.org/wikipedia/vi/3/33/Dacnhantam.jpg");
-        book3.put("stock", 100);
-        book3.put("sold", 320);
-        book3.put("rating", 5.0);
-        book3.put("reviewCount", 500);
-        book3.put("publisher", "NXB Tổng Hợp");
-        book3.put("publishedYear", 2020);
-        book3.put("createdAt", new java.util.Date());
-
-        db.collection("books").add(book1);
-        db.collection("books").add(book2);
-        db.collection("books").add(book3);
-        
-        Log.d(TAG, "Books seeded with Series!");
+            } catch (Exception e) {
+                Log.e(TAG, "Error seeding from JSON", e);
+            }
+        }).start();
     }
 }
