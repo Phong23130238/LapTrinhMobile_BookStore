@@ -65,5 +65,13 @@ dependencies {
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-storage")
+}
 
+tasks.register<Copy>("copyFirebaseData") {
+    from("../db_firebase.json")
+    into("src/main/assets")
+}
+
+tasks.named("preBuild") {
+    dependsOn("copyFirebaseData")
 }
