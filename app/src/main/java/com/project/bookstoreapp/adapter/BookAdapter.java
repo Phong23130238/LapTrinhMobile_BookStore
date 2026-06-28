@@ -7,6 +7,9 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.project.bookstoreapp.R;
 import com.project.bookstoreapp.model.Book;
 import java.text.DecimalFormat;
@@ -14,6 +17,7 @@ import java.util.List;
 
 public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder> {
     private List<Book> bookList;
+    private OnItemClickListener listener;
 
     public BookAdapter(List<Book> bookList) {
         this.bookList = bookList;
@@ -45,22 +49,38 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
         }
         holder.tvAuthor.setText(author);
 
-        // Giá tiền (Kiểu double mặc định là 0.0 nên không bị lỗi Null)
+        // Giá tiền
         DecimalFormat formatter = new DecimalFormat("###,###,###");
         holder.tvPrice.setText(formatter.format(book.getPrice()) + " đ");
 
-        // Gắn ảnh tạm thời
-        // Tương lai: Nhóm bạn sẽ dùng thư viện Glide hoặc Picasso để load ảnh từ book.getImageUrl() vào ivCover
-        holder.ivCover.setImageResource(R.mipmap.ic_launcher);
+        // 3. SỬA LỖI ROBOT XANH: Xử lý hiển thị hình ảnh bằng Glide
+        String urlAnh = book.getImageUrl();
+        int imagePlaceholder = android.R.drawable.ic_menu_gallery; // Ảnh mặc định của hệ thống khi lỗi/trống
 
-        // Code làm mờ sách bị ẩn (Phục vụ nhánh của Admin)
+        if (urlAnh == null || urlAnh.trim().isEmpty()) {
+            holder.ivCover.setImageResource(imagePlaceholder);
+        } else {
+            // Sửa lỗi link bị lặp mã nguồn từ JSON (Ví dụ cuốn số 2)
+            if (urlAnh.contains("&imageUrl=http")) {
+                urlAnh = urlAnh.split("&imageUrl=")[0];
+            }
+
+            Glide.with(holder.itemView.getContext())
+                    .load(urlAnh.trim())
+                    .placeholder(imagePlaceholder) // Ảnh hiển thị tạm lúc đang tải
+                    .error(imagePlaceholder)       // Ảnh hiển thị nếu link hỏng (Ngăn robot xanh xuất hiện)
+                    .diskCacheStrategy(DiskCacheStrategy.ALL) // Tối ưu bộ nhớ đệm khi cuộn
+                    .into(holder.ivCover);
+        }
+
+        // Code làm mờ sách bị ẩn
         if (book.isHidden()) {
             holder.itemView.setAlpha(0.5f);
         } else {
             holder.itemView.setAlpha(1.0f);
         }
 
-        // Bắt sự kiện click và đẩy ra ngoài qua Interface
+        // Bắt sự kiện click
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onItemClick(book);
@@ -90,16 +110,12 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
         void onItemClick(Book book);
     }
 
-    private OnItemClickListener listener;
-
     public void setOnItemClickListener(OnItemClickListener listener) {
         this.listener = listener;
     }
-    public void setFilteredList(List<Book> filteredList) {
-        // Gán danh sách hiển thị hiện tại của Adapter bằng danh sách đã được lọc mới
-        this.bookList = filteredList; // Hãy kiểm tra xem biến danh sách sách trong Adapter của bạn có đúng tên là bookList không để sửa cho khớp nhé
 
-        // Buộc RecyclerView vẽ lại giao diện mới
+    public void setFilteredList(List<Book> filteredList) {
+        this.bookList = filteredList;
         notifyDataSetChanged();
     }
 }

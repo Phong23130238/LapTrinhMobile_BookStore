@@ -49,12 +49,12 @@ android {
 }
 
 dependencies {
+    // AndroidX & UI Core Libraries
     implementation(libs.appcompat)
+    implementation(libs.firebase.database)
     implementation(libs.material)
     implementation(libs.activity)
     implementation(libs.constraintlayout)
-
-    // CardView
     implementation("androidx.cardview:cardview:1.0.0")
 
     // Networking - Retrofit
@@ -65,29 +65,28 @@ dependencies {
     // Google Sign-In
     implementation("com.google.android.gms:play-services-auth:21.0.0")
 
-    // Image loading
+    // Image loading & Utils
     implementation("com.github.bumptech.glide:glide:4.16.0")
-
     implementation("de.hdodenhof:circleimageview:3.1.0")
-
     implementation("com.google.code.gson:gson:2.10.1")
 
-    // Import the Firebase BoM
-    implementation(platform("com.google.firebase:firebase-bom:33.1.0"))
-
-    // Add the dependency for the Cloud Firestore library
-    implementation("com.google.firebase:firebase-firestore")
-
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.ext.junit)
-    androidTestImplementation(libs.espresso.core)
+    // Firebase (Đã gộp chung về phiên bản BoM mới nhất 34.15.0 để đồng bộ)
     implementation(platform("com.google.firebase:firebase-bom:34.15.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth")
-    implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-storage")
+    implementation("com.google.firebase:firebase-firestore")
+
+    // --- THƯ VIỆN GIẢI QUYẾT LỖI CANNOT RESOLVE CỦA BẠN ---
+    implementation("com.google.firebase:firebase-database")
+
+    // Testing Libraries
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.ext.junit)
+    androidTestImplementation(libs.espresso.core)
 }
 
+// Tự động copy dữ liệu JSON vào thư mục assets trước khi build dự án
 tasks.register<Copy>("copyFirebaseData") {
     from("../db_firebase.json")
     into("src/main/assets")
