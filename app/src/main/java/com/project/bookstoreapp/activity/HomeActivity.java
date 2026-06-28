@@ -18,6 +18,16 @@ import com.project.bookstoreapp.adapter.BookAdapter;
 import com.project.bookstoreapp.model.Book;
 import java.util.ArrayList;
 import java.util.List;
+import android.widget.PopupMenu;
+import android.widget.TextView;
+import android.widget.ImageButton;
+import android.view.View;
+import android.view.MenuItem;
+import com.bumptech.glide.Glide;
+import com.project.bookstoreapp.utils.SessionManager;
+import com.project.bookstoreapp.model.User;
+import com.google.firebase.auth.FirebaseAuth;
+import de.hdodenhof.circleimageview.CircleImageView;
 
 public class HomeActivity extends AppCompatActivity {
 
@@ -94,6 +104,71 @@ public class HomeActivity extends AppCompatActivity {
             }
             return false;
         });
+
+        setupHeader();
+    }
+
+    private void setupHeader() {
+        CircleImageView ivAvatar = findViewById(R.id.ivAvatarHeader);
+        TextView tvBadge = findViewById(R.id.tvCartBadge);
+        ImageButton btnCart = findViewById(R.id.btnCartHeader);
+
+        if (ivAvatar != null) {
+            SessionManager sessionManager = new SessionManager(this);
+            User user = sessionManager.getUser();
+            if (user != null && user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty()) {
+                Glide.with(this).load(user.getAvatarUrl()).into(ivAvatar);
+            }
+            // Realtime update from Firestore
+            if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+                FirebaseFirestore.getInstance().collection("users")
+                    .document(FirebaseAuth.getInstance().getCurrentUser().getUid())
+                    .addSnapshotListener((snapshot, error) -> {
+                        if (snapshot != null && snapshot.exists() && snapshot.getString("avatarUrl") != null) {
+                            Glide.with(this).load(snapshot.getString("avatarUrl")).into(ivAvatar);
+                        }
+                    });
+            }
+
+            ivAvatar.setOnLongClickListener(v -> {
+                PopupMenu popup = new PopupMenu(HomeActivity.this, v);
+                popup.getMenu().add("Thông tin tài khoản");
+                popup.getMenu().add("Đăng xuất");
+                popup.setOnMenuItemClickListener(item -> {
+                    if (item.getTitle().equals("Thông tin tài khoản")) {
+                        startActivity(new Intent(HomeActivity.this, ProfileActivity.class));
+                    } else if (item.getTitle().equals("Đăng xuất")) {
+                        sessionManager.logoutUser();
+                        FirebaseAuth.getInstance().signOut();
+                        startActivity(new Intent(HomeActivity.this, LoginActivity.class));
+                        finishAffinity();
+                    }
+                    return true;
+                });
+                popup.show();
+                return true;
+            });
+        }
+
+        if (btnCart != null) {
+            btnCart.setOnClickListener(v -> startActivity(new Intent(HomeActivity.this, CartActivity.class)));
+        }
+
+        // Dummy cart logic (can be updated to fetch from Firebase collection if needed)
+        // Here we just set it hidden or query a placeholder if the backend isn't ready
+        // Let's assume a "carts" collection where userId = uid
+        if (tvBadge != null && FirebaseAuth.getInstance().getCurrentUser() != null) {
+            String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+            FirebaseFirestore.getInstance().collection("carts").document(uid).collection("items")
+                .addSnapshotListener((value, error) -> {
+                    if (value != null && !value.isEmpty()) {
+                        tvBadge.setText(String.valueOf(value.size()));
+                        tvBadge.setVisibility(View.VISIBLE);
+                    } else {
+                        tvBadge.setVisibility(View.GONE);
+                    }
+                });
+        }
     }
 
     private void loadBooksFromFirebase() {
