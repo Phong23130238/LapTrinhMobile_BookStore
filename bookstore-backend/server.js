@@ -17,6 +17,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Default route để khi mở bằng trình duyệt không bị lỗi "Cannot GET /"
+app.get('/', (req, res) => {
+    res.send("<h1>BookStore Backend API đang hoạt động bình thường!</h1><p>Server này dùng để cung cấp dữ liệu cho ứng dụng Android, không có giao diện web.</p>");
+});
+
 // 1. API: Lấy danh sách đánh giá của 1 sách
 app.get('/api/reviews/:bookId', async (req, res) => {
     try {

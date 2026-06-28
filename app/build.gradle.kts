@@ -77,6 +77,7 @@ dependencies {
 
     // Add the dependency for the Cloud Firestore library
     implementation("com.google.firebase:firebase-firestore")
+    implementation(libs.firebase.database)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)

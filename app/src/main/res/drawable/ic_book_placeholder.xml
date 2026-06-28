@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="72dp"
+    android:height="96dp"
+    android:viewportWidth="72"
+    android:viewportHeight="96">
+
+    <!-- Nền sách -->
+    <path
+        android:fillColor="#E8E8E8"
+        android:pathData="M8,0 L64,0 C68.4,0 72,3.6 72,8 L72,88 C72,92.4 68.4,96 64,96 L8,96 C3.6,96 0,92.4 0,88 L0,8 C0,3.6 3.6,0 8,0 Z"/>
+
+    <!-- Gáy sách (bên trái) -->
+    <path
+        android:fillColor="#D0D0D0"
+        android:pathData="M0,8 C0,3.6 3.6,0 8,0 L16,0 L16,96 L8,96 C3.6,96 0,92.4 0,88 Z"/>
+
+    <!-- Icon sách nhỏ ở giữa -->
+    <path
+        android:fillColor="#AAAAAA"
+        android:pathData="M28,30 L52,30 L52,34 L28,34 Z"/>
+    <path
+        android:fillColor="#AAAAAA"
+        android:pathData="M28,40 L52,40 L52,44 L28,44 Z"/>
+    <path
+        android:fillColor="#AAAAAA"
+        android:pathData="M28,50 L44,50 L44,54 L28,54 Z"/>
+
+    <!-- Hình ảnh placeholder (khung) -->
+    <path
+        android:fillColor="#C8C8C8"
+        android:pathData="M28,58 L52,58 L52,72 L28,72 Z"/>
+    <path
+        android:fillColor="#AAAAAA"
+        android:pathData="M28,58 L36,68 L42,62 L48,70 L52,66 L52,72 L28,72 Z"/>
+
+</vector>

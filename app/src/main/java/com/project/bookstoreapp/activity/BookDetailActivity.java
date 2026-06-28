@@ -1,5 +1,6 @@
 package com.project.bookstoreapp.activity;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -16,6 +17,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.project.bookstoreapp.R;
 import com.project.bookstoreapp.adapter.ReviewAdapter;
+import com.project.bookstoreapp.model.CartItem;
 import com.project.bookstoreapp.model.Review;
 import com.project.bookstoreapp.network.ApiResponse;
 import com.project.bookstoreapp.network.ApiService;
@@ -43,6 +45,9 @@ public class BookDetailActivity extends AppCompatActivity {
     private String currentBookId = "";
     private int currentBookIdInt = -1;
     private String loadedImageUrl = "";
+
+    private long loadedPrice = 0L;
+    private long loadedOriginalPrice = 0L;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,9 +83,12 @@ public class BookDetailActivity extends AppCompatActivity {
                 showImageDialog();
             }
         });
-        
+
         if (btnWriteReview != null) {
             btnWriteReview.setOnClickListener(v -> checkPurchaseAndReview());
+        }
+        if (btnAddToCart != null) {
+            btnAddToCart.setOnClickListener(v -> addToCart());
         }
     }
 
@@ -188,11 +196,13 @@ public class BookDetailActivity extends AppCompatActivity {
 
         if (price != null && tvPrice != null) {
             tvPrice.setText(formatter.format(price) + " đ");
+            loadedPrice = price.longValue();
         }
 
         if (originalPrice != null && originalPrice > 0 && originalPrice > (price != null ? price : 0) && tvOriginalPrice != null) {
             tvOriginalPrice.setText(formatter.format(originalPrice) + " đ");
             tvOriginalPrice.setVisibility(android.view.View.VISIBLE);
+            loadedOriginalPrice = originalPrice.longValue();
         } else if (tvOriginalPrice != null) {
             tvOriginalPrice.setVisibility(android.view.View.GONE);
         }
@@ -376,5 +386,36 @@ public class BookDetailActivity extends AppCompatActivity {
         ivFull.setOnClickListener(view -> dialog.dismiss());
         
         dialog.show();
+    }
+
+    private void addToCart() {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+
+        String uid = (user != null) ? user.getUid() : "test_user_123";
+
+        String title  = tvTitle != null ? tvTitle.getText().toString() : "";
+        String author = tvAuthor != null ? tvAuthor.getText().toString() : "";
+        String addedAt = new java.text.SimpleDateFormat(
+                "yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.getDefault()
+        ).format(new java.util.Date());
+
+        CartItem cartItem = new CartItem(
+                currentBookId, title, author, loadedImageUrl,
+                loadedPrice, loadedOriginalPrice, 1, addedAt
+        );
+
+        com.google.firebase.database.FirebaseDatabase.getInstance()
+                .getReference("CARTS")
+                .child("userId_" + uid)
+                .child("items")
+                .child("bookId_" + currentBookId)
+                .setValue(cartItem)
+                .addOnSuccessListener(a -> {
+                    Toast.makeText(this, "Đã thêm vào giỏ hàng!", Toast.LENGTH_SHORT).show();
+                    startActivity(new Intent(this, CartActivity.class));
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                );
     }
 }
