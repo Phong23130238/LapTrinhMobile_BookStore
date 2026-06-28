@@ -417,12 +417,12 @@ public class BookDetailActivity extends AppCompatActivity {
     }
 
     private void addToCart() {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) {
+        SessionManager sessionManager = new SessionManager(this);
+        if (!sessionManager.isLoggedIn() || sessionManager.getUser() == null) {
             Toast.makeText(this, "Vui lòng đăng nhập", Toast.LENGTH_SHORT).show();
             return;
         }
-        String uid = user.getUid();
+        String uid = sessionManager.getUser().getUid();
 
         // Lấy thông tin từ field đã lưu (không đọc từ TextView để tránh null khi data chưa load xong)
         String title  = !loadedTitle.isEmpty()  ? loadedTitle  : (tvTitle  != null ? tvTitle.getText().toString()  : "");

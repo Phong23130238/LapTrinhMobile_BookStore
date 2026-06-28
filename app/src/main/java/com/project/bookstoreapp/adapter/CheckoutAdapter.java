@@ -32,7 +32,7 @@ public class CheckoutAdapter extends RecyclerView.Adapter<CheckoutAdapter.Checko
     @NonNull
     @Override
     public CheckoutViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.item_cart, parent, false);
+        View view = LayoutInflater.from(context).inflate(R.layout.item_checkout, parent, false);
         return new CheckoutViewHolder(view);
     }
 
@@ -42,9 +42,9 @@ public class CheckoutAdapter extends RecyclerView.Adapter<CheckoutAdapter.Checko
 
         holder.tvTitle.setText(item.getTitle());
         holder.tvAuthor.setText(item.getAuthor());
-        // Hiển thị tổng tiền ở vị trí giá, thay vì hiển thị giá đơn vị
-        holder.tvPrice.setText("Tổng: " + formatPrice(item.getSubtotal()));
+        holder.tvPrice.setText(formatPrice(item.getPrice()));
         holder.tvQuantity.setText("x" + item.getQuantity());
+        holder.tvSubtotal.setText("Tổng: " + formatPrice(item.getSubtotal()));
 
         if (item.getImageUrl() != null && !item.getImageUrl().isEmpty()) {
             Glide.with(context)
@@ -68,28 +68,16 @@ public class CheckoutAdapter extends RecyclerView.Adapter<CheckoutAdapter.Checko
 
     static class CheckoutViewHolder extends RecyclerView.ViewHolder {
         ImageView ivCover;
-        TextView tvTitle, tvAuthor, tvPrice, tvQuantity;
+        TextView tvTitle, tvAuthor, tvPrice, tvQuantity, tvSubtotal;
 
         CheckoutViewHolder(@NonNull View itemView) {
             super(itemView);
-            ivCover     = itemView.findViewById(R.id.ivBookCover);
-            tvTitle     = itemView.findViewById(R.id.tvBookTitle);
-            tvAuthor    = itemView.findViewById(R.id.tvBookAuthor);
-            tvPrice     = itemView.findViewById(R.id.tvBookPrice);
-            tvQuantity  = itemView.findViewById(R.id.tvQuantity);
-            
-            // Ẩn các nút không cần thiết ở trang checkout
-            View cbSelect = itemView.findViewById(R.id.cbSelectItem);
-            if(cbSelect != null) cbSelect.setVisibility(View.GONE);
-            
-            View btnIncrease = itemView.findViewById(R.id.btnIncrease);
-            if(btnIncrease != null) btnIncrease.setVisibility(View.GONE);
-            
-            View btnDecrease = itemView.findViewById(R.id.btnDecrease);
-            if(btnDecrease != null) btnDecrease.setVisibility(View.GONE);
-            
-            View tvOriginalPrice = itemView.findViewById(R.id.tvOriginalPrice);
-            if(tvOriginalPrice != null) tvOriginalPrice.setVisibility(View.GONE);
+            ivCover     = itemView.findViewById(R.id.ivCheckoutBookCover);
+            tvTitle     = itemView.findViewById(R.id.tvCheckoutBookTitle);
+            tvAuthor    = itemView.findViewById(R.id.tvCheckoutBookAuthor);
+            tvPrice     = itemView.findViewById(R.id.tvCheckoutBookPrice);
+            tvQuantity  = itemView.findViewById(R.id.tvCheckoutQuantity);
+            tvSubtotal  = itemView.findViewById(R.id.tvCheckoutItemSubtotal);
         }
     }
 }

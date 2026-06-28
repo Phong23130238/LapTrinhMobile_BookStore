@@ -28,6 +28,8 @@ import com.project.bookstoreapp.utils.SessionManager;
 import com.project.bookstoreapp.model.User;
 import com.google.firebase.auth.FirebaseAuth;
 import de.hdodenhof.circleimageview.CircleImageView;
+import android.os.Handler;
+import android.os.Looper;
 
 public class HomeActivity extends AppCompatActivity {
 
@@ -35,6 +37,9 @@ public class HomeActivity extends AppCompatActivity {
     private BookAdapter bookAdapter;
     private List<Book> bookList;
     private List<Book> originalList; // BIẾN TẠM: Lưu trữ danh sách gốc không bị thay đổi
+    
+    private Handler searchHandler = new Handler(Looper.getMainLooper());
+    private Runnable searchRunnable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,8 +76,11 @@ public class HomeActivity extends AppCompatActivity {
 
                 @Override
                 public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    // Người dùng gõ đến đâu, gọi hàm lọc sách thời gian thực đến đó
-                    filterBooks(s.toString());
+                    if (searchRunnable != null) {
+                        searchHandler.removeCallbacks(searchRunnable);
+                    }
+                    searchRunnable = () -> filterBooks(s.toString());
+                    searchHandler.postDelayed(searchRunnable, 300); // 300ms debounce
                 }
 
                 @Override
@@ -113,16 +121,17 @@ public class HomeActivity extends AppCompatActivity {
         TextView tvBadge = findViewById(R.id.tvCartBadge);
         ImageButton btnCart = findViewById(R.id.btnCartHeader);
 
+        SessionManager sessionManager = new SessionManager(this);
+        User user = sessionManager.getUser();
+
         if (ivAvatar != null) {
-            SessionManager sessionManager = new SessionManager(this);
-            User user = sessionManager.getUser();
             if (user != null && user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty()) {
                 Glide.with(this).load(user.getAvatarUrl()).into(ivAvatar);
             }
             // Realtime update from Firestore
-            if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+            if (user != null && user.getUid() != null) {
                 FirebaseFirestore.getInstance().collection("users")
-                    .document(FirebaseAuth.getInstance().getCurrentUser().getUid())
+                    .document(user.getUid())
                     .addSnapshotListener((snapshot, error) -> {
                         if (snapshot != null && snapshot.exists() && snapshot.getString("avatarUrl") != null) {
                             Glide.with(this).load(snapshot.getString("avatarUrl")).into(ivAvatar);
@@ -139,7 +148,7 @@ public class HomeActivity extends AppCompatActivity {
                         startActivity(new Intent(HomeActivity.this, ProfileActivity.class));
                     } else if (item.getTitle().equals("Đăng xuất")) {
                         sessionManager.logoutUser();
-                        FirebaseAuth.getInstance().signOut();
+                        // Firebase logout is removed since we only rely on SessionManager
                         startActivity(new Intent(HomeActivity.this, LoginActivity.class));
                         finishAffinity();
                     }
@@ -154,12 +163,10 @@ public class HomeActivity extends AppCompatActivity {
             btnCart.setOnClickListener(v -> startActivity(new Intent(HomeActivity.this, CartActivity.class)));
         }
 
-        // Dummy cart logic (can be updated to fetch from Firebase collection if needed)
-        // Here we just set it hidden or query a placeholder if the backend isn't ready
-        // Let's assume a "carts" collection where userId = uid
-        if (tvBadge != null && FirebaseAuth.getInstance().getCurrentUser() != null) {
-            String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
-            FirebaseFirestore.getInstance().collection("carts").document(uid).collection("items")
+        // Cart Badge Logic updated to use SessionManager and the correct whereEqualTo query
+        if (tvBadge != null && user != null && user.getUid() != null) {
+            FirebaseFirestore.getInstance().collection("carts")
+                .whereEqualTo("userId", user.getUid())
                 .addSnapshotListener((value, error) -> {
                     if (value != null && !value.isEmpty()) {
                         tvBadge.setText(String.valueOf(value.size()));

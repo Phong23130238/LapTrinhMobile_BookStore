@@ -78,12 +78,24 @@ public class CheckoutActivity extends AppCompatActivity {
 
         db = FirebaseFirestore.getInstance();
 
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user != null) currentUserId = user.getUid();
+        com.project.bookstoreapp.utils.SessionManager sessionManager = new com.project.bookstoreapp.utils.SessionManager(this);
+        if (!sessionManager.isLoggedIn() || sessionManager.getUser() == null) {
+            Toast.makeText(this, "Vui lòng đăng nhập", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+        currentUserId = sessionManager.getUser().getUid();
 
         initViews();
         setupToolbar();
         receiveDataFromCart();
+        
+        com.project.bookstoreapp.model.User user = sessionManager.getUser();
+        if (user != null) {
+            if (user.getName() != null && !user.getName().isEmpty()) etFullName.setText(user.getName());
+            if (user.getPhone() != null && !user.getPhone().isEmpty()) etPhone.setText(user.getPhone());
+            if (user.getAddress() != null && !user.getAddress().isEmpty()) etAddress.setText(user.getAddress());
+        }
     }
 
     private void initViews() {
@@ -292,11 +304,17 @@ public class CheckoutActivity extends AppCompatActivity {
                 .add(order)
                 .addOnSuccessListener(docRef -> {
                     removeItemsFromCart();
-                    Toast.makeText(this, "Đặt hàng thành công!", Toast.LENGTH_LONG).show();
-                    Intent intent = new Intent(this, HomeActivity.class);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(intent);
-                    finish();
+                    new androidx.appcompat.app.AlertDialog.Builder(this)
+                            .setTitle("Đặt hàng thành công")
+                            .setMessage("Cảm ơn bạn đã đặt hàng! Đơn hàng của bạn đang được xử lý.")
+                            .setPositiveButton("Về trang chủ", (dialog, which) -> {
+                                Intent intent = new Intent(this, HomeActivity.class);
+                                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                                startActivity(intent);
+                                finish();
+                            })
+                            .setCancelable(false)
+                            .show();
                 })
                 .addOnFailureListener(e -> {
                     btnPlaceOrder.setEnabled(true);

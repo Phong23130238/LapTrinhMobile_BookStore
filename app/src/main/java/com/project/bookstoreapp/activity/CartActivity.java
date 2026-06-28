@@ -94,13 +94,13 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.CartA
     }
 
     private void loadCartFromFirestore() {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) {
+        com.project.bookstoreapp.utils.SessionManager sessionManager = new com.project.bookstoreapp.utils.SessionManager(this);
+        if (!sessionManager.isLoggedIn() || sessionManager.getUser() == null) {
             showEmptyCart();
             Toast.makeText(this, "Vui lòng đăng nhập", Toast.LENGTH_SHORT).show();
             return;
         }
-        currentUserId = user.getUid();
+        currentUserId = sessionManager.getUser().getUid();
 
         // Lắng nghe realtime — collection "carts", filter theo userId
         cartListener = db.collection("carts")
