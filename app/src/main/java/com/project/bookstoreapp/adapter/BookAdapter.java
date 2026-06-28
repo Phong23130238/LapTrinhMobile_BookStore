@@ -95,4 +95,11 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
     public void setOnItemClickListener(OnItemClickListener listener) {
         this.listener = listener;
     }
+    public void setFilteredList(List<Book> filteredList) {
+        // Gán danh sách hiển thị hiện tại của Adapter bằng danh sách đã được lọc mới
+        this.bookList = filteredList; // Hãy kiểm tra xem biến danh sách sách trong Adapter của bạn có đúng tên là bookList không để sửa cho khớp nhé
+
+        // Buộc RecyclerView vẽ lại giao diện mới
+        notifyDataSetChanged();
+    }
 }
