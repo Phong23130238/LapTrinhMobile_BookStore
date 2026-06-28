@@ -11,7 +11,10 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.project.bookstoreapp.R;
+import com.project.bookstoreapp.activity.BookDetailActivity;
+import android.content.Intent;
 
 import java.text.DecimalFormat;
 import java.util.List;
@@ -39,7 +42,7 @@ public class OrderDetailAdapter extends RecyclerView.Adapter<OrderDetailAdapter.
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Map<String, Object> item = items.get(position);
 
-        String title = item.containsKey("title") ? String.valueOf(item.get("title")) : "Sách";
+        String title = item.containsKey("title") ? String.valueOf(item.get("title")) : "Đang tải...";
         String imageUrl = item.containsKey("imageUrl") ? String.valueOf(item.get("imageUrl")) : "";
         
         double price = 0;
@@ -71,6 +74,42 @@ public class OrderDetailAdapter extends RecyclerView.Adapter<OrderDetailAdapter.
         } else {
             holder.ivBookCover.setImageResource(R.drawable.ic_launcher_background);
         }
+
+        // Fetch from Firestore if title is missing
+        if (item.containsKey("bookId") && !item.containsKey("title")) {
+            String bookId = String.valueOf(item.get("bookId"));
+            FirebaseFirestore.getInstance().collection("books").document(bookId).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        String fetchedTitle = documentSnapshot.getString("title");
+                        String fetchedImage = documentSnapshot.getString("imageUrl");
+                        
+                        boolean updated = false;
+                        if (fetchedTitle != null) {
+                            item.put("title", fetchedTitle);
+                            holder.tvBookTitle.setText(fetchedTitle);
+                            updated = true;
+                        }
+                        if (fetchedImage != null) {
+                            item.put("imageUrl", fetchedImage);
+                            Glide.with(context).load(fetchedImage).into(holder.ivBookCover);
+                            updated = true;
+                        }
+                        // Don't call notifyItemChanged here to avoid infinite loops if it recycles while loading,
+                        // updating the view holder directly is fine for this simple case.
+                    }
+                });
+        }
+
+        // Click to open BookDetailActivity
+        holder.itemView.setOnClickListener(v -> {
+            if (item.containsKey("bookId")) {
+                String bookId = String.valueOf(item.get("bookId"));
+                Intent intent = new Intent(context, BookDetailActivity.class);
+                intent.putExtra("BOOK_ID", bookId);
+                context.startActivity(intent);
+            }
+        });
     }
 
     @Override

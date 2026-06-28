@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.project.bookstoreapp.R;
 import com.project.bookstoreapp.adapter.OrderDetailAdapter;
 import com.project.bookstoreapp.model.Order;
@@ -33,9 +34,10 @@ import retrofit2.Response;
 public class OrderDetailActivity extends AppCompatActivity {
 
     private TextView tvOrderId, tvOrderStatus, tvOrderDate, tvShippingAddress;
-    private TextView tvSubtotal, tvShippingFee, tvTotal;
+    private TextView tvSubtotal, tvShippingFee, tvTotal, tvPaymentMethod;
     private RecyclerView rvOrderItems;
     private ProgressBar progressBar;
+    private BottomNavigationView bottomNav;
 
     private OrderDetailAdapter adapter;
     private List<Map<String, Object>> itemList;
@@ -71,13 +73,49 @@ public class OrderDetailActivity extends AppCompatActivity {
         tvSubtotal = findViewById(R.id.tvSubtotal);
         tvShippingFee = findViewById(R.id.tvShippingFee);
         tvTotal = findViewById(R.id.tvTotal);
+        tvPaymentMethod = findViewById(R.id.tvPaymentMethod);
         progressBar = findViewById(R.id.progressBarOrder);
         rvOrderItems = findViewById(R.id.rvOrderItems);
+        bottomNav = findViewById(R.id.bottomNav);
 
         rvOrderItems.setLayoutManager(new LinearLayoutManager(this));
         itemList = new ArrayList<>();
         adapter = new OrderDetailAdapter(this, itemList);
         rvOrderItems.setAdapter(adapter);
+
+        setupBottomNav();
+    }
+
+    private void setupBottomNav() {
+        if (bottomNav != null) {
+            bottomNav.setSelectedItemId(R.id.nav_orders);
+            bottomNav.setOnItemSelectedListener(item -> {
+                int itemId = item.getItemId();
+                if (itemId == R.id.nav_home) {
+                    android.content.Intent intent = new android.content.Intent(OrderDetailActivity.this, HomeActivity.class);
+                    intent.setFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                    startActivity(intent);
+                    finish();
+                    return true;
+                } else if (itemId == R.id.nav_cart) {
+                    android.content.Intent intent = new android.content.Intent(OrderDetailActivity.this, CartActivity.class);
+                    intent.setFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                    startActivity(intent);
+                    finish();
+                    return true;
+                } else if (itemId == R.id.nav_orders) {
+                    finish();
+                    return true;
+                } else if (itemId == R.id.nav_profile) {
+                    android.content.Intent intent = new android.content.Intent(OrderDetailActivity.this, ProfileActivity.class);
+                    intent.setFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                    startActivity(intent);
+                    finish();
+                    return true;
+                }
+                return false;
+            });
+        }
     }
 
     private void loadOrderDetails(String orderId) {
@@ -119,12 +157,28 @@ public class OrderDetailActivity extends AppCompatActivity {
         
         String dateStr = order.getCreatedAt();
         if (dateStr != null && !dateStr.isEmpty()) {
+            // Payment Method
+            if (tvPaymentMethod != null) {
+                String paymentMethod = order.getPaymentMethod();
+                if ("banking".equalsIgnoreCase(paymentMethod)) {
+                    tvPaymentMethod.setText("Chuyển khoản (VNPay)");
+                } else {
+                    tvPaymentMethod.setText("Trả tiền mặt (COD)");
+                }
+            }
+
+            Date date = null;
             try {
-                SimpleDateFormat inFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-                SimpleDateFormat outFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
-                Date date = inFormat.parse(dateStr);
-                tvOrderDate.setText("Ngày đặt: " + outFormat.format(date));
+                date = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").parse(dateStr);
             } catch (Exception e) {
+                try {
+                    date = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").parse(dateStr);
+                } catch (Exception e2) {
+                }
+            }
+            if (date != null) {
+                tvOrderDate.setText("Ngày đặt: " + new SimpleDateFormat("dd/MM/yyyy - HH:mm").format(date));
+            } else {
                 tvOrderDate.setText("Ngày đặt: " + dateStr);
             }
         }
