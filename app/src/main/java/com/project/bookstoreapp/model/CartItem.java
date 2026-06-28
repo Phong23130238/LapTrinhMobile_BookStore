@@ -13,7 +13,6 @@ public class CartItem implements Parcelable {
     private long originalPrice;
     private int quantity;
     private String addedAt;
-
     private boolean isSelected = false;
 
     public CartItem() {}
@@ -66,32 +65,23 @@ public class CartItem implements Parcelable {
         public CartItem[] newArray(int size) { return new CartItem[size]; }
     };
 
-    public String getBookId() { return bookId; }
-    public void setBookId(String bookId) { this.bookId = bookId; }
-
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
-
-    public String getAuthor() { return author; }
-    public void setAuthor(String author) { this.author = author; }
-
-    public String getImageUrl() { return imageUrl; }
-    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
-
-    public long getPrice() { return price; }
-    public void setPrice(long price) { this.price = price; }
-
-    public long getOriginalPrice() { return originalPrice; }
-    public void setOriginalPrice(long originalPrice) { this.originalPrice = originalPrice; }
-
-    public int getQuantity() { return quantity; }
-    public void setQuantity(int quantity) { this.quantity = quantity; }
-
-    public String getAddedAt() { return addedAt; }
-    public void setAddedAt(String addedAt) { this.addedAt = addedAt; }
-
-    public boolean isSelected() { return isSelected; }
-    public void setSelected(boolean selected) { isSelected = selected; }
-
-    public long getSubtotal() { return price * quantity; }
+    public String getBookId()            { return bookId; }
+    public void   setBookId(String v)    { this.bookId = v; }
+    public String getTitle()             { return title; }
+    public void   setTitle(String v)     { this.title = v; }
+    public String getAuthor()            { return author; }
+    public void   setAuthor(String v)    { this.author = v; }
+    public String getImageUrl()          { return imageUrl; }
+    public void   setImageUrl(String v)  { this.imageUrl = v; }
+    public long   getPrice()             { return price; }
+    public void   setPrice(long v)       { this.price = v; }
+    public long   getOriginalPrice()     { return originalPrice; }
+    public void   setOriginalPrice(long v){ this.originalPrice = v; }
+    public int    getQuantity()          { return quantity; }
+    public void   setQuantity(int v)     { this.quantity = v; }
+    public String getAddedAt()           { return addedAt; }
+    public void   setAddedAt(String v)   { this.addedAt = v; }
+    public boolean isSelected()          { return isSelected; }
+    public void    setSelected(boolean v){ this.isSelected = v; }
+    public long   getSubtotal()          { return price * quantity; }
 }

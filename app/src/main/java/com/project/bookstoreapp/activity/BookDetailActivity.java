@@ -45,6 +45,8 @@ public class BookDetailActivity extends AppCompatActivity {
     private String currentBookId = "";
     private int currentBookIdInt = -1;
     private String loadedImageUrl = "";
+    private String loadedTitle = "";
+    private String loadedAuthor = "";
 
     private long loadedPrice = 0L;
     private long loadedOriginalPrice = 0L;
@@ -62,17 +64,18 @@ public class BookDetailActivity extends AppCompatActivity {
 
         // Lấy bookId từ Intent được truyền từ HomeActivity
         String bookIdStr = getIntent().getStringExtra("BOOK_ID");
-        if (bookIdStr != null) {
+        if (bookIdStr != null && !bookIdStr.isEmpty()) {
+            currentBookId = bookIdStr;
             try {
                 currentBookIdInt = Integer.parseInt(bookIdStr);
             } catch (NumberFormatException e) {
-                currentBookIdInt = -1;
+                // Document ID không phải số nguyên — vẫn dùng được như String
+                currentBookIdInt = -2; // Déo fail, chỉ đánh dấu không parse được số
             }
         }
-        currentBookId = String.valueOf(currentBookIdInt);
 
-        if (currentBookIdInt != -1) {
-            loadBookData(currentBookIdInt);
+        if (!currentBookId.isEmpty()) {
+            loadBookData(currentBookId);
             loadReviews(currentBookId);
         } else {
             Toast.makeText(BookDetailActivity.this, "Lỗi: Không tìm thấy sách!", Toast.LENGTH_SHORT).show();
@@ -127,39 +130,59 @@ public class BookDetailActivity extends AppCompatActivity {
         }
     }
 
-    private void loadBookData(int bookId) {
-        String docId = String.valueOf(bookId);
-        android.util.Log.d("FIRESTORE", "==> Đang query books/" + docId);
+    private void loadBookData(String bookId) {
+        android.util.Log.d("FIRESTORE", "==> Đang query books/" + bookId);
 
-        // Cách 1: Dùng document ID trực tiếp (hoạt động khi Firestore dùng "1","2","7"... làm document ID)
+        // Cách 1: Dùng document ID trực tiếp
         FirebaseFirestore.getInstance()
                 .collection("books")
-                .document(docId)
+                .document(bookId)
                 .get()
                 .addOnSuccessListener(documentSnapshot -> {
                     android.util.Log.d("FIRESTORE", "==> exists=" + documentSnapshot.exists() + " | data=" + documentSnapshot.getData());
                     if (documentSnapshot.exists()) {
                         bindBookData(documentSnapshot);
                     } else {
-                        // Cách 2: Fallback - query theo field bookId (cast sang long)
-                        android.util.Log.d("FIRESTORE", "==> Document ID không tồn tại, thử whereEqualTo bookId=(long)" + bookId);
-                        FirebaseFirestore.getInstance()
-                                .collection("books")
-                                .whereEqualTo("bookId", (long) bookId)
-                                .limit(1)
-                                .get()
-                                .addOnSuccessListener(querySnapshot -> {
-                                    android.util.Log.d("FIRESTORE", "==> whereEqualTo kết quả: " + querySnapshot.size() + " docs");
-                                    if (!querySnapshot.isEmpty()) {
-                                        bindBookData(querySnapshot.getDocuments().get(0));
-                                    } else {
-                                        Toast.makeText(BookDetailActivity.this, "Không tìm thấy sách ID=" + bookId, Toast.LENGTH_LONG).show();
-                                    }
-                                })
-                                .addOnFailureListener(e -> {
-                                    android.util.Log.e("FIRESTORE", "==> Lỗi whereEqualTo: " + e.getMessage());
-                                    Toast.makeText(BookDetailActivity.this, "Lỗi mạng: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                                });
+                        // Cách 2: Fallback - query theo field bookId (thử kiểu long trước)
+                        android.util.Log.d("FIRESTORE", "==> Document ID không tồn tại, thử whereEqualTo bookId=" + bookId);
+                        long bookIdLong = -1;
+                        try { bookIdLong = Long.parseLong(bookId); } catch (NumberFormatException ignored) {}
+                        final long finalId = bookIdLong;
+
+                        com.google.firebase.firestore.Query q = FirebaseFirestore.getInstance().collection("books");
+                        // Thử tìm theo long bookId nếu có thể parse
+                        if (finalId >= 0) {
+                            q.whereEqualTo("bookId", finalId)
+                                    .limit(1).get()
+                                    .addOnSuccessListener(qs -> {
+                                        if (!qs.isEmpty()) {
+                                            bindBookData(qs.getDocuments().get(0));
+                                        } else {
+                                            // Fallback cuối: tìm theo String
+                                            FirebaseFirestore.getInstance().collection("books")
+                                                    .whereEqualTo("bookId", bookId)
+                                                    .limit(1).get()
+                                                    .addOnSuccessListener(qs2 -> {
+                                                        if (!qs2.isEmpty()) bindBookData(qs2.getDocuments().get(0));
+                                                        else Toast.makeText(BookDetailActivity.this, "Không tìm thấy sách ID=" + bookId, Toast.LENGTH_LONG).show();
+                                                    })
+                                                    .addOnFailureListener(e -> Toast.makeText(BookDetailActivity.this, "Lỗi mạng: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                                        }
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        android.util.Log.e("FIRESTORE", "==> Lỗi whereEqualTo: " + e.getMessage());
+                                        Toast.makeText(BookDetailActivity.this, "Lỗi mạng: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                    });
+                        } else {
+                            // bookId không phải số, thử String
+                            q.whereEqualTo("bookId", bookId)
+                                    .limit(1).get()
+                                    .addOnSuccessListener(qs -> {
+                                        if (!qs.isEmpty()) bindBookData(qs.getDocuments().get(0));
+                                        else Toast.makeText(BookDetailActivity.this, "Không tìm thấy sách", Toast.LENGTH_LONG).show();
+                                    })
+                                    .addOnFailureListener(e -> Toast.makeText(BookDetailActivity.this, "Lỗi mạng: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                        }
                     }
                 })
                 .addOnFailureListener(e -> {
@@ -175,6 +198,9 @@ public class BookDetailActivity extends AppCompatActivity {
         Double originalPrice = documentSnapshot.getDouble("originalPrice");
         String description = documentSnapshot.getString("description");
         loadedImageUrl = documentSnapshot.getString("imageUrl");
+        // Lưu lại title và author để dùng khi addToCart()
+        loadedTitle  = title  != null ? title  : "";
+        loadedAuthor = author != null ? author : "";
 
         Double rating = documentSnapshot.getDouble("rating");
         Double reviewCount = documentSnapshot.getDouble("reviewCount");
@@ -360,7 +386,7 @@ public class BookDetailActivity extends AppCompatActivity {
                     dialog.dismiss();
                     loadReviews(currentBookId);
                     // Tải lại thông tin sách để cập nhật rating mới hiển thị
-                    loadBookData(currentBookIdInt);
+                    loadBookData(currentBookId);
                 } else {
                     Toast.makeText(BookDetailActivity.this, "Lỗi khi gửi đánh giá từ server", Toast.LENGTH_SHORT).show();
                 }
@@ -390,32 +416,99 @@ public class BookDetailActivity extends AppCompatActivity {
 
     private void addToCart() {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) {
+            Toast.makeText(this, "Vui lòng đăng nhập", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String uid = user.getUid();
 
-        String uid = (user != null) ? user.getUid() : "test_user_123";
+        // Lấy thông tin từ field đã lưu (không đọc từ TextView để tránh null khi data chưa load xong)
+        String title  = !loadedTitle.isEmpty()  ? loadedTitle  : (tvTitle  != null ? tvTitle.getText().toString()  : "");
+        String author = !loadedAuthor.isEmpty() ? loadedAuthor : (tvAuthor != null ? tvAuthor.getText().toString() : "");
 
-        String title  = tvTitle != null ? tvTitle.getText().toString() : "";
-        String author = tvAuthor != null ? tvAuthor.getText().toString() : "";
-        String addedAt = new java.text.SimpleDateFormat(
-                "yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.getDefault()
-        ).format(new java.util.Date());
+        // Kiểm tra sách có hợp lệ không
+        if (currentBookId.isEmpty()) {
+            Toast.makeText(this, "Không xác định được sách", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (loadedPrice <= 0) {
+            Toast.makeText(this, "Dữ liệu sách chưa tải xong, vui lòng thử lại!", Toast.LENGTH_SHORT).show();
+            if (btnAddToCart != null) btnAddToCart.setEnabled(true);
+            return;
+        }
 
-        CartItem cartItem = new CartItem(
-                currentBookId, title, author, loadedImageUrl,
-                loadedPrice, loadedOriginalPrice, 1, addedAt
-        );
+        // Tắt nút tránh bấm nhiều lần
+        if (btnAddToCart != null) btnAddToCart.setEnabled(false);
 
-        com.google.firebase.database.FirebaseDatabase.getInstance()
-                .getReference("CARTS")
-                .child("userId_" + uid)
-                .child("items")
-                .child("bookId_" + currentBookId)
-                .setValue(cartItem)
-                .addOnSuccessListener(a -> {
-                    Toast.makeText(this, "Đã thêm vào giỏ hàng!", Toast.LENGTH_SHORT).show();
-                    startActivity(new Intent(this, CartActivity.class));
+        com.google.firebase.firestore.FirebaseFirestore db =
+                com.google.firebase.firestore.FirebaseFirestore.getInstance();
+
+        // Kiểm tra sách đã có trong giỏ chưa (cùng userId + bookId)
+        db.collection("carts")
+                .whereEqualTo("userId", uid)
+                .whereEqualTo("bookId", currentBookId)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (!querySnapshot.isEmpty()) {
+                        // Sách đã có → tăng số lượng thêm 1
+                        com.google.firebase.firestore.DocumentSnapshot existingDoc =
+                                querySnapshot.getDocuments().get(0);
+                        Long currentQty = existingDoc.getLong("quantity");
+                        int newQty = (currentQty != null ? currentQty.intValue() : 1) + 1;
+
+                        existingDoc.getReference().update("quantity", newQty)
+                                .addOnSuccessListener(a -> {
+                                    if (btnAddToCart != null) btnAddToCart.setEnabled(true);
+                                    Toast.makeText(this,
+                                            "Đã cập nhật số lượng trong giỏ hàng!",
+                                            Toast.LENGTH_SHORT).show();
+                                    // Chuyển sang CartActivity, truyền bookId để auto-select
+                                    Intent cartIntent = new Intent(BookDetailActivity.this, CartActivity.class);
+                                    cartIntent.putExtra(CartActivity.EXTRA_AUTO_SELECT_BOOK_ID, currentBookId);
+                                    startActivity(cartIntent);
+                                })
+                                .addOnFailureListener(e -> {
+                                    if (btnAddToCart != null) btnAddToCart.setEnabled(true);
+                                    Toast.makeText(this, "Lỗi: " + e.getMessage(),
+                                            Toast.LENGTH_SHORT).show();
+                                });
+                    } else {
+                        // Sách chưa có → thêm document mới
+                        java.util.Map<String, Object> cartData = new java.util.HashMap<>();
+                        cartData.put("userId",        uid);
+                        cartData.put("bookId",        currentBookId);
+                        cartData.put("title",         title);
+                        cartData.put("author",        author);
+                        cartData.put("imageUrl",      loadedImageUrl != null ? loadedImageUrl : "");
+                        cartData.put("price",         loadedPrice);
+                        cartData.put("originalPrice", loadedOriginalPrice);
+                        cartData.put("quantity",      1);
+                        cartData.put("addedAt",       com.google.firebase.firestore.FieldValue.serverTimestamp());
+
+                        db.collection("carts")
+                                .add(cartData)
+                                .addOnSuccessListener(docRef -> {
+                                    if (btnAddToCart != null) btnAddToCart.setEnabled(true);
+                                    Toast.makeText(this,
+                                            "Đã thêm vào giỏ hàng!",
+                                            Toast.LENGTH_SHORT).show();
+                                    // Chuyển sang CartActivity, truyền bookId để auto-select
+                                    Intent cartIntent = new Intent(BookDetailActivity.this, CartActivity.class);
+                                    cartIntent.putExtra(CartActivity.EXTRA_AUTO_SELECT_BOOK_ID, currentBookId);
+                                    startActivity(cartIntent);
+                                })
+                                .addOnFailureListener(e -> {
+                                    if (btnAddToCart != null) btnAddToCart.setEnabled(true);
+                                    Toast.makeText(this, "Lỗi: " + e.getMessage(),
+                                            Toast.LENGTH_SHORT).show();
+                                });
+                    }
                 })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                );
+                .addOnFailureListener(e -> {
+                    if (btnAddToCart != null) btnAddToCart.setEnabled(true);
+                    Toast.makeText(this, "Lỗi kiểm tra giỏ hàng: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                });
     }
 }
