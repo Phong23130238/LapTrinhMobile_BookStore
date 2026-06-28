@@ -1,5 +1,9 @@
 const express = require('express');
 const cors = require('cors');
+require('dotenv').config();
+const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const crypto = require('crypto');
 const { OAuth2Client } = require('google-auth-library');
 const { initializeApp } = require('firebase/app');
@@ -22,6 +26,24 @@ const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// =============================================
+// CẤU HÌNH CLOUDINARY & MULTER
+// =============================================
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'bookstore_avatars',
+    allowedFormats: ['jpg', 'png', 'jpeg']
+  }
+});
+const upload = multer({ storage: storage });
 
 // =============================================
 // HELPER: Hash mật khẩu bằng MD5
@@ -250,6 +272,96 @@ app.post('/api/auth/google', async (req, res) => {
 });
 
 // =============================================
+// USER PROFILE APIs
+// =============================================
+
+// Cập nhật Profile (có hỗ trợ upload ảnh)
+app.put('/api/users/profile', upload.single('avatar'), async (req, res) => {
+    try {
+        const { uid, name, phone, address } = req.body;
+        
+        if (!uid) {
+            return res.status(400).json({ success: false, message: "Thiếu UID người dùng" });
+        }
+
+        const updateData = {};
+        if (name) updateData.name = name;
+        if (phone) updateData.phone = phone;
+        if (address !== undefined) updateData.address = address; // allow empty address
+
+        // Nếu có file ảnh được upload thành công lên Cloudinary
+        if (req.file) {
+            updateData.avatarUrl = req.file.path; // req.file.path chứa URL ảnh trên Cloudinary
+        }
+
+        const userRef = doc(db, "users", uid);
+        const userSnap = await getDoc(userRef);
+
+        if (!userSnap.exists()) {
+            return res.status(404).json({ success: false, message: "Không tìm thấy người dùng" });
+        }
+
+        await updateDoc(userRef, updateData);
+
+        // Lấy dữ liệu mới nhất trả về
+        const updatedSnap = await getDoc(userRef);
+        
+        res.json({
+            success: true,
+            message: "Cập nhật hồ sơ thành công",
+            data: updatedSnap.data()
+        });
+
+    } catch (error) {
+        console.error("Lỗi cập nhật profile:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Cập nhật Mật khẩu
+app.put('/api/users/password', async (req, res) => {
+    try {
+        const { uid, oldPassword, newPassword } = req.body;
+
+        if (!uid || !oldPassword || !newPassword) {
+            return res.status(400).json({ success: false, message: "Vui lòng nhập đủ thông tin" });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({ success: false, message: "Mật khẩu mới phải có ít nhất 6 ký tự" });
+        }
+
+        const userRef = doc(db, "users", uid);
+        const userSnap = await getDoc(userRef);
+
+        if (!userSnap.exists()) {
+            return res.status(404).json({ success: false, message: "Không tìm thấy người dùng" });
+        }
+
+        const userData = userSnap.data();
+
+        // Tài khoản đăng nhập Google không có password
+        if (!userData.password) {
+            return res.status(400).json({ success: false, message: "Tài khoản Google không có mật khẩu để đổi" });
+        }
+
+        const hashedOld = hashMD5(oldPassword);
+        if (userData.password !== hashedOld) {
+            return res.status(400).json({ success: false, message: "Mật khẩu cũ không chính xác" });
+        }
+
+        const hashedNew = hashMD5(newPassword);
+        await updateDoc(userRef, { password: hashedNew });
+
+        res.json({ success: true, message: "Đổi mật khẩu thành công" });
+
+    } catch (error) {
+        console.error("Lỗi đổi mật khẩu:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// =============================================
 // REVIEW APIs (giữ nguyên)
 // =============================================
 
@@ -367,6 +479,28 @@ app.post('/api/reviews/check-purchase', async (req, res) => {
         
     } catch (error) {
         console.error("Lỗi kiểm tra mua hàng:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// =============================================
+// ORDER APIs
+// =============================================
+
+// Lấy chi tiết đơn hàng
+app.get('/api/orders/:orderId', async (req, res) => {
+    try {
+        const orderId = req.params.orderId;
+        const orderRef = doc(db, "orders", orderId);
+        const orderSnap = await getDoc(orderRef);
+
+        if (!orderSnap.exists()) {
+            return res.status(404).json({ success: false, message: "Không tìm thấy đơn hàng" });
+        }
+
+        res.json({ success: true, data: orderSnap.data() });
+    } catch (error) {
+        console.error("Lỗi lấy chi tiết đơn hàng:", error);
         res.status(500).json({ success: false, message: error.message });
     }
 });
