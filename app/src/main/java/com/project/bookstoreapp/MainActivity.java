@@ -17,11 +17,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // 1. KÍCH HOẠT SEED DỮ LIỆU (CHỈ DÙNG 1 LẦN)
-        // LƯU Ý: Mở comment dòng dưới đây để chạy đẩy dữ liệu 1 lần.
-        // Lần sau mở app, BẮT BUỘC phải comment nó lại (thêm // ở đầu) để không ghi đè dữ liệu mới!
-         DatabaseSeeder.seedDataFromJson(this);
-
         // 2. Kiểm tra session đăng nhập bằng SharedPreferences
         SessionManager sessionManager = new SessionManager(this);
 

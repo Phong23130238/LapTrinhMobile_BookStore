@@ -1,56 +1,216 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout 
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@color/cream"
-    android:padding="20dp">
+    android:background="#F5F7FA">
 
-    <de.hdodenhof.circleimageview.CircleImageView
-        android:id="@+id/ivProfile"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:layout_gravity="center"
-        android:layout_marginTop="30dp"
-        android:src="@mipmap/ic_launcher"
-        app:civ_border_width="2dp"
-        app:civ_border_color="@color/gold"/>
-
-    <TextView
-        android:id="@+id/tvUserName"
+    <!-- AppBar / Toolbar -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Tên người dùng"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:layout_marginTop="15dp"
-        android:textColor="@color/navy_dark"/>
+        android:background="@android:color/transparent"
+        app:elevation="0dp"
+        app:layout_constraintTop_toTopOf="parent">
 
-    <LinearLayout
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbarProfile"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@android:color/white"
+            app:title="Hồ sơ cá nhân"
+            app:titleCentered="true"
+            app:titleTextAppearance="@style/TextAppearance.MaterialComponents.Headline6" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <ScrollView
         android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toBottomOf="@id/appBarLayout"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:paddingBottom="40dp">
+
+            <!-- Avatar Section -->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="32dp"
+                android:paddingBottom="24dp"
+                android:background="@android:color/white"
+                android:clipToPadding="false"
+                android:clipChildren="false">
+
+                <de.hdodenhof.circleimageview.CircleImageView
+                    android:id="@+id/ivAvatar"
+                    android:layout_width="120dp"
+                    android:layout_height="120dp"
+                    android:src="@drawable/ic_launcher_background"
+                    app:civ_border_width="3dp"
+                    app:civ_border_color="#E0E0E0"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent" />
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/fabChangeAvatar"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:fabSize="mini"
+                    android:src="@android:drawable/ic_menu_camera"
+                    app:tint="@android:color/white"
+                    app:backgroundTint="@color/design_default_color_primary"
+                    app:layout_constraintBottom_toBottomOf="@id/ivAvatar"
+                    app:layout_constraintEnd_toEndOf="@id/ivAvatar"
+                    android:layout_marginEnd="4dp"
+                    android:layout_marginBottom="4dp"
+                    android:contentDescription="Đổi ảnh đại diện" />
+
+                <TextView
+                    android:id="@+id/tvEmail"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="email@example.com"
+                    android:textColor="#757575"
+                    android:textSize="16sp"
+                    app:layout_constraintTop_toBottomOf="@id/ivAvatar"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <!-- Form Section -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="16dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="@android:color/white">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Họ và tên"
+                        app:startIconDrawable="@android:drawable/ic_menu_myplaces"
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etName"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textPersonName" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:hint="Số điện thoại"
+                        app:startIconDrawable="@android:drawable/ic_menu_call"
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etPhone"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="phone" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:hint="Địa chỉ"
+                        app:startIconDrawable="@android:drawable/ic_dialog_map"
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etAddress"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textMultiLine"
+                            android:minLines="2" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Action Buttons -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSaveProfile"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginTop="16dp"
+                android:text="Lưu thay đổi"
+                app:cornerRadius="12dp"
+                android:textSize="16sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnChangePassword"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginTop="12dp"
+                android:text="Đổi mật khẩu"
+                android:textColor="#546E7A"
+                app:strokeColor="#B0BEC5"
+                app:cornerRadius="12dp"
+                android:textSize="16sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnLogout"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginTop="12dp"
+                android:text="Đăng xuất"
+                android:textColor="#E53935"
+                app:strokeColor="#EF9A9A"
+                app:cornerRadius="12dp"
+                android:textSize="16sp" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Progress Bar -->
+    <ProgressBar
+        android:id="@+id/progressBarProfile"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_marginTop="40dp">
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-        <Button
-            android:id="@+id/btnEditProfile"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Chỉnh sửa thông tin"
-            android:gravity="left|center_vertical"
-            android:textColor="@color/navy_medium" />
-
-        <Button
-            android:id="@+id/btnLogout"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Đăng xuất"
-            android:gravity="left|center_vertical"
-            android:textColor="@color/red_danger" />
-    </LinearLayout>
-
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
