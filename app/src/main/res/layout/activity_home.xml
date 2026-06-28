@@ -6,7 +6,6 @@
     android:layout_height="match_parent"
     android:background="@color/cream">
 
-    <!-- AppBar -->
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -20,18 +19,19 @@
             android:background="@color/navy_dark"
             app:contentInsetStart="20dp">
 
-            <!-- Logo text -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="📚"
-                    android:textSize="24sp" />
+                <de.hdodenhof.circleimageview.CircleImageView
+                    android:id="@+id/ivAvatarHeader"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:src="@drawable/ic_launcher_background"
+                    app:civ_border_width="1dp"
+                    app:civ_border_color="@color/gold" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -44,21 +44,39 @@
                     android:letterSpacing="0.08" />
             </LinearLayout>
 
-            <!-- Avatar icon -->
-            <androidx.appcompat.widget.AppCompatImageButton
-                android:id="@+id/btnAccount"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_gravity="end"
-                android:layout_marginEnd="16dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@android:drawable/ic_menu_myplaces"
-                android:tint="@color/gold" />
+                android:layout_marginEnd="16dp">
+
+                <androidx.appcompat.widget.AppCompatImageButton
+                    android:id="@+id/btnCartHeader"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_bag"
+                    app:tint="@color/gold" />
+
+                <TextView
+                    android:id="@+id/tvCartBadge"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_gravity="top|end"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginEnd="2dp"
+                    android:background="@drawable/bg_badge_red"
+                    android:text="0"
+                    android:textColor="@android:color/white"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:visibility="gone"/>
+            </FrameLayout>
 
         </com.google.android.material.appbar.MaterialToolbar>
     </com.google.android.material.appbar.AppBarLayout>
 
-    <!-- Scrollable content -->
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -69,7 +87,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Hero Banner -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="200dp"
@@ -114,7 +131,6 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Search Bar -->
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -123,6 +139,7 @@
                 android:hint="Tìm kiếm sách..."
                 app:startIconDrawable="@android:drawable/ic_menu_search"
                 app:startIconTint="@color/navy_medium"
+                app:hintTextColor="@color/navy_dark"
                 style="@style/OutlinedInput">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -130,10 +147,11 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:imeOptions="actionSearch"
-                    android:inputType="text" />
+                    android:inputType="text"
+                    android:textColor="@color/navy_dark"
+                    android:textColorHint="@color/navy_medium" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Category chips -->
             <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -182,7 +200,6 @@
                 </com.google.android.material.chip.ChipGroup>
             </HorizontalScrollView>
 
-            <!-- Section: Sách nổi bật -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -211,7 +228,6 @@
                     android:focusable="true" />
             </LinearLayout>
 
-            <!-- Book list placeholder -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvBooks"
                 android:layout_width="match_parent"
@@ -231,6 +247,7 @@
         android:background="@color/navy_dark"
         app:itemIconTint="@color/gold"
         app:itemTextColor="@color/gold"
+        app:labelVisibilityMode="labeled"
         app:menu="@menu/bottom_nav_menu" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

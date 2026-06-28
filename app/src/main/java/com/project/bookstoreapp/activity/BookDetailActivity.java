@@ -19,9 +19,11 @@ import com.project.bookstoreapp.R;
 import com.project.bookstoreapp.adapter.ReviewAdapter;
 import com.project.bookstoreapp.model.CartItem;
 import com.project.bookstoreapp.model.Review;
+import com.project.bookstoreapp.model.User;
 import com.project.bookstoreapp.network.ApiResponse;
 import com.project.bookstoreapp.network.ApiService;
 import com.project.bookstoreapp.network.RetrofitClient;
+import com.project.bookstoreapp.utils.SessionManager;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -292,12 +294,12 @@ public class BookDetailActivity extends AppCompatActivity {
     }
 
     private void checkPurchaseAndReview() {
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        if (currentUser == null) {
+        SessionManager sessionManager = new SessionManager(this);
+        if (!sessionManager.isLoggedIn() || sessionManager.getUser() == null) {
             Toast.makeText(BookDetailActivity.this, "Vui lòng đăng nhập để đánh giá", Toast.LENGTH_SHORT).show();
             return;
         }
-        String uid = currentUser.getUid();
+        String uid = sessionManager.getUser().getUid();
 
         HashMap<String, Object> body = new HashMap<>();
         body.put("userId", uid);

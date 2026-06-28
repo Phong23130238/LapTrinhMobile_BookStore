@@ -2,36 +2,34 @@ package com.project.bookstoreapp;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
+
 import androidx.appcompat.app.AppCompatActivity;
-import com.google.firebase.auth.FirebaseAuth;
+
+import com.project.bookstoreapp.activity.AdminDashboardActivity;
+import com.project.bookstoreapp.activity.HomeActivity;
 import com.project.bookstoreapp.activity.LoginActivity;
 import com.project.bookstoreapp.utils.DatabaseSeeder;
+import com.project.bookstoreapp.utils.SessionManager;
 
 public class MainActivity extends AppCompatActivity {
-
-    private FirebaseAuth mAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // 1. KÍCH HOẠT SEED DỮ LIỆU (CHỈ DÙNG 1 LẦN)
-        // LƯU Ý: Mở comment dòng dưới đây để chạy đẩy dữ liệu 1 lần.
-        // Lần sau mở app, BẮT BUỘC phải comment nó lại (thêm // ở đầu) để không ghi đè dữ liệu mới!
-         DatabaseSeeder.seedDataFromJson(this);
+        // 2. Kiểm tra session đăng nhập bằng SharedPreferences
+        SessionManager sessionManager = new SessionManager(this);
 
-        mAuth = FirebaseAuth.getInstance();
-
-        // 2. Kiểm tra xem đã đăng nhập chưa
-        if (mAuth.getCurrentUser() != null) {
-            // Tương lai: Bạn có thể chèn thêm lệnh kiểm tra Role ở đây.
-            // Nếu Role = Admin -> Mở AdminDashboardActivity.
-            // Nếu Role = Customer -> Mở HomeActivity.
-            // Hiện tại cứ cho vào Home trước.
-            startActivity(new Intent(MainActivity.this, com.project.bookstoreapp.activity.HomeActivity.class));
+        if (sessionManager.isLoggedIn()) {
+            // Đã đăng nhập → kiểm tra role để điều hướng
+            String role = sessionManager.getRole();
+            if ("admin".equals(role)) {
+                startActivity(new Intent(MainActivity.this, AdminDashboardActivity.class));
+            } else {
+                startActivity(new Intent(MainActivity.this, HomeActivity.class));
+            }
         } else {
-            // Nếu chưa, vào Login
+            // Chưa đăng nhập → vào Login
             startActivity(new Intent(MainActivity.this, LoginActivity.class));
         }
 
