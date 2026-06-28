@@ -225,6 +225,7 @@
         android:background="@color/navy_dark"
         app:itemIconTint="@color/gold"
         app:itemTextColor="@color/gold"
+        app:labelVisibilityMode="labeled"
         app:menu="@menu/bottom_nav_menu" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
