@@ -149,7 +149,48 @@
                     android:imeOptions="actionNext" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Địa chỉ giao hàng -->
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:hint="Tỉnh / Thành phố *"
+                app:startIconDrawable="@android:drawable/ic_menu_mapmode">
+                <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                    android:id="@+id/spinProvince"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:hint="Quận / Huyện *"
+                app:startIconDrawable="@android:drawable/ic_menu_mapmode">
+                <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                    android:id="@+id/spinDistrict"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:hint="Phường / Xã *"
+                app:startIconDrawable="@android:drawable/ic_menu_mapmode">
+                <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                    android:id="@+id/spinWard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
+
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilAddress"
                 android:layout_width="match_parent"
@@ -161,7 +202,7 @@
                     android:id="@+id/etAddress"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Địa chỉ giao hàng chi tiết *"
+                    android:hint="Số nhà, Tên đường chi tiết *"
                     android:inputType="textMultiLine"
                     android:minLines="2"
                     android:imeOptions="actionNext" />

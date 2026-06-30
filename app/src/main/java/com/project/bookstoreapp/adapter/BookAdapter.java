@@ -55,7 +55,7 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
 
         // 3. SỬA LỖI ROBOT XANH: Xử lý hiển thị hình ảnh bằng Glide
         String urlAnh = book.getImageUrl();
-        int imagePlaceholder = android.R.drawable.ic_menu_gallery; // Ảnh mặc định của hệ thống khi lỗi/trống
+        int imagePlaceholder = R.drawable.ic_book_placeholder; // Ảnh mặc định của project khi lỗi/trống
 
         if (urlAnh == null || urlAnh.trim().isEmpty()) {
             holder.ivCover.setImageResource(imagePlaceholder);

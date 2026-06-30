@@ -195,9 +195,19 @@ public class HomeActivity extends AppCompatActivity {
 
                             if (!book.isHidden()) {
                                 bookList.add(book);
-                                originalList.add(book);
                             }
                         }
+
+                        // Sắp xếp: sách có ảnh hợp lệ lên trên, sách không có ảnh xuống dưới
+                        java.util.Collections.sort(bookList, (b1, b2) -> {
+                            boolean hasImage1 = b1.getImageUrl() != null && b1.getImageUrl().trim().startsWith("http");
+                            boolean hasImage2 = b2.getImageUrl() != null && b2.getImageUrl().trim().startsWith("http");
+                            if (hasImage1 && !hasImage2) return -1;
+                            if (!hasImage1 && hasImage2) return 1;
+                            return 0;
+                        });
+
+                        originalList.addAll(bookList);
                         bookAdapter.notifyDataSetChanged();
                     }
                 });

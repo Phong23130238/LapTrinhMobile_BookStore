@@ -505,7 +505,7 @@ app.get('/api/orders/:orderId', async (req, res) => {
     }
 });
 
-const PORT = 3000;
-app.listen(PORT, () => {
-    console.log(`Node.js Backend đang chạy tại http://localhost:${PORT}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Node.js Backend đang chạy tại http://0.0.0.0:${PORT}`);
 });

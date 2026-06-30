@@ -11,6 +11,9 @@ import android.widget.LinearLayout;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -27,6 +30,15 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.project.bookstoreapp.R;
 import com.project.bookstoreapp.adapter.CheckoutAdapter;
 import com.project.bookstoreapp.model.CartItem;
+import com.project.bookstoreapp.ghn.District;
+import com.project.bookstoreapp.ghn.GHNApiService;
+import com.project.bookstoreapp.ghn.GHNResponse;
+import com.project.bookstoreapp.ghn.Province;
+import com.project.bookstoreapp.ghn.RetrofitClientGHN;
+import com.project.bookstoreapp.ghn.Ward;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -43,7 +55,7 @@ public class CheckoutActivity extends AppCompatActivity {
     private static final Pattern VN_PHONE =
             Pattern.compile("^0[35789][0-9]{8}$");
 
-    private static final long SHIPPING_FEE  = 25_000L;
+    private long dynamicShippingFee = 0L;
     private static final long FREE_SHIP_MIN = 300_000L;
 
     private static final NumberFormat VND =
@@ -59,6 +71,15 @@ public class CheckoutActivity extends AppCompatActivity {
     private LinearLayout      layoutEmptyCheckout;
     private NestedScrollView  scrollCheckout;
     private View              bottomBar;
+
+    private AutoCompleteTextView spinProvince, spinDistrict, spinWard;
+    private List<Province> provinceList = new ArrayList<>();
+    private List<District> districtList = new ArrayList<>();
+    private List<Ward> wardList = new ArrayList<>();
+    private Province selectedProvince = null;
+    private District selectedDistrict = null;
+    private Ward selectedWard = null;
+    private final String GHN_TOKEN = "dffec2e1-6725-11f1-a973-aee5264794df";
 
     // ---- Data ----
     private ArrayList<CartItem> selectedItems      = new ArrayList<>();
@@ -94,7 +115,9 @@ public class CheckoutActivity extends AppCompatActivity {
         if (user != null) {
             if (user.getName() != null && !user.getName().isEmpty()) etFullName.setText(user.getName());
             if (user.getPhone() != null && !user.getPhone().isEmpty()) etPhone.setText(user.getPhone());
-            if (user.getAddress() != null && !user.getAddress().isEmpty()) etAddress.setText(user.getAddress());
+            if (user.getAddress() != null && !user.getAddress().isEmpty()) {
+                parseAndAutoFillAddress(user.getAddress());
+            }
         }
     }
 
@@ -103,6 +126,9 @@ public class CheckoutActivity extends AppCompatActivity {
         etFullName        = findViewById(R.id.etFullName);
         etPhone           = findViewById(R.id.etPhone);
         etAddress         = findViewById(R.id.etAddress);
+        spinProvince      = findViewById(R.id.spinProvince);
+        spinDistrict      = findViewById(R.id.spinDistrict);
+        spinWard          = findViewById(R.id.spinWard);
         etNote            = findViewById(R.id.etNote);
         etVoucher         = findViewById(R.id.etVoucher);
         tilFullName       = findViewById(R.id.tilFullName);
@@ -124,6 +150,178 @@ public class CheckoutActivity extends AppCompatActivity {
         btnApplyVoucher.setOnClickListener(v -> applyVoucher());
         btnPlaceOrder.setOnClickListener(v -> placeOrder());
         if (btnBackToCart != null) btnBackToCart.setOnClickListener(v -> finish());
+
+        spinProvince.setOnItemClickListener((parent, view, position, id) -> {
+            selectedProvince = provinceList.get(position);
+            spinDistrict.setText("");
+            spinWard.setText("");
+            selectedDistrict = null;
+            selectedWard = null;
+            loadDistricts(selectedProvince.ProvinceID);
+        });
+
+        spinDistrict.setOnItemClickListener((parent, view, position, id) -> {
+            selectedDistrict = districtList.get(position);
+            spinWard.setText("");
+            selectedWard = null;
+            loadWards(selectedDistrict.DistrictID);
+        });
+
+        spinWard.setOnItemClickListener((parent, view, position, id) -> {
+            selectedWard = wardList.get(position);
+            calculateShippingFee();
+        });
+
+        loadProvinces();
+    }
+
+    private void loadProvinces() {
+        RetrofitClientGHN.getApiService().getProvinces(GHN_TOKEN).enqueue(new Callback<GHNResponse<List<Province>>>() {
+            @Override
+            public void onResponse(Call<GHNResponse<List<Province>>> call, Response<GHNResponse<List<Province>>> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().data != null) {
+                    provinceList = response.body().data;
+                    ArrayAdapter<Province> adapter = new ArrayAdapter<>(CheckoutActivity.this, android.R.layout.simple_list_item_1, provinceList);
+                    spinProvince.setAdapter(adapter);
+                    
+                    if (targetProvinceName != null && !targetProvinceName.isEmpty()) {
+                        for (Province p : provinceList) {
+                            if (p.ProvinceName != null && p.ProvinceName.equalsIgnoreCase(targetProvinceName)) {
+                                selectedProvince = p;
+                                spinProvince.setText(p.ProvinceName, false);
+                                loadDistricts(p.ProvinceID);
+                                break;
+                            }
+                        }
+                        targetProvinceName = null;
+                    }
+                } else {
+                    Toast.makeText(CheckoutActivity.this, "Lỗi tải Tỉnh: API trả về thất bại", Toast.LENGTH_SHORT).show();
+                }
+            }
+            @Override
+            public void onFailure(Call<GHNResponse<List<Province>>> call, Throwable t) {
+                Log.e("CheckoutActivity", "Lỗi tải Tỉnh: ", t);
+                Toast.makeText(CheckoutActivity.this, "Lỗi kết nối GHN", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void loadDistricts(int provinceId) {
+        RetrofitClientGHN.getApiService().getDistricts(GHN_TOKEN, provinceId).enqueue(new Callback<GHNResponse<List<District>>>() {
+            @Override
+            public void onResponse(Call<GHNResponse<List<District>>> call, Response<GHNResponse<List<District>>> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().data != null) {
+                    districtList = response.body().data;
+                    ArrayAdapter<District> adapter = new ArrayAdapter<>(CheckoutActivity.this, android.R.layout.simple_list_item_1, districtList);
+                    spinDistrict.setAdapter(adapter);
+                    
+                    if (targetDistrictName != null && !targetDistrictName.isEmpty()) {
+                        for (District d : districtList) {
+                            if (d.DistrictName != null && d.DistrictName.equalsIgnoreCase(targetDistrictName)) {
+                                selectedDistrict = d;
+                                spinDistrict.setText(d.DistrictName, false);
+                                loadWards(d.DistrictID);
+                                break;
+                            }
+                        }
+                        targetDistrictName = null;
+                    }
+                }
+            }
+            @Override
+            public void onFailure(Call<GHNResponse<List<District>>> call, Throwable t) {
+                Log.e("CheckoutActivity", "Lỗi tải Quận/Huyện: ", t);
+            }
+        });
+    }
+
+    private void loadWards(int districtId) {
+        RetrofitClientGHN.getApiService().getWards(GHN_TOKEN, districtId).enqueue(new Callback<GHNResponse<List<Ward>>>() {
+            @Override
+            public void onResponse(Call<GHNResponse<List<Ward>>> call, Response<GHNResponse<List<Ward>>> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().data != null) {
+                    wardList = response.body().data;
+                    ArrayAdapter<Ward> adapter = new ArrayAdapter<>(CheckoutActivity.this, android.R.layout.simple_list_item_1, wardList);
+                    spinWard.setAdapter(adapter);
+                    
+                    if (targetWardName != null && !targetWardName.isEmpty()) {
+                        for (Ward w : wardList) {
+                            if (w.WardName != null && w.WardName.equalsIgnoreCase(targetWardName)) {
+                                selectedWard = w;
+                                spinWard.setText(w.WardName, false);
+                                calculateShippingFee();
+                                break;
+                            }
+                        }
+                        targetWardName = null;
+                    }
+                }
+            }
+            @Override
+            public void onFailure(Call<GHNResponse<List<Ward>>> call, Throwable t) {
+                Log.e("CheckoutActivity", "Lỗi tải Phường/Xã: ", t);
+            }
+        });
+    }
+
+    private void calculateShippingFee() {
+        if (selectedDistrict == null || selectedWard == null) return;
+        
+        btnPlaceOrder.setEnabled(false);
+        btnPlaceOrder.setText("Đang tính phí ship...");
+        
+        int toDistrictId = selectedDistrict.DistrictID;
+        String toWardCode = selectedWard.WardCode;
+        
+        com.project.bookstoreapp.ghn.GHNFeeRequest request = new com.project.bookstoreapp.ghn.GHNFeeRequest(1452, "21211", toDistrictId, toWardCode);
+        int SHOP_ID = 200948;
+        
+        RetrofitClientGHN.getApiService().calculateFee(GHN_TOKEN, SHOP_ID, request).enqueue(new Callback<GHNResponse<com.project.bookstoreapp.ghn.GHNFeeData>>() {
+            @Override
+            public void onResponse(Call<GHNResponse<com.project.bookstoreapp.ghn.GHNFeeData>> call, Response<GHNResponse<com.project.bookstoreapp.ghn.GHNFeeData>> response) {
+                btnPlaceOrder.setEnabled(true);
+                btnPlaceOrder.setText("ĐẶT HÀNG NGAY");
+                if (response.isSuccessful() && response.body() != null && response.body().data != null) {
+                    dynamicShippingFee = response.body().data.total;
+                    updateOrderSummary();
+                } else {
+                    Toast.makeText(CheckoutActivity.this, "Không thể tính phí vận chuyển", Toast.LENGTH_SHORT).show();
+                    dynamicShippingFee = 0;
+                    updateOrderSummary();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<GHNResponse<com.project.bookstoreapp.ghn.GHNFeeData>> call, Throwable t) {
+                btnPlaceOrder.setEnabled(true);
+                btnPlaceOrder.setText("ĐẶT HÀNG NGAY");
+                Toast.makeText(CheckoutActivity.this, "Lỗi kết nối khi tính phí", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private String targetProvinceName = null;
+    private String targetDistrictName = null;
+    private String targetWardName = null;
+    
+    private void parseAndAutoFillAddress(String fullAddress) {
+        if (fullAddress == null || fullAddress.isEmpty()) return;
+        String[] parts = fullAddress.split(", ");
+        if (parts.length >= 4) {
+            targetProvinceName = parts[parts.length - 1].trim();
+            targetDistrictName = parts[parts.length - 2].trim();
+            targetWardName = parts[parts.length - 3].trim();
+            
+            StringBuilder street = new StringBuilder();
+            for (int i = 0; i < parts.length - 3; i++) {
+                street.append(parts[i]);
+                if (i < parts.length - 4) street.append(", ");
+            }
+            etAddress.setText(street.toString());
+        } else {
+            etAddress.setText(fullAddress);
+        }
     }
 
     private void setupToolbar() {
@@ -162,7 +360,7 @@ public class CheckoutActivity extends AppCompatActivity {
     }
 
     private void updateOrderSummary() {
-        long shipping = subtotal >= FREE_SHIP_MIN ? 0L : SHIPPING_FEE;
+        long shipping = subtotal >= FREE_SHIP_MIN ? 0L : dynamicShippingFee;
         long total    = Math.max(0, subtotal + shipping - discountAmount);
 
         tvSubtotal.setText(fmt(subtotal));
@@ -246,8 +444,8 @@ public class CheckoutActivity extends AppCompatActivity {
             tilPhone.setError("SĐT không hợp lệ (VD: 0912345678)"); ok = false;
         } else tilPhone.setError(null);
 
-        if (getEditText(etAddress).isEmpty()) {
-            tilAddress.setError("Vui lòng nhập địa chỉ giao hàng"); ok = false;
+        if (selectedProvince == null || selectedDistrict == null || selectedWard == null || getEditText(etAddress).isEmpty()) {
+            tilAddress.setError("Vui lòng chọn Tỉnh, Quận, Phường và nhập số nhà"); ok = false;
         } else tilAddress.setError(null);
 
         return ok;
@@ -262,7 +460,7 @@ public class CheckoutActivity extends AppCompatActivity {
         String paymentMethod = (rgPaymentMethod.getCheckedRadioButtonId() == R.id.rbVnPay)
                 ? "vnpay" : "cod";
 
-        long shipping  = subtotal >= FREE_SHIP_MIN ? 0L : SHIPPING_FEE;
+        long shipping  = subtotal >= FREE_SHIP_MIN ? 0L : dynamicShippingFee;
         long total     = Math.max(0, subtotal + shipping - discountAmount);
         String nowStr  = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
                 .format(new Date());
@@ -276,6 +474,7 @@ public class CheckoutActivity extends AppCompatActivity {
             m.put("title",    ci.getTitle());
             m.put("quantity", ci.getQuantity());
             m.put("price",    ci.getPrice());
+            m.put("imageUrl", ci.getImageUrl());
             m.put("subtotal", ci.getSubtotal());
             orderItems.add(m);
             bookIds.add(ci.getBookId());
@@ -285,7 +484,8 @@ public class CheckoutActivity extends AppCompatActivity {
         order.put("userId",          currentUserId != null ? currentUserId : "");
         order.put("receiverName",    getEditText(etFullName));
         order.put("receiverPhone",   getEditText(etPhone));
-        order.put("shippingAddress", getEditText(etAddress));
+        String fullAddress = getEditText(etAddress) + ", " + selectedWard.WardName + ", " + selectedDistrict.DistrictName + ", " + selectedProvince.ProvinceName;
+        order.put("shippingAddress", fullAddress);
         order.put("note",            getEditText(etNote));
         order.put("paymentMethod",   paymentMethod);
         order.put("status",          "pending");
@@ -295,7 +495,7 @@ public class CheckoutActivity extends AppCompatActivity {
         order.put("voucherCode",     appliedVoucherCode); // ← dùng field đúng
         order.put("totalPrice",      total);
         order.put("items",           orderItems);
-        order.put("bookIds",         bookIds.toString());
+        order.put("bookIds",         bookIds);
         order.put("createdAt",       nowStr);
         order.put("updatedAt",       nowStr);
 

@@ -40,7 +40,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         Order order = orderList.get(position);
         if (order == null) return;
 
-        holder.tvOrderId.setText("#" + order.getOrderId());
+        holder.tvOrderId.setVisibility(View.GONE);
 
         // 1. BẢO VỆ LỖI NULL NGÀY THÁNG
         String dateStr = order.getCreatedAt();

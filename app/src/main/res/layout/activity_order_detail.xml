@@ -280,6 +280,18 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCancelOrder"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="24dp"
+                android:text="HỦY ĐƠN HÀNG"
+                android:textColor="@color/white"
+                app:backgroundTint="#E53935"
+                app:cornerRadius="8dp"
+                android:visibility="gone"/>
+
         </LinearLayout>
     </ScrollView>
 
