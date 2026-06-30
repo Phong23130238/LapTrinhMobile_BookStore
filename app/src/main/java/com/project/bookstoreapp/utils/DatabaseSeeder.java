@@ -4,6 +4,7 @@ import android.content.Context;
 import android.util.Log;
 
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -46,7 +47,7 @@ public class DatabaseSeeder {
                         if (cat.has("imageUrl")) {
                             map.put("imageUrl", cat.optString("imageUrl"));
                         }
-                        db.collection("categories").document(key).set(map);
+                        db.collection("categories").document(key).set(map, SetOptions.merge());
                         
                         catMap.put(key, cat.optString("name"));
                     }
@@ -90,7 +91,7 @@ public class DatabaseSeeder {
                         } catch (Exception e) {}
                         map.put("bookIds", bookIdsList);
                         
-                        db.collection("series").document(key).set(map);
+                        db.collection("series").document(key).set(map, SetOptions.merge());
                     }
                     Log.d(TAG, "Series seeded from JSON");
                 }
@@ -142,7 +143,7 @@ public class DatabaseSeeder {
                         
                         map.put("createdAt", new java.util.Date());
 
-                        db.collection("books").document(key).set(map);
+                        db.collection("books").document(key).set(map, SetOptions.merge());
                     }
                     Log.d(TAG, "Books seeded from JSON");
                 }
@@ -165,7 +166,7 @@ public class DatabaseSeeder {
                         if (user.has("avatarUrl")) {
                             map.put("avatarUrl", user.optString("avatarUrl"));
                         }
-                        db.collection("users").document(key).set(map);
+                        db.collection("users").document(key).set(map, SetOptions.merge());
                     }
                     Log.d(TAG, "Users seeded from JSON");
                 }
@@ -227,7 +228,7 @@ public class DatabaseSeeder {
                         } catch (Exception e) {}
                         map.put("items", itemsList);
 
-                        db.collection("orders").document(key).set(map);
+                        db.collection("orders").document(key).set(map, SetOptions.merge());
                     }
                     Log.d(TAG, "Orders seeded from JSON");
                 }

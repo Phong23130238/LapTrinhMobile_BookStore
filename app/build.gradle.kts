@@ -76,6 +76,7 @@ dependencies {
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-storage")
     implementation("com.google.firebase:firebase-firestore")
+    implementation(libs.firebase.database)
 
     // --- THƯ VIỆN GIẢI QUYẾT LỖI CANNOT RESOLVE CỦA BẠN ---
     implementation("com.google.firebase:firebase-database")

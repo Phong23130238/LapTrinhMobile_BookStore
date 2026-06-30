@@ -6,19 +6,65 @@
     android:layout_height="match_parent"
     android:background="@color/cream">
 
+    <!-- Toolbar -->
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
         <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbarCart"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:background="@color/navy_dark"
             app:title="Giỏ hàng của bạn"
-            app:titleTextColor="@color/white" />
+            app:titleTextColor="@color/white"
+            app:navigationIcon="@android:drawable/ic_menu_revert" />
     </com.google.android.material.appbar.AppBarLayout>
 
+    <!-- Trạng thái giỏ hàng trống -->
+    <LinearLayout
+        android:id="@+id/layoutEmptyCart"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/appBarLayout"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <ImageView
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:src="@android:drawable/ic_menu_gallery"
+            android:alpha="0.4"
+            android:contentDescription="Giỏ hàng trống" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Giỏ hàng của bạn đang trống"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Hãy thêm sách yêu thích vào giỏ nhé!"
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary" />
+
+        <Button
+            android:id="@+id/btnShopNow"
+            style="@style/GoldButton"
+            android:layout_marginTop="24dp"
+            android:text="MUA SẮM NGAY" />
+    </LinearLayout>
+
+    <!-- Danh sách sản phẩm trong giỏ -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvCartItems"
         android:layout_width="match_parent"
@@ -26,8 +72,10 @@
         android:layout_below="@id/appBarLayout"
         android:layout_above="@id/checkoutBar"
         android:padding="12dp"
-        android:clipToPadding="false"/>
+        android:clipToPadding="false"
+        android:visibility="visible" />
 
+    <!-- Thanh tổng tiền + nút checkout -->
     <LinearLayout
         android:id="@+id/checkoutBar"
         android:layout_width="match_parent"
@@ -48,17 +96,17 @@
                 android:layout_height="wrap_content"
                 android:text="Tổng thanh toán:"
                 android:textSize="16sp"
-                android:textColor="@color/text_primary"/>
+                android:textColor="@color/text_primary" />
 
             <TextView
                 android:id="@+id/tvTotalPrice"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_alignParentRight="true"
+                android:layout_alignParentEnd="true"
                 tools:text="240.000 đ"
                 android:textSize="20sp"
                 android:textStyle="bold"
-                android:textColor="@color/red_danger"/>
+                android:textColor="@color/red_danger" />
         </RelativeLayout>
 
         <Button

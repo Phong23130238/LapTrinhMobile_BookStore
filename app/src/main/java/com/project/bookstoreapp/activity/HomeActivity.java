@@ -23,6 +23,18 @@ import com.project.bookstoreapp.model.Book;
 
 import java.util.ArrayList;
 import java.util.List;
+import android.widget.PopupMenu;
+import android.widget.TextView;
+import android.widget.ImageButton;
+import android.view.View;
+import android.view.MenuItem;
+import com.bumptech.glide.Glide;
+import com.project.bookstoreapp.utils.SessionManager;
+import com.project.bookstoreapp.model.User;
+import com.google.firebase.auth.FirebaseAuth;
+import de.hdodenhof.circleimageview.CircleImageView;
+import android.os.Handler;
+import android.os.Looper;
 
 public class HomeActivity extends AppCompatActivity {
 
@@ -93,6 +105,70 @@ public class HomeActivity extends AppCompatActivity {
             }
             return false;
         });
+
+        setupHeader();
+    }
+
+    private void setupHeader() {
+        CircleImageView ivAvatar = findViewById(R.id.ivAvatarHeader);
+        TextView tvBadge = findViewById(R.id.tvCartBadge);
+        ImageButton btnCart = findViewById(R.id.btnCartHeader);
+
+        SessionManager sessionManager = new SessionManager(this);
+        User user = sessionManager.getUser();
+
+        if (ivAvatar != null) {
+            if (user != null && user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty()) {
+                Glide.with(this).load(user.getAvatarUrl()).into(ivAvatar);
+            }
+            // Realtime update from Firestore
+            if (user != null && user.getUid() != null) {
+                FirebaseFirestore.getInstance().collection("users")
+                    .document(user.getUid())
+                    .addSnapshotListener((snapshot, error) -> {
+                        if (snapshot != null && snapshot.exists() && snapshot.getString("avatarUrl") != null) {
+                            Glide.with(this).load(snapshot.getString("avatarUrl")).into(ivAvatar);
+                        }
+                    });
+            }
+
+            ivAvatar.setOnLongClickListener(v -> {
+                PopupMenu popup = new PopupMenu(HomeActivity.this, v);
+                popup.getMenu().add("Thông tin tài khoản");
+                popup.getMenu().add("Đăng xuất");
+                popup.setOnMenuItemClickListener(item -> {
+                    if (item.getTitle().equals("Thông tin tài khoản")) {
+                        startActivity(new Intent(HomeActivity.this, ProfileActivity.class));
+                    } else if (item.getTitle().equals("Đăng xuất")) {
+                        sessionManager.logoutUser();
+                        // Firebase logout is removed since we only rely on SessionManager
+                        startActivity(new Intent(HomeActivity.this, LoginActivity.class));
+                        finishAffinity();
+                    }
+                    return true;
+                });
+                popup.show();
+                return true;
+            });
+        }
+
+        if (btnCart != null) {
+            btnCart.setOnClickListener(v -> startActivity(new Intent(HomeActivity.this, CartActivity.class)));
+        }
+
+        // Cart Badge Logic updated to use SessionManager and the correct whereEqualTo query
+        if (tvBadge != null && user != null && user.getUid() != null) {
+            FirebaseFirestore.getInstance().collection("carts")
+                .whereEqualTo("userId", user.getUid())
+                .addSnapshotListener((value, error) -> {
+                    if (value != null && !value.isEmpty()) {
+                        tvBadge.setText(String.valueOf(value.size()));
+                        tvBadge.setVisibility(View.VISIBLE);
+                    } else {
+                        tvBadge.setVisibility(View.GONE);
+                    }
+                });
+        }
     }
 
     private void loadBooksFromFirebase() {

@@ -6,9 +6,12 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+import com.google.android.material.card.MaterialCardView;
 import com.project.bookstoreapp.R;
 import com.project.bookstoreapp.model.Order;
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHolder> {
@@ -37,43 +40,88 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         Order order = orderList.get(position);
         if (order == null) return;
 
-        holder.tvOrderId.setText("#DH" + order.getOrderId());
+        holder.tvOrderId.setText("#" + order.getOrderId());
 
-        // 1. BẢO VỆ LỖI NULL NGÀY THÁNG (Bị thiếu ở Order #1 trong DB)
-        String date = order.getCreatedAt();
-        if (date == null || date.isEmpty()) {
-            date = "Chưa cập nhật ngày";
+        // 1. BẢO VỆ LỖI NULL NGÀY THÁNG
+        String dateStr = order.getCreatedAt();
+        if (dateStr == null || dateStr.isEmpty()) {
+            holder.tvOrderDate.setText("Chưa cập nhật ngày");
+        } else {
+            Date date = null;
+            try {
+                date = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").parse(dateStr);
+            } catch (Exception e) {
+                try {
+                    date = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").parse(dateStr);
+                } catch (Exception e2) {
+                }
+            }
+            if (date != null) {
+                holder.tvOrderDate.setText(new SimpleDateFormat("dd/MM/yyyy - HH:mm").format(date));
+            } else {
+                holder.tvOrderDate.setText(dateStr);
+            }
         }
-        holder.tvOrderDate.setText(date);
 
-        // Tạm thời hiển thị Mã KH. Khi nối với Firebase, bạn có thể gọi API User để lấy tên.
-        holder.tvCustomerName.setText("Mã KH: " + order.getUserId());
+        // Tình trạng thanh toán
+        String paymentMethod = order.getPaymentMethod();
+        if ("banking".equalsIgnoreCase(paymentMethod)) {
+            holder.tvPaymentStatus.setText("Đã thanh toán");
+            holder.tvPaymentStatus.setTextColor(0xFF047857); // Green Text
+            holder.cardPaymentStatus.setCardBackgroundColor(0xFFD1FAE5); // Green BG
+        } else {
+            if ("delivered".equalsIgnoreCase(order.getStatus())) {
+                holder.tvPaymentStatus.setText("Đã thanh toán");
+                holder.tvPaymentStatus.setTextColor(0xFF047857);
+                holder.cardPaymentStatus.setCardBackgroundColor(0xFFD1FAE5);
+            } else {
+                holder.tvPaymentStatus.setText("Chưa thanh toán");
+                holder.tvPaymentStatus.setTextColor(0xFFEF4444); // Red Text
+                holder.cardPaymentStatus.setCardBackgroundColor(0xFFFEE2E2); // Red BG
+            }
+        }
 
-        // Tổng tiền (Nếu DB thiếu, kiểu double trong Java sẽ mặc định là 0.0 nên không lo lỗi Null)
+        // Tổng tiền
         DecimalFormat formatter = new DecimalFormat("###,###,###");
         holder.tvTotalAmount.setText("Tổng tiền: " + formatter.format(order.getTotalPrice()) + " đ");
 
-        // 2. BẢO VỆ PHƯƠNG THỨC THANH TOÁN
-        if ("banking".equalsIgnoreCase(order.getPaymentMethod())) {
-            holder.tvPaymentStatus.setText("Đã TT (VNPay)");
-            holder.tvPaymentStatus.setBackgroundColor(0xFF388E3C);
-        } else {
-            holder.tvPaymentStatus.setText("COD (Chưa TT)");
-            holder.tvPaymentStatus.setBackgroundColor(0xFFD32F2F);
-        }
-
         // 3. BẢO VỆ TRẠNG THÁI STATUS (Dùng toLowerCase để chống lỗi in hoa/in thường)
         String statusText = "Chờ xác nhận"; // Mặc định nếu null
+        int statusColorText = 0xFFD97706; // Orange Text
+        int statusColorBg = 0xFFFEF3C7;   // Orange BG
+
         if (order.getStatus() != null) {
             switch(order.getStatus().toLowerCase()) {
-                case "pending": statusText = "Chờ xác nhận"; break;
-                case "confirmed": statusText = "Đã xác nhận"; break;
-                case "shipping": statusText = "Đang giao"; break;
-                case "delivered": statusText = "Đã giao"; break;
-                case "cancelled": statusText = "Đã hủy"; break;
+                case "pending": 
+                    statusText = "Chờ xác nhận"; 
+                    statusColorText = 0xFFD97706; 
+                    statusColorBg = 0xFFFEF3C7; 
+                    break;
+                case "confirmed": 
+                    statusText = "Đã xác nhận"; 
+                    statusColorText = 0xFF0284C7; // Blue
+                    statusColorBg = 0xFFE0F2FE;
+                    break;
+                case "shipping": 
+                    statusText = "Đang giao"; 
+                    statusColorText = 0xFF7C3AED; // Purple
+                    statusColorBg = 0xFFEDE9FE;
+                    break;
+                case "delivered": 
+                    statusText = "Đã giao hàng"; 
+                    statusColorText = 0xFF047857; // Green
+                    statusColorBg = 0xFFD1FAE5;
+                    break;
+                case "cancelled": 
+                    statusText = "Đã hủy"; 
+                    statusColorText = 0xFFBE123C; // Rose
+                    statusColorBg = 0xFFFFE4E6;
+                    break;
             }
         }
         holder.tvShippingStatus.setText(statusText);
+        holder.tvShippingStatus.setTextColor(statusColorText);
+        holder.cardShippingStatus.setCardBackgroundColor(statusColorBg);
 
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) listener.onOrderClick(order);
@@ -86,16 +134,18 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
     }
 
     public static class OrderViewHolder extends RecyclerView.ViewHolder {
-        TextView tvOrderId, tvOrderDate, tvCustomerName, tvTotalAmount, tvPaymentStatus, tvShippingStatus;
+        TextView tvOrderId, tvOrderDate, tvTotalAmount, tvPaymentStatus, tvShippingStatus;
+        MaterialCardView cardPaymentStatus, cardShippingStatus;
 
         public OrderViewHolder(@NonNull View itemView) {
             super(itemView);
             tvOrderId = itemView.findViewById(R.id.tvOrderId);
             tvOrderDate = itemView.findViewById(R.id.tvOrderDate);
-            tvCustomerName = itemView.findViewById(R.id.tvCustomerName);
             tvTotalAmount = itemView.findViewById(R.id.tvTotalAmount);
             tvPaymentStatus = itemView.findViewById(R.id.tvPaymentStatus);
             tvShippingStatus = itemView.findViewById(R.id.tvShippingStatus);
+            cardPaymentStatus = itemView.findViewById(R.id.cardPaymentStatus);
+            cardShippingStatus = itemView.findViewById(R.id.cardShippingStatus);
         }
     }
 }

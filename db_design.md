@@ -13,6 +13,7 @@ erDiagram
         string uid PK "Firebase Auth UID"
         string name
         string email
+        string password "MD5 hash, NULL nếu đăng ký bằng Google"
         string phone
         string address
         string avatarUrl
@@ -97,6 +98,7 @@ erDiagram
 | `uid` | String | ✅ | Firebase Auth UID (dùng làm Document ID) |
 | `name` | String | ✅ | Tên hiển thị |
 | `email` | String | ✅ | Email đăng nhập |
+| `password` | String | ❌ | Mật khẩu đã hash MD5 (NULL nếu đăng ký bằng Google) |
 | `phone` | String | ❌ | Số điện thoại |
 | `address` | String | ❌ | Địa chỉ giao hàng mặc định |
 | `avatarUrl` | String | ❌ | URL ảnh đại diện (Firebase Storage) |
@@ -108,6 +110,7 @@ erDiagram
 {
   "name": "Nguyễn Văn A",
   "email": "a@gmail.com",
+  "password": "e10adc3949ba59abbe56e057f20f883e",
   "phone": "0901234567",
   "address": "123 Lê Lợi, Quận 1, TP.HCM",
   "avatarUrl": "https://storage.firebase.../avatar.jpg",

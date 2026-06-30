@@ -154,6 +154,16 @@
                     app:cornerRadius="10dp"
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
+                <!-- Loading indicator -->
+                <ProgressBar
+                    android:id="@+id/progressBar"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="16dp"
+                    android:visibility="gone"
+                    android:indeterminateTint="@color/navy_medium" />
+
                 <!-- Register link -->
                 <LinearLayout
                     android:layout_width="wrap_content"

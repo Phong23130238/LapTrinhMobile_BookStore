@@ -36,7 +36,9 @@ public class ManageOrdersActivity extends AppCompatActivity {
         // Khởi tạo Adapter với danh sách rỗng
         orderList = new ArrayList<>();
         orderAdapter = new OrderAdapter(orderList, clickedOrder -> {
-            Toast.makeText(ManageOrdersActivity.this, "Xem đơn hàng: " + clickedOrder.getOrderId(), Toast.LENGTH_SHORT).show();
+            android.content.Intent intent = new android.content.Intent(ManageOrdersActivity.this, OrderDetailActivity.class);
+            intent.putExtra("ORDER_ID", clickedOrder.getOrderId());
+            startActivity(intent);
         });
         rvAdminOrders.setAdapter(orderAdapter);
 
@@ -53,8 +55,13 @@ public class ManageOrdersActivity extends AppCompatActivity {
                 for (QueryDocumentSnapshot document : task.getResult()) {
                     Order order = document.toObject(Order.class);
                     if (order.getOrderId() == null) {
-                        // Tùy biến vì Seeder của bạn put orderId thẳng vào map,
-                        // nhưng phòng hờ thì vẫn set thêm từ document.getId()
+                        try {
+                            java.lang.reflect.Field field = Order.class.getDeclaredField("orderId");
+                            field.setAccessible(true);
+                            field.set(order, document.getId());
+                        } catch (Exception e) {
+                            Log.e("Order", "Error setting orderId", e);
+                        }
                     }
                     orderList.add(order);
                 }
