@@ -17,6 +17,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.project.bookstoreapp.R;
 import com.project.bookstoreapp.adapter.BookAdapter;
 import com.project.bookstoreapp.model.Book;
@@ -173,7 +174,7 @@ public class HomeActivity extends AppCompatActivity {
 
     private void loadBooksFromFirebase() {
         com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                .collection("BOOKS")
+                .collection("books")
                 .addSnapshotListener((value, error) -> {
                     if (error != null) {
                         Log.e("Firestore_Error", "Lỗi lấy dữ liệu: " + error.getMessage());

@@ -288,7 +288,10 @@ public class BookDetailActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<ApiResponse<List<Review>>> call, Throwable t) {
                 android.util.Log.e("API_ERROR", "Lỗi mạng", t);
-                Toast.makeText(BookDetailActivity.this, "Lỗi kết nối Node.js Server: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                // Xóa Toast "Lỗi kết nối Node.js Server" để tránh spam gây hiểu nhầm
+                tvNoReview.setText("Hiện không thể tải đánh giá từ máy chủ.");
+                tvNoReview.setVisibility(android.view.View.VISIBLE);
+                rvReviews.setVisibility(android.view.View.GONE);
             }
         });
     }

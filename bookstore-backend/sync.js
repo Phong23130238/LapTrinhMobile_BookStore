@@ -41,10 +41,10 @@ async function syncData() {
         }
     }
     
-    // Đường dẫn trỏ tới file db_firebase.json trong Android project
-    const outputPath = path.join(__dirname, '../app/src/main/assets/db_firebase.json');
+    // Đường dẫn trỏ tới file db_firebase.json ở thư mục gốc (root project)
+    const outputPath = path.join(__dirname, '../db_firebase.json');
     fs.writeFileSync(outputPath, JSON.stringify(result, null, 2), 'utf-8');
-    console.log(`\n✅ Đã đồng bộ thành công dữ liệu từ Database Online về file:`);
+    console.log(`\n✅ Đã đồng bộ thành công dữ liệu từ Database Online về file gốc:`);
     console.log(outputPath);
     process.exit(0);
 }

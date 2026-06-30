@@ -112,6 +112,14 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.CartA
                         return;
                     }
 
+                    // Lưu lại trạng thái tick chọn của người dùng trước khi reset list
+                    java.util.Set<String> selectedBookIds = new java.util.HashSet<>();
+                    for (CartItem item : cartItemList) {
+                        if (item.isSelected()) {
+                            selectedBookIds.add(item.getBookId());
+                        }
+                    }
+
                     cartItemList.clear();
                     docIdList.clear();
 
@@ -145,14 +153,17 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.CartA
                                 bookId, title, author, imageUrl,
                                 price, origPrice, quantity, addedAt
                         );
+                        
+                        // Phục hồi trạng thái tick chọn
+                        if (selectedBookIds.contains(bookId)) {
+                            item.setSelected(true);
+                        }
+                        
                         cartItemList.add(item);
                         docIdList.add(doc.getId()); // lưu doc ID để update sau
                     }
 
-                    showCartContent();
-                    cartAdapter.notifyDataSetChanged();
-
-                    // Auto-select item nếu đến từ BookDetailActivity
+                    // Auto-select item nếu đến từ BookDetailActivity (chỉ áp dụng 1 lần)
                     if (autoSelectBookId != null && !autoSelectBookId.isEmpty()) {
                         for (CartItem item : cartItemList) {
                             if (autoSelectBookId.equals(item.getBookId())) {
@@ -160,8 +171,11 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.CartA
                                 break;
                             }
                         }
-                        cartAdapter.notifyDataSetChanged();
+                        autoSelectBookId = null; // Xóa id sau khi đã auto select xong để tránh lỗi tick lại
                     }
+
+                    showCartContent();
+                    cartAdapter.notifyDataSetChanged();
 
                     updateTotalPrice();
                 });
