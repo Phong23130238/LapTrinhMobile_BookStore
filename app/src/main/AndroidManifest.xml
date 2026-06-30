@@ -2,28 +2,19 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="BookStore"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+
         android:usesCleartextTraffic="true"
+
+        android:networkSecurityConfig="@xml/network_security_config"
         android:theme="@style/Theme.BookStore">
-
-        <activity
-            android:name=".activity.LoginActivity"
-            android:exported="true"
-            android:windowSoftInputMode="adjustResize">
-        </activity>
-
-        <activity
-            android:name=".activity.HomeActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".activity.RegisterActivity"
-            android:windowSoftInputMode="adjustResize"
-            android:exported="false" />
 
         <activity
             android:name=".MainActivity"
@@ -34,16 +25,60 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".activity.OrdersActivity" android:exported="false" />
-        <activity android:name=".activity.ProfileActivity" android:exported="false" />
-        <activity android:name=".activity.CartActivity" android:exported="false" />
-        <activity android:name=".activity.BookDetailActivity" android:exported="false" />
-        <activity android:name=".activity.CheckoutActivity" android:exported="false" />
-        <activity android:name=".activity.AdminDashboardActivity" android:exported="false" />
-        <activity android:name=".activity.ManageBooksActivity" android:exported="false" />
-        <activity android:name=".activity.AddEditBookActivity" android:exported="false" />
-        <activity android:name=".activity.ManageOrdersActivity" android:exported="false" />
-        <activity android:name=".activity.ManageUsersActivity" android:exported="false" />
-        <activity android:name=".activity.OrderDetailActivity" android:exported="false" />
+        <activity
+            android:name=".activity.LoginActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".activity.RegisterActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".activity.HomeActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".activity.BookDetailActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".activity.CartActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".activity.CheckoutActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".activity.OrdersActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".activity.ProfileActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".activity.AdminDashboardActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".activity.ManageBooksActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".activity.AddEditBookActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".activity.ManageOrdersActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".activity.ManageUsersActivity"
+            android:exported="false" />
+
     </application>
 </manifest>
