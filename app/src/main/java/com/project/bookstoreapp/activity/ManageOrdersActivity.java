@@ -29,7 +29,11 @@ public class ManageOrdersActivity extends AppCompatActivity {
         rvAdminOrders = findViewById(R.id.rvAdminOrders);
         MaterialToolbar toolbar = findViewById(R.id.toolbarManageOrders);
 
-        toolbar.setNavigationIcon(androidx.appcompat.R.drawable.abc_ic_ab_back_material);
+        setSupportActionBar(toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setDisplayShowTitleEnabled(false);
+        }
         toolbar.setNavigationOnClickListener(v -> finish());
         rvAdminOrders.setLayoutManager(new LinearLayoutManager(this));
 
@@ -53,17 +57,21 @@ public class ManageOrdersActivity extends AppCompatActivity {
             if (task.isSuccessful()) {
                 orderList.clear();
                 for (QueryDocumentSnapshot document : task.getResult()) {
-                    Order order = document.toObject(Order.class);
-                    if (order.getOrderId() == null) {
-                        try {
-                            java.lang.reflect.Field field = Order.class.getDeclaredField("orderId");
-                            field.setAccessible(true);
-                            field.set(order, document.getId());
-                        } catch (Exception e) {
-                            Log.e("Order", "Error setting orderId", e);
+                    try {
+                        Order order = document.toObject(Order.class);
+                        if (order.getOrderId() == null) {
+                            try {
+                                java.lang.reflect.Field field = Order.class.getDeclaredField("orderId");
+                                field.setAccessible(true);
+                                field.set(order, document.getId());
+                            } catch (Exception e) {
+                                Log.e("Order", "Error setting orderId", e);
+                            }
                         }
+                        orderList.add(order);
+                    } catch (Exception e) {
+                        Log.e("Firebase_Error", "Lỗi dữ liệu đơn hàng admin: " + document.getId(), e);
                     }
-                    orderList.add(order);
                 }
                 orderAdapter.notifyDataSetChanged();
             } else {

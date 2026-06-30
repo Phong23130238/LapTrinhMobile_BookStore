@@ -34,6 +34,18 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
+
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
+
+import com.project.bookstoreapp.ghn.District;
+import com.project.bookstoreapp.ghn.GHNApiService;
+import com.project.bookstoreapp.ghn.GHNResponse;
+import com.project.bookstoreapp.ghn.Province;
+import com.project.bookstoreapp.ghn.RetrofitClientGHN;
+import com.project.bookstoreapp.ghn.Ward;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 import okhttp3.MediaType;
@@ -58,6 +70,15 @@ public class ProfileActivity extends AppCompatActivity {
     private User currentUser;
     private ApiService apiService;
     private Uri selectedImageUri = null;
+
+    private AutoCompleteTextView spinProvince, spinDistrict, spinWard;
+    private List<Province> provinceList = new ArrayList<>();
+    private List<District> districtList = new ArrayList<>();
+    private List<Ward> wardList = new ArrayList<>();
+    private Province selectedProvince = null;
+    private District selectedDistrict = null;
+    private Ward selectedWard = null;
+    private final String GHN_TOKEN = "dffec2e1-6725-11f1-a973-aee5264794df";
 
     // Trình chọn ảnh
     private final ActivityResultLauncher<String> getContentLauncher = registerForActivityResult(
@@ -101,6 +122,9 @@ public class ProfileActivity extends AppCompatActivity {
         etName = findViewById(R.id.etName);
         etPhone = findViewById(R.id.etPhone);
         etAddress = findViewById(R.id.etAddress);
+        spinProvince = findViewById(R.id.spinProvince);
+        spinDistrict = findViewById(R.id.spinDistrict);
+        spinWard = findViewById(R.id.spinWard);
         btnSaveProfile = findViewById(R.id.btnSaveProfile);
         btnChangePassword = findViewById(R.id.btnChangePassword);
         btnLogout = findViewById(R.id.btnLogout);
@@ -118,6 +142,33 @@ public class ProfileActivity extends AppCompatActivity {
             Glide.with(this).load(avatarUrl)
                     .placeholder(R.drawable.ic_launcher_background)
                     .into(ivAvatar);
+        }
+        
+        if (currentUser.getAddress() != null && !currentUser.getAddress().isEmpty()) {
+            parseAndAutoFillAddress(currentUser.getAddress());
+        }
+    }
+
+    private String targetProvinceName = null;
+    private String targetDistrictName = null;
+    private String targetWardName = null;
+    
+    private void parseAndAutoFillAddress(String fullAddress) {
+        if (fullAddress == null || fullAddress.isEmpty()) return;
+        String[] parts = fullAddress.split(", ");
+        if (parts.length >= 4) {
+            targetProvinceName = parts[parts.length - 1].trim();
+            targetDistrictName = parts[parts.length - 2].trim();
+            targetWardName = parts[parts.length - 3].trim();
+            
+            StringBuilder street = new StringBuilder();
+            for (int i = 0; i < parts.length - 3; i++) {
+                street.append(parts[i]);
+                if (i < parts.length - 4) street.append(", ");
+            }
+            etAddress.setText(street.toString());
+        } else {
+            etAddress.setText(fullAddress);
         }
     }
 
@@ -138,6 +189,117 @@ public class ProfileActivity extends AppCompatActivity {
             startActivity(intent);
             finish();
         });
+
+        spinProvince.setOnItemClickListener((parent, view, position, id) -> {
+            selectedProvince = provinceList.get(position);
+            spinDistrict.setText("");
+            spinWard.setText("");
+            selectedDistrict = null;
+            selectedWard = null;
+            loadDistricts(selectedProvince.ProvinceID);
+        });
+
+        spinDistrict.setOnItemClickListener((parent, view, position, id) -> {
+            selectedDistrict = districtList.get(position);
+            spinWard.setText("");
+            selectedWard = null;
+            loadWards(selectedDistrict.DistrictID);
+        });
+
+        spinWard.setOnItemClickListener((parent, view, position, id) -> {
+            selectedWard = wardList.get(position);
+        });
+
+        loadProvinces();
+    }
+
+    private void loadProvinces() {
+        RetrofitClientGHN.getApiService().getProvinces(GHN_TOKEN).enqueue(new Callback<GHNResponse<List<Province>>>() {
+            @Override
+            public void onResponse(Call<GHNResponse<List<Province>>> call, Response<GHNResponse<List<Province>>> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().data != null) {
+                    provinceList = response.body().data;
+                    ArrayAdapter<Province> adapter = new ArrayAdapter<>(ProfileActivity.this, android.R.layout.simple_list_item_1, provinceList);
+                    spinProvince.setAdapter(adapter);
+                    
+                    if (targetProvinceName != null && !targetProvinceName.isEmpty()) {
+                        for (Province p : provinceList) {
+                            if (p.ProvinceName != null && p.ProvinceName.equalsIgnoreCase(targetProvinceName)) {
+                                selectedProvince = p;
+                                spinProvince.setText(p.ProvinceName, false);
+                                loadDistricts(p.ProvinceID);
+                                break;
+                            }
+                        }
+                        targetProvinceName = null;
+                    }
+                } else {
+                    Toast.makeText(ProfileActivity.this, "Lỗi tải Tỉnh: API trả về thất bại", Toast.LENGTH_SHORT).show();
+                }
+            }
+            @Override
+            public void onFailure(Call<GHNResponse<List<Province>>> call, Throwable t) {
+                Log.e(TAG, "Lỗi tải Tỉnh: ", t);
+                Toast.makeText(ProfileActivity.this, "Lỗi kết nối GHN", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void loadDistricts(int provinceId) {
+        RetrofitClientGHN.getApiService().getDistricts(GHN_TOKEN, provinceId).enqueue(new Callback<GHNResponse<List<District>>>() {
+            @Override
+            public void onResponse(Call<GHNResponse<List<District>>> call, Response<GHNResponse<List<District>>> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().data != null) {
+                    districtList = response.body().data;
+                    ArrayAdapter<District> adapter = new ArrayAdapter<>(ProfileActivity.this, android.R.layout.simple_list_item_1, districtList);
+                    spinDistrict.setAdapter(adapter);
+                    
+                    if (targetDistrictName != null && !targetDistrictName.isEmpty()) {
+                        for (District d : districtList) {
+                            if (d.DistrictName != null && d.DistrictName.equalsIgnoreCase(targetDistrictName)) {
+                                selectedDistrict = d;
+                                spinDistrict.setText(d.DistrictName, false);
+                                loadWards(d.DistrictID);
+                                break;
+                            }
+                        }
+                        targetDistrictName = null;
+                    }
+                }
+            }
+            @Override
+            public void onFailure(Call<GHNResponse<List<District>>> call, Throwable t) {
+                Log.e(TAG, "Lỗi tải Quận/Huyện: ", t);
+            }
+        });
+    }
+
+    private void loadWards(int districtId) {
+        RetrofitClientGHN.getApiService().getWards(GHN_TOKEN, districtId).enqueue(new Callback<GHNResponse<List<Ward>>>() {
+            @Override
+            public void onResponse(Call<GHNResponse<List<Ward>>> call, Response<GHNResponse<List<Ward>>> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().data != null) {
+                    wardList = response.body().data;
+                    ArrayAdapter<Ward> adapter = new ArrayAdapter<>(ProfileActivity.this, android.R.layout.simple_list_item_1, wardList);
+                    spinWard.setAdapter(adapter);
+                    
+                    if (targetWardName != null && !targetWardName.isEmpty()) {
+                        for (Ward w : wardList) {
+                            if (w.WardName != null && w.WardName.equalsIgnoreCase(targetWardName)) {
+                                selectedWard = w;
+                                spinWard.setText(w.WardName, false);
+                                break;
+                            }
+                        }
+                        targetWardName = null;
+                    }
+                }
+            }
+            @Override
+            public void onFailure(Call<GHNResponse<List<Ward>>> call, Throwable t) {
+                Log.e(TAG, "Lỗi tải Phường/Xã: ", t);
+            }
+        });
     }
 
     private void showLoading(boolean isLoading) {
@@ -149,12 +311,19 @@ public class ProfileActivity extends AppCompatActivity {
     private void saveProfile() {
         String name = etName.getText().toString().trim();
         String phone = etPhone.getText().toString().trim();
-        String address = etAddress.getText().toString().trim();
+        String addressStreet = etAddress.getText().toString().trim();
 
         if (name.isEmpty()) {
             etName.setError("Vui lòng nhập họ tên");
             return;
         }
+
+        if (selectedProvince == null || selectedDistrict == null || selectedWard == null || addressStreet.isEmpty()) {
+            Toast.makeText(this, "Vui lòng chọn đầy đủ địa chỉ", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        String address = addressStreet + ", " + selectedWard.WardName + ", " + selectedDistrict.DistrictName + ", " + selectedProvince.ProvinceName;
 
         showLoading(true);
 

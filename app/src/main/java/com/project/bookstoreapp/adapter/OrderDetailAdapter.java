@@ -70,13 +70,17 @@ public class OrderDetailAdapter extends RecyclerView.Adapter<OrderDetailAdapter.
         holder.tvBookQuantity.setText("x" + quantity);
 
         if (!imageUrl.isEmpty()) {
-            Glide.with(context).load(imageUrl).into(holder.ivBookCover);
+            Glide.with(context)
+                .load(imageUrl)
+                .placeholder(R.drawable.ic_book_placeholder)
+                .error(R.drawable.ic_book_placeholder)
+                .into(holder.ivBookCover);
         } else {
-            holder.ivBookCover.setImageResource(R.drawable.ic_launcher_background);
+            holder.ivBookCover.setImageResource(R.drawable.ic_book_placeholder);
         }
 
-        // Fetch from Firestore if title is missing
-        if (item.containsKey("bookId") && !item.containsKey("title")) {
+        // Fetch from Firestore if title or imageUrl is missing
+        if (item.containsKey("bookId") && (!item.containsKey("title") || !item.containsKey("imageUrl") || imageUrl.isEmpty())) {
             String bookId = String.valueOf(item.get("bookId"));
             FirebaseFirestore.getInstance().collection("books").document(bookId).get()
                 .addOnSuccessListener(documentSnapshot -> {
@@ -92,7 +96,11 @@ public class OrderDetailAdapter extends RecyclerView.Adapter<OrderDetailAdapter.
                         }
                         if (fetchedImage != null) {
                             item.put("imageUrl", fetchedImage);
-                            Glide.with(context).load(fetchedImage).into(holder.ivBookCover);
+                            Glide.with(context)
+                                .load(fetchedImage)
+                                .placeholder(R.drawable.ic_book_placeholder)
+                                .error(R.drawable.ic_book_placeholder)
+                                .into(holder.ivBookCover);
                             updated = true;
                         }
                         // Don't call notifyItemChanged here to avoid infinite loops if it recycles while loading,

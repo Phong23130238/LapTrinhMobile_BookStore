@@ -11,8 +11,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import androidx.recyclerview.widget.RecyclerView;
+
+import android.app.AlertDialog;
+import android.widget.EditText;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.button.MaterialButton;
 import com.project.bookstoreapp.R;
 import com.project.bookstoreapp.adapter.OrderDetailAdapter;
 import com.project.bookstoreapp.model.Order;
@@ -43,6 +49,8 @@ public class OrderDetailActivity extends AppCompatActivity {
     private List<Map<String, Object>> itemList;
     private ApiService apiService;
     private DecimalFormat formatter = new DecimalFormat("###,###,###");
+    private MaterialButton btnCancelOrder;
+    private String currentOrderId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,9 +60,9 @@ public class OrderDetailActivity extends AppCompatActivity {
         apiService = RetrofitClient.getClient().create(ApiService.class);
         initViews();
 
-        String orderId = getIntent().getStringExtra("ORDER_ID");
-        if (orderId != null && !orderId.isEmpty()) {
-            loadOrderDetails(orderId);
+        currentOrderId = getIntent().getStringExtra("ORDER_ID");
+        if (currentOrderId != null && !currentOrderId.isEmpty()) {
+            loadOrderDetails(currentOrderId);
         } else {
             Toast.makeText(this, "Không tìm thấy mã đơn hàng", Toast.LENGTH_SHORT).show();
             finish();
@@ -63,7 +71,11 @@ public class OrderDetailActivity extends AppCompatActivity {
 
     private void initViews() {
         MaterialToolbar toolbar = findViewById(R.id.toolbarOrderDetail);
-        toolbar.setNavigationIcon(androidx.appcompat.R.drawable.abc_ic_ab_back_material);
+        setSupportActionBar(toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setDisplayShowTitleEnabled(false);
+        }
         toolbar.setNavigationOnClickListener(v -> finish());
 
         tvOrderId = findViewById(R.id.tvOrderId);
@@ -77,6 +89,9 @@ public class OrderDetailActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBarOrder);
         rvOrderItems = findViewById(R.id.rvOrderItems);
         bottomNav = findViewById(R.id.bottomNav);
+        btnCancelOrder = findViewById(R.id.btnCancelOrder);
+
+        btnCancelOrder.setOnClickListener(v -> showCancelDialog());
 
         rvOrderItems.setLayoutManager(new LinearLayoutManager(this));
         itemList = new ArrayList<>();
@@ -144,8 +159,46 @@ public class OrderDetailActivity extends AppCompatActivity {
         });
     }
 
+    private void showCancelDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Hủy đơn hàng");
+        
+        final EditText input = new EditText(this);
+        input.setHint("Nhập lý do hủy đơn...");
+        builder.setView(input);
+
+        builder.setPositiveButton("Xác nhận", (dialog, which) -> {
+            String reason = input.getText().toString().trim();
+            if (reason.isEmpty()) {
+                Toast.makeText(OrderDetailActivity.this, "Vui lòng nhập lý do hủy", Toast.LENGTH_SHORT).show();
+            } else {
+                cancelOrder(reason);
+            }
+        });
+        builder.setNegativeButton("Đóng", (dialog, which) -> dialog.cancel());
+        builder.show();
+    }
+
+    private void cancelOrder(String reason) {
+        if (currentOrderId == null) return;
+        progressBar.setVisibility(View.VISIBLE);
+        
+        FirebaseFirestore.getInstance().collection("orders").document(currentOrderId)
+            .update("status", "cancelled", "cancelReason", reason)
+            .addOnSuccessListener(aVoid -> {
+                progressBar.setVisibility(View.GONE);
+                Toast.makeText(OrderDetailActivity.this, "Đã hủy đơn hàng", Toast.LENGTH_SHORT).show();
+                loadOrderDetails(currentOrderId); 
+            })
+            .addOnFailureListener(e -> {
+                progressBar.setVisibility(View.GONE);
+                Toast.makeText(OrderDetailActivity.this, "Lỗi khi hủy đơn", Toast.LENGTH_SHORT).show();
+                Log.e("OrderDetail", "Lỗi hủy đơn: ", e);
+            });
+    }
+
     private void displayOrderDetails(Order order, String docId) {
-        tvOrderId.setText("Mã ĐH: #" + (order.getOrderId() != null ? order.getOrderId() : docId));
+        tvOrderId.setVisibility(View.GONE);
         
         String statusText = "Đang xử lý";
         String status = order.getStatus();
@@ -154,6 +207,12 @@ public class OrderDetailActivity extends AppCompatActivity {
         else if ("cancelled".equals(status)) statusText = "Đã hủy";
         
         tvOrderStatus.setText("Trạng thái: " + statusText);
+        
+        if ("pending".equals(status)) {
+            btnCancelOrder.setVisibility(View.VISIBLE);
+        } else {
+            btnCancelOrder.setVisibility(View.GONE);
+        }
         
         String dateStr = order.getCreatedAt();
         if (dateStr != null && !dateStr.isEmpty()) {
