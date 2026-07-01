@@ -645,3 +645,39 @@ app.put('/api/users/:uid/lock', async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 });
+
+// 3. Lấy thống kê mua hàng của 1 user
+app.get('/api/users/:uid/stats', async (req, res) => {
+    try {
+        const uid = req.params.uid;
+
+        // Tìm các đơn hàng của user này
+        const ordersRef = collection(db, "orders");
+        const q = query(ordersRef, where("userId", "==", uid));
+        const querySnapshot = await getDocs(q);
+
+        let totalOrders = 0;
+        let totalSpent = 0;
+
+        querySnapshot.forEach((docSnap) => {
+            const orderData = docSnap.data();
+            // Không tính các đơn hàng đã bị hủy (nếu có trường status)
+            if (orderData.status !== "cancelled") {
+                totalOrders++;
+                // Giả sử tổng tiền đơn hàng được lưu trong biến totalPrice
+                totalSpent += (orderData.totalPrice || 0);
+            }
+        });
+
+        res.json({
+            success: true,
+            data: {
+                totalOrders: totalOrders,
+                totalSpent: totalSpent
+            }
+        });
+    } catch (error) {
+        console.error("Lỗi lấy thống kê user:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});

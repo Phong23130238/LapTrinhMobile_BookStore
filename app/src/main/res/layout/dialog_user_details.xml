@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_dialog_rounded"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <!-- Avatar tượng trưng (Tùy chọn, làm cho dialog sinh động hơn) -->
+    <ImageView
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="12dp"
+        android:src="@drawable/ic_launcher_foreground"
+        app:tint="@color/navy_dark" />
+
+    <!-- Tên người dùng -->
+    <TextView
+        android:id="@+id/tvDialogName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="Nguyễn Văn A"
+        android:textColor="@color/navy_dark"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <!-- Email -->
+    <TextView
+        android:id="@+id/tvDialogEmail"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:gravity="center"
+        android:text="email@gmail.com"
+        android:textColor="#757575"
+        android:textSize="14sp" />
+
+    <!-- Đường kẻ ngang -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginVertical="16dp"
+        android:background="#EEEEEE" />
+
+    <!-- ======================================= -->
+    <!-- KHU VỰC THỐNG KÊ -->
+    <!-- ======================================= -->
+
+    <!-- Vòng xoay loading hiển thị trong lúc đợi gọi API -->
+    <ProgressBar
+        android:id="@+id/pbDialogStats"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginVertical="16dp" />
+
+    <!-- Nội dung thống kê (Sẽ bị ẩn lúc loading và hiện ra khi API trả về) -->
+    <LinearLayout
+        android:id="@+id/layoutDialogStats"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <!-- Hàng 1: Tổng đơn hàng -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Tổng số đơn hàng:"
+                android:textColor="#555555"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/tvTotalOrders"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textColor="@color/navy_dark"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Hàng 2: Tổng chi tiêu -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Tổng chi tiêu:"
+                android:textColor="#555555"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/tvTotalSpent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 đ"
+                android:textColor="#D32F2F"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Đường kẻ ngang -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginVertical="16dp"
+        android:background="#EEEEEE" />
+
+    <!-- ======================================= -->
+    <!-- CÁC NÚT BẤM -->
+    <!-- ======================================= -->
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnDialogToggleLock"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Khóa tài khoản"
+        android:paddingVertical="12dp"
+        app:cornerRadius="8dp"
+        app:backgroundTint="#D32F2F" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnDialogClose"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Đóng"
+        android:textColor="#757575" />
+
+</LinearLayout>

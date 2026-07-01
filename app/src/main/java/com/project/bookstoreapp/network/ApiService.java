@@ -3,6 +3,7 @@ package com.project.bookstoreapp.network;
 import com.project.bookstoreapp.model.Order;
 import com.project.bookstoreapp.model.Review;
 import com.project.bookstoreapp.model.User;
+import com.project.bookstoreapp.model.UserStats;
 import java.util.HashMap;
 import java.util.List;
 import okhttp3.MultipartBody;
@@ -79,4 +80,8 @@ public interface ApiService {
     // Khóa/Mở khóa tài khoản (Truyền UID vào đường dẫn, isLocked vào body)
     @PUT("/api/users/{uid}/lock")
     Call<ApiResponse<Object>> toggleUserLock(@Path("uid") String uid, @Body java.util.Map<String, Boolean> body);
+
+    // Lấy thống kê đơn hàng của người dùng
+    @GET("/api/users/{uid}/stats")
+    Call<ApiResponse<UserStats>> getUserStats(@Path("uid") String uid);
 }
