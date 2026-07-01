@@ -5,6 +5,7 @@ const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 const { OAuth2Client } = require('google-auth-library');
 const { initializeApp } = require('firebase/app');
 const { getFirestore, collection, query, where, getDocs, addDoc, updateDoc, doc, getDoc, setDoc } = require('firebase/firestore');
@@ -20,11 +21,36 @@ const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 
 // Google OAuth2 Client để verify idToken
-const GOOGLE_CLIENT_ID = "608811292447-d9cncbpmdbuf07npas15ack1o3cmdtsm.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = "156167272606-ahuk0t1gr5biq7b69a24kh0i9so84vp4.apps.googleusercontent.com";
+const GOOGLE_ANDROID_CLIENT_ID = "156167272606-ftq1ike17ekmorja3trn0bbot04btoh6.apps.googleusercontent.com";
+const ACCEPTED_CLIENT_IDS = [GOOGLE_CLIENT_ID, GOOGLE_ANDROID_CLIENT_ID];
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 const app = express();
 app.use(cors());
+
+// =============================================
+// OTP & RESET TOKEN IN-MEMORY STORE
+// =============================================
+const otpStore = new Map();      // email -> { otp, expiresAt }
+const resetTokenStore = new Map(); // email -> { token, expiresAt }
+
+// Cấu hình Nodemailer - Gmail SMTP
+const emailTransporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // Dùng STARTTLS thay vì SSL trực tiếp
+    auth: {
+        user: 'aurasound.contact@gmail.com',
+        pass: 'vssg ofwa bqcw yjll'
+    },
+    tls: {
+        rejectUnauthorized: false
+    },
+    connectionTimeout: 5000, // Timeout 5s để không làm treo Android app
+    greetingTimeout: 5000,
+    socketTimeout: 5000
+});
 app.use(express.json());
 
 // =============================================
@@ -203,7 +229,7 @@ app.post('/api/auth/google', async (req, res) => {
         try {
             const ticket = await googleClient.verifyIdToken({
                 idToken: idToken,
-                audience: GOOGLE_CLIENT_ID,
+                audience: ACCEPTED_CLIENT_IDS,
             });
             payload = ticket.getPayload();
         } catch (verifyError) {
@@ -561,6 +587,168 @@ app.get('/api/orders/:orderId', async (req, res) => {
         res.json({ success: true, data: orderSnap.data() });
     } catch (error) {
         console.error("Lỗi lấy chi tiết đơn hàng:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// =============================================
+// FORGOT PASSWORD APIs
+// =============================================
+
+// API 1: Gửi OTP qua email
+app.post('/api/auth/forgot-password', async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ success: false, message: "Vui lòng nhập email" });
+        }
+
+        // Tìm user theo email
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("email", "==", email));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            return res.status(404).json({ success: false, message: "Email không tồn tại trong hệ thống" });
+        }
+
+        const userData = querySnapshot.docs[0].data();
+
+        // Kiểm tra tài khoản Google-only (không có password)
+        if (!userData.password) {
+            return res.status(400).json({
+                success: false,
+                message: "Tài khoản này được đăng ký bằng Google, không có mật khẩu để khôi phục."
+            });
+        }
+
+        // Sinh OTP 6 chữ số
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = Date.now() + 5 * 60 * 1000; // 5 phút
+
+        // Lưu OTP vào bộ nhớ
+        otpStore.set(email, { otp, expiresAt });
+
+        // Gửi email
+        const mailOptions = {
+            from: '"BookStore App" <aurasound.contact@gmail.com>',
+            to: email,
+            subject: 'Mã xác thực đặt lại mật khẩu - BookStore',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 30px; background: #f8fafc; border-radius: 12px;">
+                    <h2 style="color: #0F172A; text-align: center;">📚 BookStore</h2>
+                    <p style="color: #334155;">Xin chào,</p>
+                    <p style="color: #334155;">Bạn đã yêu cầu đặt lại mật khẩu. Dưới đây là mã xác thực của bạn:</p>
+                    <div style="text-align: center; margin: 24px 0;">
+                        <span style="display: inline-block; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0F172A; background: #E2E8F0; padding: 16px 32px; border-radius: 8px;">${otp}</span>
+                    </div>
+                    <p style="color: #64748B; font-size: 14px; text-align: center;">Mã có hiệu lực trong <strong>5 phút</strong>.</p>
+                    <p style="color: #64748B; font-size: 13px; text-align: center;">Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này.</p>
+                </div>
+            `
+        };
+
+        await emailTransporter.sendMail(mailOptions);
+
+        console.log(`OTP ${otp} đã gửi đến ${email}`);
+        res.json({ success: true, message: "Mã xác thực đã được gửi đến email của bạn" });
+
+    } catch (error) {
+        console.error("Lỗi gửi OTP:", error);
+        res.status(500).json({ success: false, message: "Không thể gửi email. Vui lòng thử lại sau." });
+    }
+});
+
+// API 2: Xác thực OTP
+app.post('/api/auth/verify-otp', async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+
+        if (!email || !otp) {
+            return res.status(400).json({ success: false, message: "Vui lòng nhập đầy đủ thông tin" });
+        }
+
+        const storedData = otpStore.get(email);
+
+        if (!storedData) {
+            return res.status(400).json({ success: false, message: "Mã xác thực không tồn tại. Vui lòng gửi lại." });
+        }
+
+        // Kiểm tra hết hạn
+        if (Date.now() > storedData.expiresAt) {
+            otpStore.delete(email);
+            return res.status(400).json({ success: false, message: "Mã xác thực đã hết hạn. Vui lòng gửi lại." });
+        }
+
+        // So sánh OTP
+        if (storedData.otp !== otp) {
+            return res.status(400).json({ success: false, message: "Mã xác thực không đúng" });
+        }
+
+        // OTP đúng → tạo resetToken
+        otpStore.delete(email);
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const tokenExpiresAt = Date.now() + 10 * 60 * 1000; // 10 phút
+        resetTokenStore.set(email, { token: resetToken, expiresAt: tokenExpiresAt });
+
+        res.json({ success: true, message: "Xác thực thành công", resetToken });
+
+    } catch (error) {
+        console.error("Lỗi verify OTP:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// API 3: Đặt lại mật khẩu mới
+app.post('/api/auth/reset-password', async (req, res) => {
+    try {
+        const { email, resetToken, newPassword } = req.body;
+
+        if (!email || !resetToken || !newPassword) {
+            return res.status(400).json({ success: false, message: "Thiếu thông tin bắt buộc" });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({ success: false, message: "Mật khẩu mới phải có ít nhất 6 ký tự" });
+        }
+
+        // Verify resetToken
+        const storedData = resetTokenStore.get(email);
+
+        if (!storedData) {
+            return res.status(400).json({ success: false, message: "Phiên đặt lại mật khẩu không hợp lệ" });
+        }
+
+        if (Date.now() > storedData.expiresAt) {
+            resetTokenStore.delete(email);
+            return res.status(400).json({ success: false, message: "Phiên đặt lại mật khẩu đã hết hạn" });
+        }
+
+        if (storedData.token !== resetToken) {
+            return res.status(400).json({ success: false, message: "Token không hợp lệ" });
+        }
+
+        // Tìm user và cập nhật password
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("email", "==", email));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            return res.status(404).json({ success: false, message: "Không tìm thấy tài khoản" });
+        }
+
+        const userDoc = querySnapshot.docs[0];
+        const hashedNew = hashMD5(newPassword);
+        await updateDoc(userDoc.ref, { password: hashedNew });
+
+        // Xóa resetToken
+        resetTokenStore.delete(email);
+
+        res.json({ success: true, message: "Đổi mật khẩu thành công! Vui lòng đăng nhập lại." });
+
+    } catch (error) {
+        console.error("Lỗi đặt lại mật khẩu:", error);
         res.status(500).json({ success: false, message: error.message });
     }
 });
