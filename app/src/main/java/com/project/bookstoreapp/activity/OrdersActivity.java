@@ -47,11 +47,13 @@ public class OrdersActivity extends AppCompatActivity {
     private boolean isSortDesc = true;
     private String currentStatusFilter = "all";
 
+    // 2.1 Khởi tạo (onCreate)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_orders);
 
+        // 2.1.1 Khởi tạo SessionManager, kiểm tra currentUser. Nếu người dùng chưa đăng nhập (null) thì kết thúc (finish).
         sessionManager = new SessionManager(this);
         User currentUser = sessionManager.getUser();
 
@@ -61,11 +63,13 @@ public class OrdersActivity extends AppCompatActivity {
             return;
         }
 
+        // 2.1.2 Gọi initViews() ánh xạ UI, thiết lập bộ lọc ChipGroup (chipGroupStatus) và nút sắp xếp btnSortTime.
         initViews();
         setupBottomNav();
 
         orderList = new ArrayList<>();
         originalOrderList = new ArrayList<>();
+        // 2.1.3 Khởi tạo OrderAdapter với listener truyền ORDER_ID sang màn hình OrderDetailActivity khi người dùng bấm vào item.
         orderAdapter = new OrderAdapter(orderList, clickedOrder -> {
             Intent intent = new Intent(OrdersActivity.this, OrderDetailActivity.class);
             intent.putExtra("ORDER_ID", clickedOrder.getOrderId());
@@ -138,9 +142,11 @@ public class OrdersActivity extends AppCompatActivity {
         });
     }
 
+    // 2.2 Truy xuất dữ liệu từ Firebase (loadOrdersFromFirebase)
     private void loadOrdersFromFirebase(String userId) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
+        // 2.2.1 Dùng db.collection("orders").whereEqualTo("userId", userId).get() truy vấn toàn bộ đơn của User.
         db.collection("orders")
                 .whereEqualTo("userId", userId)
                 .get()
@@ -149,6 +155,7 @@ public class OrdersActivity extends AppCompatActivity {
                         originalOrderList.clear();
                         for (QueryDocumentSnapshot document : task.getResult()) {
                             try {
+                                // 2.2.2 Duyệt QueryDocumentSnapshot, dùng document.toObject(Order.class). Sử dụng Reflection (Field) ép kiểu ID tài liệu (document.getId()) vào biến orderId, lưu vào originalOrderList.
                                 Order order = document.toObject(Order.class);
                                 if (order.getOrderId() == null) {
                                     try {
@@ -172,7 +179,9 @@ public class OrdersActivity extends AppCompatActivity {
                 });
     }
 
+    // 2.3 Lọc và sắp xếp (applyFilterAndSort)
     private void applyFilterAndSort() {
+        // 2.3.1 Xóa danh sách orderList hiện tại. Lặp qua originalOrderList, kiểm tra điều kiện trùng với currentStatusFilter để add vào mảng hiển thị.
         orderList.clear();
         for (Order order : originalOrderList) {
             if ("all".equals(currentStatusFilter) || currentStatusFilter.equals(order.getStatus())) {
@@ -180,6 +189,7 @@ public class OrdersActivity extends AppCompatActivity {
             }
         }
         
+        // 2.3.2 Sắp xếp orderList bằng Collections.sort() kết hợp Comparator, dựa trên trường chuỗi ngày tháng CreatedAt, hỗ trợ Ascending/Descending (isSortDesc).
         Collections.sort(orderList, new Comparator<Order>() {
             @Override
             public int compare(Order o1, Order o2) {
@@ -193,6 +203,7 @@ public class OrdersActivity extends AppCompatActivity {
             }
         });
         
+        // 2.3.3 Xử lý rỗng (isEmpty): Ẩn/hiện layoutEmpty với tiêu đề, text phù hợp tương ứng theo tab filter. Nếu có dữ liệu thì notifyDataSetChanged().
         if (orderList.isEmpty()) {
             rvOrders.setVisibility(View.GONE);
             layoutEmpty.setVisibility(View.VISIBLE);

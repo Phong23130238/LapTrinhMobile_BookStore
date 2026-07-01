@@ -53,6 +53,7 @@ public class BookDetailActivity extends AppCompatActivity {
     private long loadedPrice = 0L;
     private long loadedOriginalPrice = 0L;
 
+    // 3.1 Nhận ID sách (onCreate)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -64,10 +65,11 @@ public class BookDetailActivity extends AppCompatActivity {
             btnBack.setOnClickListener(v -> finish());
         }
 
-        // Lấy bookId từ Intent được truyền từ HomeActivity
+        // 3.1.1 Lấy bookIdStr thông qua getIntent().getStringExtra("BOOK_ID").
         String bookIdStr = getIntent().getStringExtra("BOOK_ID");
         if (bookIdStr != null && !bookIdStr.isEmpty()) {
             currentBookId = bookIdStr;
+            // 3.1.2 Cố gắng parse int biến currentBookIdInt (Dự phòng cho ID dạng số cũ).
             try {
                 currentBookIdInt = Integer.parseInt(bookIdStr);
             } catch (NumberFormatException e) {
@@ -132,10 +134,12 @@ public class BookDetailActivity extends AppCompatActivity {
         }
     }
 
+    // 3.2 Truy vấn sách từ Firestore (loadBookData)
     private void loadBookData(String bookId) {
         android.util.Log.d("FIRESTORE", "==> Đang query books/" + bookId);
 
         // Cách 1: Dùng document ID trực tiếp
+        // 3.2.1 Gọi truy vấn mặc định db.collection("books").document(bookId).get() tìm trực tiếp theo ID Document Firestore.
         FirebaseFirestore.getInstance()
                 .collection("books")
                 .document(bookId)
@@ -145,7 +149,7 @@ public class BookDetailActivity extends AppCompatActivity {
                     if (documentSnapshot.exists()) {
                         bindBookData(documentSnapshot);
                     } else {
-                        // Cách 2: Fallback - query theo field bookId (thử kiểu long trước)
+                        // 3.2.2 Xử lý Fallback: Nếu không thấy (exists=false), tiếp tục gọi whereEqualTo("bookId", bookId) (Thử ép sang kiểu long trước, thất bại thử String).
                         android.util.Log.d("FIRESTORE", "==> Document ID không tồn tại, thử whereEqualTo bookId=" + bookId);
                         long bookIdLong = -1;
                         try { bookIdLong = Long.parseLong(bookId); } catch (NumberFormatException ignored) {}
@@ -193,7 +197,9 @@ public class BookDetailActivity extends AppCompatActivity {
                 });
     }
 
+    // 3.3 Hiển thị thông tin sách (bindBookData)
     private void bindBookData(com.google.firebase.firestore.DocumentSnapshot documentSnapshot) {
+        // 3.3.1 Trích xuất title, author, price, rating, reviewCount, stock bằng documentSnapshot.getString() và getDouble().
         String title = documentSnapshot.getString("title");
         String author = documentSnapshot.getString("author");
         Double price = documentSnapshot.getDouble("price");
@@ -213,6 +219,7 @@ public class BookDetailActivity extends AppCompatActivity {
 
         android.util.Log.d("FIRESTORE", "title=" + title + " | author=" + author + " | price=" + price + " | imageUrl=" + loadedImageUrl);
 
+        // 3.3.2 Đẩy dữ liệu vào các TextView. Sử dụng Paint.STRIKE_THRU_TEXT_FLAG để tạo đường gạch ngang ở giá gốc (tvOriginalPrice).
         if (title != null) tvTitle.setText(title);
         if (author != null) tvAuthor.setText(author);
         if (description != null) tvDescription.setText(description);
@@ -251,6 +258,7 @@ public class BookDetailActivity extends AppCompatActivity {
         if (!year.isEmpty()) pub += " (" + year + ")";
         if (tvPublisher != null) tvPublisher.setText("Nhà xuất bản: " + pub);
 
+        // 3.3.3 Sử dụng thư viện Glide tải hình ảnh từ loadedImageUrl đưa vào ImageView.
         if (loadedImageUrl != null && !loadedImageUrl.isEmpty()) {
             Glide.with(this).load(loadedImageUrl).into(ivCover);
             if (ivCoverBg != null) {
@@ -260,12 +268,15 @@ public class BookDetailActivity extends AppCompatActivity {
     }
 
 
+    // 4.1 Tải danh sách đánh giá (loadReviews)
     private void loadReviews(String bookId) {
+        // 4.1.1 Gọi HTTP API apiService.getReviews(bookId).enqueue lấy Json Array đánh giá từ Node.js server.
         ApiService apiService = RetrofitClient.getClient().create(ApiService.class);
         apiService.getReviews(bookId).enqueue(new Callback<ApiResponse<List<Review>>>() {
             @Override
             public void onResponse(Call<ApiResponse<List<Review>>> call, Response<ApiResponse<List<Review>>> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    // 4.1.2 Đổ mảng vào reviewList, gọi reviewAdapter.notifyDataSetChanged(). Nếu rỗng hiện thông báo tvNoReview.
                     reviewList.clear();
                     if (response.body().getData() != null) {
                         reviewList.addAll(response.body().getData());
@@ -296,6 +307,7 @@ public class BookDetailActivity extends AppCompatActivity {
         });
     }
 
+    // 4.2 Kiểm tra điều kiện mua hàng (checkPurchaseAndReview)
     private void checkPurchaseAndReview() {
         SessionManager sessionManager = new SessionManager(this);
         if (!sessionManager.isLoggedIn() || sessionManager.getUser() == null) {
@@ -304,6 +316,7 @@ public class BookDetailActivity extends AppCompatActivity {
         }
         String uid = sessionManager.getUser().getUid();
 
+        // 4.2.1 Đóng gói userId và bookId vào một HashMap body. Gọi apiService.checkPurchase().
         HashMap<String, Object> body = new HashMap<>();
         body.put("userId", uid);
         body.put("bookId", currentBookId);
@@ -312,6 +325,7 @@ public class BookDetailActivity extends AppCompatActivity {
         apiService.checkPurchase(body).enqueue(new Callback<ApiResponse<Void>>() {
             @Override
             public void onResponse(Call<ApiResponse<Void>> call, Response<ApiResponse<Void>> response) {
+                // 4.2.2 Backend phản hồi, nếu isCanReview() == true (Nghĩa là có mua và đơn đã giao), gọi showWriteReviewDialog. Nếu false, báo lỗi.
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
                     if (response.body().isCanReview()) {
                         showWriteReviewDialog(uid, response.body().getOrderId());
@@ -334,7 +348,9 @@ public class BookDetailActivity extends AppCompatActivity {
         });
     }
 
+    // 4.3 Nhập thông tin đánh giá (showWriteReviewDialog)
     private void showWriteReviewDialog(String uid, String orderId) {
+        // 4.3.1 Khởi tạo Dialog tùy chỉnh từ layout dialog_write_review. Lấy tham chiếu đến RatingBar và EditText.
         android.app.Dialog dialog = new android.app.Dialog(this, android.R.style.Theme_DeviceDefault_Light_Dialog_Alert);
         dialog.setContentView(R.layout.dialog_write_review);
         if (dialog.getWindow() != null) {
@@ -348,6 +364,7 @@ public class BookDetailActivity extends AppCompatActivity {
         
         btnCancel.setOnClickListener(v -> dialog.dismiss());
         
+        // 4.3.2 Validation dữ liệu đầu vào. Tìm kiếm Name của người dùng bằng query db.collection("users").document(uid).get() trước khi submit.
         btnSubmit.setOnClickListener(v -> {
             float rating = ratingBar.getRating();
             String comment = etComment.getText().toString().trim();
@@ -373,7 +390,9 @@ public class BookDetailActivity extends AppCompatActivity {
         dialog.show();
     }
 
+    // 4.4 Gửi đánh giá (submitReview)
     private void submitReview(String uid, String userName, String orderId, float rating, String comment, android.app.Dialog dialog) {
+        // 4.4.1 Bọc tất cả (userId, bookId, orderId, userName, rating, comment) vào Map, gọi apiService.submitReview(body).
         HashMap<String, Object> body = new HashMap<>();
         body.put("bookId", currentBookId);
         body.put("userId", uid);
@@ -386,6 +405,7 @@ public class BookDetailActivity extends AppCompatActivity {
         apiService.submitReview(body).enqueue(new Callback<ApiResponse<Void>>() {
             @Override
             public void onResponse(Call<ApiResponse<Void>> call, Response<ApiResponse<Void>> response) {
+                // 4.4.2 Khi hoàn thành, ẩn Dialog, và gọi tái sử dụng loadReviews() + loadBookData() để cập nhật lại rating trung bình.
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
                     Toast.makeText(BookDetailActivity.this, "Cảm ơn bạn đã đánh giá!", Toast.LENGTH_SHORT).show();
                     dialog.dismiss();
