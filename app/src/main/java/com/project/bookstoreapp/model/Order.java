@@ -6,6 +6,7 @@ import java.util.Map;
 
 public class Order implements Serializable {
     private String orderId; // String theo Firebase
+    private String displayId; // Thêm trường này
     private String userId;  // String theo Firebase
     private String status;
     private double totalPrice;
@@ -21,8 +22,9 @@ public class Order implements Serializable {
 
     public Order() {}
 
-    public Order(String orderId, String userId, String status, double totalPrice, double shippingFee, String shippingAddress, String paymentMethod, String note, String createdAt, String updatedAt) {
+    public Order(String orderId, String displayId, String userId, String status, double totalPrice, double shippingFee, String shippingAddress, String paymentMethod, String note, String createdAt, String updatedAt) {
         this.orderId = orderId;
+        this.displayId = displayId;
         this.userId = userId;
         this.status = status;
         this.totalPrice = totalPrice;
@@ -34,17 +36,107 @@ public class Order implements Serializable {
         this.updatedAt = updatedAt;
     }
 
-    // Getters
-    public String getOrderId() { return orderId; }
-    public String getUserId() { return userId; }
-    public String getStatus() { return status; }
-    public double getTotalPrice() { return totalPrice; }
-    public double getShippingFee() { return shippingFee; }
-    public String getShippingAddress() { return shippingAddress; }
-    public String getPaymentMethod() { return paymentMethod; }
-    public String getNote() { return note; }
-    public String getCreatedAt() { return createdAt; }
-    public String getUpdatedAt() { return updatedAt; }
-    public List<String> getBookIds() { return bookIds; }
-    public List<Map<String, Object>> getItems() { return items; }
+    public String getOrderId() {
+        return orderId;
+    }
+
+    public void setOrderId(String orderId) {
+        this.orderId = orderId;
+    }
+
+    public String getDisplayId() {
+        return displayId;
+    }
+
+    public void setDisplayId(String displayId) {
+        this.displayId = displayId;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public double getTotalPrice() {
+        return totalPrice;
+    }
+
+    public void setTotalPrice(double totalPrice) {
+        this.totalPrice = totalPrice;
+    }
+
+    public String getShippingAddress() {
+        return shippingAddress;
+    }
+
+    public void setShippingAddress(String shippingAddress) {
+        this.shippingAddress = shippingAddress;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(String paymentMethod) {
+        this.paymentMethod = paymentMethod;
+    }
+
+    public double getShippingFee() {
+        return shippingFee;
+    }
+
+    public void setShippingFee(double shippingFee) {
+        this.shippingFee = shippingFee;
+    }
+
+    public String getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(String createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public String getNote() {
+        return note;
+    }
+
+    public void setNote(String note) {
+        this.note = note;
+    }
+
+    public String getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(String updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public List<String> getBookIds() {
+        return bookIds;
+    }
+
+    public void setBookIds(List<String> bookIds) {
+        this.bookIds = bookIds;
+    }
+
+    public List<Map<String, Object>> getItems() {
+        return items;
+    }
+
+    public void setItems(List<Map<String, Object>> items) {
+        this.items = items;
+    }
 }

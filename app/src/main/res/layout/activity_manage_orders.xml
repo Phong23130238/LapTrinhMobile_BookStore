@@ -19,11 +19,97 @@
             app:titleTextColor="@color/white" />
     </com.google.android.material.appbar.AppBarLayout>
 
+    <!-- Khung chứa Tìm kiếm và Bộ lọc -->
+    <LinearLayout
+        android:id="@+id/llFilterContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/appBarManageOrders"
+        android:orientation="vertical"
+        android:background="@color/cream"
+        android:paddingBottom="8dp">
+
+        <!-- Thanh tìm kiếm -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="12dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="8dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/white">
+
+            <androidx.appcompat.widget.SearchView
+                android:id="@+id/searchViewOrders"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:iconifiedByDefault="false"
+                app:queryHint="Nhập mã đơn hàng..."
+                app:searchIcon="@android:drawable/ic_menu_search" />
+        </androidx.cardview.widget.CardView>
+
+        <!-- Bộ lọc trạng thái đơn hàng (Có thể cuộn ngang nếu màn hình hẹp) -->
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:paddingHorizontal="12dp"
+            android:clipToPadding="false">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupOrderStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:singleLine="true"
+                app:singleSelection="true"
+                app:selectionRequired="true">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipAll"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Tất cả"
+                    android:checked="true"/>
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipPending"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Chờ xác nhận"/>
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipShipping"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Đang giao"/>
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipDelivered"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Đã giao"/>
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipCancelled"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Đã hủy"/>
+            </com.google.android.material.chip.ChipGroup>
+        </HorizontalScrollView>
+    </LinearLayout>
+
+    <!-- RecyclerView chứa danh sách đơn hàng được đẩy xuống dưới bộ lọc -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvAdminOrders"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/appBarManageOrders"
+        android:layout_below="@id/llFilterContainer"
         android:paddingVertical="8dp"
         android:clipToPadding="false"/>
 

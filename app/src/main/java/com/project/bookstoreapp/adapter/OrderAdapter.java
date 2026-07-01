@@ -40,7 +40,9 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         Order order = orderList.get(position);
         if (order == null) return;
 
-        holder.tvOrderId.setVisibility(View.GONE);
+        String displayId = (order.getDisplayId() != null) ? order.getDisplayId() : "N/A";
+        // Trong hàm onBindViewHolder của OrderAdapter
+        holder.tvItemDisplayId.setText(order.getDisplayId()); // Gắn dữ liệu displayId vào TextView
 
         // 1. BẢO VỆ LỖI NULL NGÀY THÁNG
         String dateStr = order.getCreatedAt();
@@ -134,12 +136,12 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
     }
 
     public static class OrderViewHolder extends RecyclerView.ViewHolder {
-        TextView tvOrderId, tvOrderDate, tvTotalAmount, tvPaymentStatus, tvShippingStatus;
+        TextView tvItemDisplayId, tvOrderDate, tvTotalAmount, tvPaymentStatus, tvShippingStatus;
         MaterialCardView cardPaymentStatus, cardShippingStatus;
 
         public OrderViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvOrderId = itemView.findViewById(R.id.tvOrderId);
+            tvItemDisplayId = itemView.findViewById(R.id.tvItemDisplayId);
             tvOrderDate = itemView.findViewById(R.id.tvOrderDate);
             tvTotalAmount = itemView.findViewById(R.id.tvTotalAmount);
             tvPaymentStatus = itemView.findViewById(R.id.tvPaymentStatus);
@@ -147,5 +149,11 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             cardPaymentStatus = itemView.findViewById(R.id.cardPaymentStatus);
             cardShippingStatus = itemView.findViewById(R.id.cardShippingStatus);
         }
+    }
+
+    // Hàm dùng để cập nhật danh sách khi tìm kiếm hoặc lọc
+    public void filterList(List<Order> filteredList) {
+        this.orderList = filteredList;
+        notifyDataSetChanged();
     }
 }
