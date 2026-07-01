@@ -95,6 +95,7 @@ public class ProfileActivity extends AppCompatActivity {
             }
     );
 
+    // 5.1 Khởi tạo giao diện (onCreate, loadUserData, parseAndAutoFillAddress)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -119,6 +120,7 @@ public class ProfileActivity extends AppCompatActivity {
         );
 
         apiService = RetrofitClient.getClient().create(ApiService.class);
+        // 5.1.1 Gọi SessionManager kiểm tra đăng nhập. Nếu OK, gọi initViews và loadUserData().
         sessionManager = new SessionManager(this);
         currentUser = sessionManager.getUser();
 
@@ -153,6 +155,7 @@ public class ProfileActivity extends AppCompatActivity {
         progressBarProfile = findViewById(R.id.progressBarProfile);
     }
 
+    // 5.1.2 Đẩy dữ liệu currentUser lên View. Gọi hàm parseAndAutoFillAddress tách chuỗi (Address text -> Array split bằng phẩy) để định hình lại dropdown GHN.
     private void loadUserData() {
         tvEmail.setText(currentUser.getEmail());
         etName.setText(currentUser.getName());
@@ -204,6 +207,8 @@ public class ProfileActivity extends AppCompatActivity {
             });
         }
 
+        // 5.2 Xử lý ảnh đại diện (setupListeners, getFileFromUri)
+        // 5.2.1 Khởi tạo ActivityResultLauncher (GetContent) để mở thư viện, lọc MIME type 'image/*'. Lấy URI khi trả về.
         fabChangeAvatar.setOnClickListener(v -> {
             getContentLauncher.launch("image/*");
         });
@@ -221,6 +226,7 @@ public class ProfileActivity extends AppCompatActivity {
             finish();
         });
 
+        // 6.2.1 Bắt sự kiện spinProvince.setOnItemClickListener, lấy biến ProvinceID và làm trống các Dropdown dưới.
         spinProvince.setOnItemClickListener((parent, view, position, id) -> {
             selectedProvince = provinceList.get(position);
             spinDistrict.setText("");
@@ -230,6 +236,7 @@ public class ProfileActivity extends AppCompatActivity {
             loadDistricts(selectedProvince.ProvinceID);
         });
 
+        // 6.3.1 Bắt sự kiện spinDistrict.setOnItemClickListener, lấy DistrictID. Gọi hàm getWards() tải mảng Ward.
         spinDistrict.setOnItemClickListener((parent, view, position, id) -> {
             selectedDistrict = districtList.get(position);
             spinWard.setText("");
@@ -244,15 +251,20 @@ public class ProfileActivity extends AppCompatActivity {
         loadProvinces();
     }
 
+    // 6.1 Tải danh sách Tỉnh/Thành phố (loadProvinces)
     private void loadProvinces() {
+        // 6.1.1 Dùng RetrofitClientGHN.getApiService().getProvinces() lấy toàn bộ tỉnh qua Header token GHN.
         RetrofitClientGHN.getApiService().getProvinces(GHN_TOKEN).enqueue(new Callback<GHNResponse<List<Province>>>() {
             @Override
             public void onResponse(Call<GHNResponse<List<Province>>> call, Response<GHNResponse<List<Province>>> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().data != null) {
+                    // 6.1.2 Đổ Json List vào provinceList, binding lên AutoCompleteTextView spinProvince thông qua ArrayAdapter.
                     provinceList = response.body().data;
                     ArrayAdapter<Province> adapter = new ArrayAdapter<>(ProfileActivity.this, android.R.layout.simple_list_item_1, provinceList);
                     spinProvince.setAdapter(adapter);
 
+                    
+                    // 6.1.3 Quét mảng tìm Tỉnh trùng với targetProvinceName (được parse từ hàm parseAndAutoFillAddress). Gọi hàm loadDistricts().
                     if (targetProvinceName != null && !targetProvinceName.isEmpty()) {
                         for (Province p : provinceList) {
                             if (p.ProvinceName != null && p.ProvinceName.equalsIgnoreCase(targetProvinceName)) {
@@ -276,11 +288,13 @@ public class ProfileActivity extends AppCompatActivity {
         });
     }
 
+    // 6.2 Lải danh sách Quận/Huyện (loadDistricts)
     private void loadDistricts(int provinceId) {
         RetrofitClientGHN.getApiService().getDistricts(GHN_TOKEN, provinceId).enqueue(new Callback<GHNResponse<List<District>>>() {
             @Override
             public void onResponse(Call<GHNResponse<List<District>>> call, Response<GHNResponse<List<District>>> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().data != null) {
+                    // 6.2.2 Gọi API getDistricts truyền provinceId. Lọc tương tự tự động điền targetDistrictName rồi gọi loadWards().
                     districtList = response.body().data;
                     ArrayAdapter<District> adapter = new ArrayAdapter<>(ProfileActivity.this, android.R.layout.simple_list_item_1, districtList);
                     spinDistrict.setAdapter(adapter);
@@ -305,6 +319,7 @@ public class ProfileActivity extends AppCompatActivity {
         });
     }
 
+    // 6.3 Tải danh sách Phường/Xã (loadWards)
     private void loadWards(int districtId) {
         RetrofitClientGHN.getApiService().getWards(GHN_TOKEN, districtId).enqueue(new Callback<GHNResponse<List<Ward>>>() {
             @Override
@@ -314,6 +329,8 @@ public class ProfileActivity extends AppCompatActivity {
                     ArrayAdapter<Ward> adapter = new ArrayAdapter<>(ProfileActivity.this, android.R.layout.simple_list_item_1, wardList);
                     spinWard.setAdapter(adapter);
 
+                    
+                    // 6.3.2 Tự động match với targetWardName, nếu đúng cập nhật spinWard và chọn biến tham chiếu selectedWard.
                     if (targetWardName != null && !targetWardName.isEmpty()) {
                         for (Ward w : wardList) {
                             if (w.WardName != null && w.WardName.equalsIgnoreCase(targetWardName)) {
@@ -339,6 +356,7 @@ public class ProfileActivity extends AppCompatActivity {
         fabChangeAvatar.setEnabled(!isLoading);
     }
 
+    // 5.3 Lưu thông tin hồ sơ (saveProfile)
     private void saveProfile() {
         String name = etName.getText().toString().trim();
         String phone = etPhone.getText().toString().trim();
@@ -358,6 +376,7 @@ public class ProfileActivity extends AppCompatActivity {
 
         showLoading(true);
 
+        // 5.3.1 Khởi tạo các RequestBody dạng Multipart kiểu 'text/plain' chứa Name, Phone, Address.
         RequestBody uidPart = RequestBody.create(MediaType.parse("text/plain"), currentUser.getUid());
         RequestBody namePart = RequestBody.create(MediaType.parse("text/plain"), name);
         RequestBody phonePart = RequestBody.create(MediaType.parse("text/plain"), phone);
@@ -365,6 +384,7 @@ public class ProfileActivity extends AppCompatActivity {
 
         MultipartBody.Part avatarPart = null;
 
+        // 5.3.2 Tạo MultipartBody.Part từ file ảnh tạm (nếu có). Gọi apiService.updateProfile() đẩy file qua HTTP.
         if (selectedImageUri != null) {
             File file = getFileFromUri(selectedImageUri);
             if (file != null) {
@@ -381,6 +401,7 @@ public class ProfileActivity extends AppCompatActivity {
                         if (response.isSuccessful() && response.body() != null) {
                             if (response.body().isSuccess()) {
                                 Toast.makeText(ProfileActivity.this, "Cập nhật thành công!", Toast.LENGTH_SHORT).show();
+                                // 5.3.3 Nếu server báo thành công, ghi đè object User mới lên SessionManager.
                                 User updatedUser = response.body().getData();
                                 sessionManager.saveUser(updatedUser);
                                 currentUser = updatedUser;
@@ -402,6 +423,7 @@ public class ProfileActivity extends AppCompatActivity {
                 });
     }
 
+    // 5.4 Đổi mật khẩu (showChangePasswordDialog)
     private void showChangePasswordDialog() {
         Dialog dialog = new Dialog(this, android.R.style.Theme_DeviceDefault_Light_Dialog_Alert);
         dialog.setContentView(R.layout.dialog_change_password);
@@ -423,6 +445,7 @@ public class ProfileActivity extends AppCompatActivity {
             String newPass = etNewPassword.getText().toString().trim();
             String confirmPass = etConfirmPassword.getText().toString().trim();
 
+            // 5.4.1 Mở popup đổi mật khẩu, kiểm tra đầu vào mật khẩu cũ, mật khẩu mới (khớp nhau, > 6 ký tự).
             if (oldPass.isEmpty() || newPass.isEmpty() || confirmPass.isEmpty()) {
                 Toast.makeText(this, "Vui lòng nhập đủ thông tin", Toast.LENGTH_SHORT).show();
                 return;
@@ -446,6 +469,7 @@ public class ProfileActivity extends AppCompatActivity {
             body.put("oldPassword", oldPass);
             body.put("newPassword", newPass);
 
+            // 5.4.2 Đóng gói tham số, gọi apiService.updatePassword(body). Try-catch parse chuỗi lỗi từ errorBody.string() nếu HTTP Code 400.
             apiService.updatePassword(body).enqueue(new Callback<ApiResponse<Void>>() {
                 @Override
                 public void onResponse(Call<ApiResponse<Void>> call, Response<ApiResponse<Void>> response) {
@@ -486,6 +510,8 @@ public class ProfileActivity extends AppCompatActivity {
         dialog.show();
     }
 
+    // Tiện ích để tạo file tạm từ URI (vì Retrofit Multipart cần File hoặc File path)
+    // 5.2.2 Khi bấm lưu Profile, gọi getFileFromUri dùng luồng Byte (InputStream) copy nội dung file từ Storage vào thư mục Cache thành File tạm, để chuyển lên Retrofit Multipart.
     private File getFileFromUri(Uri uri) {
         try {
             InputStream inputStream = getContentResolver().openInputStream(uri);
