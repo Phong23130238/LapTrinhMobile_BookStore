@@ -93,17 +93,17 @@ app.post('/api/auth/register', async (req, res) => {
         // Hash mật khẩu bằng MD5
         const hashedPassword = hashMD5(password);
 
-        // Tạo user mới
         const newUser = {
-            name,
-            email,
-            password: hashedPassword,
-            phone: "",
-            address: "",
-            avatarUrl: "",
-            role: "customer",
-            createdAt: new Date().toISOString()
-        };
+                    name,
+                    email,
+                    password: hashedPassword, // (hoặc null đối với Google)
+                    phone: "",
+                    address: "",
+                    avatarUrl: "", // (hoặc googleAvatar)
+                    role: "customer",
+                    isLocked: false, // THÊM DÒNG NÀY
+                    createdAt: new Date().toISOString()
+                };
 
         const docRef = await addDoc(usersRef, newUser);
 
@@ -160,6 +160,18 @@ app.post('/api/auth/login', async (req, res) => {
                 message: "Tài khoản này được đăng ký bằng Google, vui lòng sử dụng nút Đăng nhập Google."
             });
         }
+
+        // ==========================================
+        // THÊM ĐOẠN NÀY: Kiểm tra tài khoản có bị khóa không
+        // Bắt chặt cả trường hợp lưu là boolean (true) hoặc chuỗi text ("true")
+                if (userData.isLocked === true || String(userData.isLocked).toLowerCase() === "true") {
+            return res.status(403).json({
+                success: false,
+                message: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên."
+            });
+        }
+        // ==========================================
+
 
         // So sánh password đã hash
         const hashedPassword = hashMD5(password);
@@ -227,6 +239,16 @@ app.post('/api/auth/google', async (req, res) => {
             const existingDoc = querySnapshot.docs[0];
             const existingData = existingDoc.data();
 
+            // ==========================================
+            // THÊM ĐOẠN NÀY: Kiểm tra tài khoản có bị khóa không
+          // Bắt chặt cả trường hợp lưu là boolean (true) hoặc chuỗi text ("true")
+                  if (existingData.isLocked === true || String(existingData.isLocked).toLowerCase() === "true") {
+                return res.status(403).json({
+                    success: false,
+                    message: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên."
+                });
+            }
+
             userToReturn = {
                 uid: existingData.uid || existingDoc.id,
                 name: existingData.name,
@@ -243,7 +265,6 @@ app.post('/api/auth/google', async (req, res) => {
                 await updateDoc(existingDoc.ref, { avatarUrl: googleAvatar });
             }
         } else {
-            // Email chưa tồn tại → tạo user mới với password = null
             const newUser = {
                 name: googleName,
                 email: googleEmail,
@@ -252,6 +273,7 @@ app.post('/api/auth/google', async (req, res) => {
                 address: "",
                 avatarUrl: googleAvatar,
                 role: "customer",
+                isLocked: false,
                 createdAt: new Date().toISOString()
             };
 
@@ -568,4 +590,88 @@ app.get('/api/orders/:orderId', async (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(3000, '0.0.0.0', () => {
   console.log('Server is running on port 3000');
+});
+
+// =============================================
+// ADMIN: QUẢN LÝ NGƯỜI DÙNG
+// =============================================
+
+// 1. Lấy danh sách toàn bộ người dùng
+app.get('/api/users', async (req, res) => {
+    try {
+        const usersRef = collection(db, "users");
+        const querySnapshot = await getDocs(usersRef);
+
+        let users = [];
+        querySnapshot.forEach((docSnap) => {
+            let data = docSnap.data();
+            // Đảm bảo luôn có uid trả về
+            data.uid = docSnap.id;
+            users.push(data);
+        });
+
+        res.json({ success: true, data: users });
+    } catch (error) {
+        console.error("Lỗi lấy danh sách user:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// 2. Cập nhật trạng thái Khóa/Mở khóa tài khoản
+app.put('/api/users/:uid/lock', async (req, res) => {
+    try {
+        const uid = req.params.uid;
+        const { isLocked } = req.body;
+
+        if (uid === undefined || isLocked === undefined) {
+            return res.status(400).json({ success: false, message: "Thiếu thông tin cập nhật" });
+        }
+
+        const userRef = doc(db, "users", uid);
+        await updateDoc(userRef, { isLocked: isLocked });
+
+        res.json({
+            success: true,
+            message: isLocked ? "Đã khóa tài khoản" : "Đã mở khóa tài khoản"
+        });
+    } catch (error) {
+        console.error("Lỗi cập nhật trạng thái khóa:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// 3. Lấy thống kê mua hàng của 1 user
+app.get('/api/users/:uid/stats', async (req, res) => {
+    try {
+        const uid = req.params.uid;
+
+        // Tìm các đơn hàng của user này
+        const ordersRef = collection(db, "orders");
+        const q = query(ordersRef, where("userId", "==", uid));
+        const querySnapshot = await getDocs(q);
+
+        let totalOrders = 0;
+        let totalSpent = 0;
+
+        querySnapshot.forEach((docSnap) => {
+            const orderData = docSnap.data();
+            // Không tính các đơn hàng đã bị hủy (nếu có trường status)
+            if (orderData.status !== "cancelled") {
+                totalOrders++;
+                // Giả sử tổng tiền đơn hàng được lưu trong biến totalPrice
+                totalSpent += (orderData.totalPrice || 0);
+            }
+        });
+
+        res.json({
+            success: true,
+            data: {
+                totalOrders: totalOrders,
+                totalSpent: totalSpent
+            }
+        });
+    } catch (error) {
+        console.error("Lỗi lấy thống kê user:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
 });

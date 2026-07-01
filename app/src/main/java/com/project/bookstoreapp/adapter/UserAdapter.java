@@ -3,11 +3,16 @@ package com.project.bookstoreapp.adapter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.bumptech.glide.Glide;
 import com.project.bookstoreapp.R;
 import com.project.bookstoreapp.model.User;
+
+import java.util.ArrayList;
 import java.util.List;
 
 public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder> {
@@ -24,6 +29,11 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         this.listener = listener;
     }
 
+    public void updateList(List<User> newList) {
+        this.userList = new ArrayList<>(newList);
+        notifyDataSetChanged();
+    }
+
     @NonNull
     @Override
     public UserViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -36,51 +46,65 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         User user = userList.get(position);
         if (user == null) return;
 
-        // 1. BẢO VỆ NULL: Tên người dùng
-        String name = user.getName();
-        if (name == null || name.trim().isEmpty()) {
-            name = "Chưa cập nhật tên";
-        }
-        holder.tvUserName.setText(name);
+        // 1. Gán text thông tin cơ bản (Bảo vệ Null)
+        holder.tvUserName.setText(user.getName() != null && !user.getName().isEmpty() ? user.getName() : "Chưa cập nhật tên");
+        holder.tvUserEmail.setText("Email: " + (user.getEmail() != null ? user.getEmail() : "Chưa có"));
+        holder.tvUserPhone.setText("SĐT: " + (user.getPhone() != null && !user.getPhone().isEmpty() ? user.getPhone() : "Chưa có"));
 
-        // 2. BẢO VỆ NULL: Email
-        String email = user.getEmail();
-        if (email == null || email.trim().isEmpty()) {
-            email = "Chưa có email";
-        }
-        holder.tvUserEmail.setText(email);
-
-        // 3. BẢO VỆ NULL: Số điện thoại
-        String phone = user.getPhone();
-        if (phone == null || phone.trim().isEmpty()) {
-            holder.tvUserPhone.setText("SĐT: Chưa cập nhật");
+        // 2. Gán ngày tham gia (Cắt chuỗi nếu định dạng ISO quá dài)
+        String createdAt = user.getCreatedAt();
+        if (createdAt != null && createdAt.length() >= 10) {
+            holder.tvUserDate.setText("Tham gia: " + createdAt.substring(0, 10));
         } else {
-            holder.tvUserPhone.setText("SĐT: " + phone);
+            holder.tvUserDate.setText("Tham gia: Không rõ");
         }
 
-        // Lệnh check "admin".equalsIgnoreCase(user.getRole()) của bạn đã
-        // rất an toàn với NullPointerException rồi, giữ nguyên!
-        if ("admin".equalsIgnoreCase(user.getRole())) {
-            holder.tvUserRole.setText("Quản trị viên");
-            holder.tvUserRole.setBackgroundColor(0xFF2196F3);
-            holder.tvUserRole.setTextColor(0xFFFFFFFF);
+        // 3. Load Avatar bằng Glide (Cắt hình tròn)
+        if (user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty()) {
+            Glide.with(holder.itemView.getContext())
+                    .load(user.getAvatarUrl())
+                    .circleCrop()
+                    .into(holder.ivUserAvatar);
         } else {
-            holder.tvUserRole.setText("Khách hàng");
-            holder.tvUserRole.setBackgroundColor(0xFFFFC107);
-            holder.tvUserRole.setTextColor(0xFF000000);
+            // Ảnh mặc định nếu user chưa có avatar
+            Glide.with(holder.itemView.getContext())
+                    .load(R.drawable.ic_launcher_foreground) // Đổi thành tên icon mặc định trong drawable của bạn nếu cần
+                    .circleCrop()
+                    .into(holder.ivUserAvatar);
         }
 
-        // Trạng thái Khóa
+        // 4. Xử lý màu sắc phân quyền và trạng thái khóa
         if (user.isLocked()) {
+            // TÀI KHOẢN BỊ KHÓA: Chuyển toàn bộ màu sang xám, làm mờ thẻ
             holder.tvUserStatus.setText("Đã bị khóa");
-            holder.tvUserStatus.setBackgroundColor(0xFFD32F2F);
-            holder.itemView.setAlpha(0.6f);
+            holder.tvUserStatus.setTextColor(0xFF757575);       // Chữ Xám
+            holder.tvUserStatus.setBackgroundColor(0xFFE0E0E0); // Nền Xám nhạt
+
+            holder.tvUserRole.setText(user.getRole() != null ? user.getRole() : "Khách hàng");
+            holder.tvUserRole.setTextColor(0xFF757575);
+            holder.tvUserRole.setBackgroundColor(0xFFE0E0E0);
+
+            holder.itemView.setAlpha(0.6f); // Làm mờ toàn bộ thẻ
         } else {
+            // ĐANG HOẠT ĐỘNG
             holder.tvUserStatus.setText("Đang hoạt động");
-            holder.tvUserStatus.setBackgroundColor(0xFF388E3C);
-            holder.itemView.setAlpha(1.0f);
+            holder.tvUserStatus.setTextColor(0xFF388E3C);       // Chữ Xanh lá
+            holder.tvUserStatus.setBackgroundColor(0xFFC8E6C9); // Nền Xanh lá nhạt
+            holder.itemView.setAlpha(1.0f); // Hiện rõ thẻ
+
+            // Phân quyền (Đỏ cho Admin, Xanh dương cho Khách hàng)
+            if ("admin".equalsIgnoreCase(user.getRole())) {
+                holder.tvUserRole.setText("Admin");
+                holder.tvUserRole.setTextColor(0xFFD32F2F);       // Chữ Đỏ
+                holder.tvUserRole.setBackgroundColor(0xFFFFCDD2); // Nền Đỏ nhạt
+            } else {
+                holder.tvUserRole.setText("Khách hàng");
+                holder.tvUserRole.setTextColor(0xFF1976D2);       // Chữ Xanh dương
+                holder.tvUserRole.setBackgroundColor(0xFFBBDEFB); // Nền Xanh dương nhạt
+            }
         }
 
+        // 5. Sự kiện Click
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) listener.onUserClick(user);
         });
@@ -92,13 +116,16 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     }
 
     public static class UserViewHolder extends RecyclerView.ViewHolder {
-        TextView tvUserName, tvUserEmail, tvUserPhone, tvUserRole, tvUserStatus;
+        ImageView ivUserAvatar;
+        TextView tvUserName, tvUserEmail, tvUserPhone, tvUserDate, tvUserRole, tvUserStatus;
 
         public UserViewHolder(@NonNull View itemView) {
             super(itemView);
+            ivUserAvatar = itemView.findViewById(R.id.ivUserAvatar);
             tvUserName = itemView.findViewById(R.id.tvUserName);
             tvUserEmail = itemView.findViewById(R.id.tvUserEmail);
             tvUserPhone = itemView.findViewById(R.id.tvUserPhone);
+            tvUserDate = itemView.findViewById(R.id.tvUserDate);
             tvUserRole = itemView.findViewById(R.id.tvUserRole);
             tvUserStatus = itemView.findViewById(R.id.tvUserStatus);
         }
