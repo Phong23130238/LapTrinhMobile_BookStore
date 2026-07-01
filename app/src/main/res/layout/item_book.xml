@@ -6,6 +6,9 @@
     android:layout_margin="8dp"
     app:cardCornerRadius="12dp"
     app:cardElevation="4dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?android:attr/selectableItemBackground"
     app:cardBackgroundColor="@color/white">
 
     <LinearLayout
@@ -14,24 +17,28 @@
         android:orientation="vertical"
         android:padding="8dp">
 
+        <!-- Đã tăng chiều cao lên 180dp để phù hợp với tỷ lệ bìa sách -->
         <ImageView
             android:id="@+id/ivItemBookCover"
             android:layout_width="match_parent"
-            android:layout_height="160dp"
+            android:layout_height="180dp"
             android:scaleType="centerCrop"
             android:background="@color/gray_light"
-            android:src="@mipmap/ic_launcher" /> <TextView
-        android:id="@+id/tvItemBookTitle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="Tên sách"
-        android:textColor="@color/text_primary"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:maxLines="2"
-        android:ellipsize="end"/>
+            android:src="@mipmap/ic_launcher" />
 
+        <TextView
+            android:id="@+id/tvItemBookTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Tên sách"
+            android:textColor="@color/text_primary"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:maxLines="2"
+            android:ellipsize="end"/>
+
+        <!-- Đã thêm ellipsize end đề phòng tên tác giả quá dài -->
         <TextView
             android:id="@+id/tvItemBookAuthor"
             android:layout_width="match_parent"
@@ -40,7 +47,8 @@
             android:text="Tác giả"
             android:textColor="@color/text_secondary"
             android:textSize="12sp"
-            android:maxLines="1"/>
+            android:maxLines="1"
+            android:ellipsize="end"/>
 
         <TextView
             android:id="@+id/tvItemBookPrice"

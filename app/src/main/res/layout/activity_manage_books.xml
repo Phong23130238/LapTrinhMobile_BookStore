@@ -19,11 +19,34 @@
             app:titleTextColor="@color/white" />
     </com.google.android.material.appbar.AppBarLayout>
 
+    <!-- THÊM MỚI: Khung chứa thanh tìm kiếm -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cvSearchContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/appBarManageBooks"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="4dp"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="2dp"
+        app:cardBackgroundColor="@color/white">
+
+        <androidx.appcompat.widget.SearchView
+            android:id="@+id/searchViewBooks"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:iconifiedByDefault="false"
+            app:queryHint="Nhập tên sách cần tìm..."
+            app:searchIcon="@android:drawable/ic_menu_search" />
+    </androidx.cardview.widget.CardView>
+
+    <!-- Đã sửa thuộc tính layout_below trỏ về id của CardView -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvAdminBooks"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/appBarManageBooks"
+        android:layout_below="@id/cvSearchContainer"
         android:padding="8dp"
         android:clipToPadding="false" />
 
