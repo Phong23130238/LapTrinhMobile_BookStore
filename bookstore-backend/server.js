@@ -93,17 +93,17 @@ app.post('/api/auth/register', async (req, res) => {
         // Hash mật khẩu bằng MD5
         const hashedPassword = hashMD5(password);
 
-        // Tạo user mới
         const newUser = {
-            name,
-            email,
-            password: hashedPassword,
-            phone: "",
-            address: "",
-            avatarUrl: "",
-            role: "customer",
-            createdAt: new Date().toISOString()
-        };
+                    name,
+                    email,
+                    password: hashedPassword, // (hoặc null đối với Google)
+                    phone: "",
+                    address: "",
+                    avatarUrl: "", // (hoặc googleAvatar)
+                    role: "customer",
+                    isLocked: false, // THÊM DÒNG NÀY
+                    createdAt: new Date().toISOString()
+                };
 
         const docRef = await addDoc(usersRef, newUser);
 
@@ -160,17 +160,11 @@ app.post('/api/auth/login', async (req, res) => {
                 message: "Tài khoản này được đăng ký bằng Google, vui lòng sử dụng nút Đăng nhập Google."
             });
         }
-// Kiểm tra tài khoản đăng ký bằng Google
-        if (!userData.password) {
-            return res.status(401).json({
-                success: false,
-                message: "Tài khoản này được đăng ký bằng Google, vui lòng sử dụng nút Đăng nhập Google."
-            });
-        }
 
         // ==========================================
         // THÊM ĐOẠN NÀY: Kiểm tra tài khoản có bị khóa không
-        if (userData.isLocked) {
+        // Bắt chặt cả trường hợp lưu là boolean (true) hoặc chuỗi text ("true")
+                if (userData.isLocked === true || String(userData.isLocked).toLowerCase() === "true") {
             return res.status(403).json({
                 success: false,
                 message: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên."
@@ -178,8 +172,7 @@ app.post('/api/auth/login', async (req, res) => {
         }
         // ==========================================
 
-        // So sánh password đã hash
-        const hashedPassword = hashMD5(password);
+
         // So sánh password đã hash
         const hashedPassword = hashMD5(password);
         if (userData.password !== hashedPassword) {
@@ -248,7 +241,8 @@ app.post('/api/auth/google', async (req, res) => {
 
             // ==========================================
             // THÊM ĐOẠN NÀY: Kiểm tra tài khoản có bị khóa không
-            if (existingData.isLocked) {
+          // Bắt chặt cả trường hợp lưu là boolean (true) hoặc chuỗi text ("true")
+                  if (existingData.isLocked === true || String(existingData.isLocked).toLowerCase() === "true") {
                 return res.status(403).json({
                     success: false,
                     message: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên."
@@ -271,7 +265,6 @@ app.post('/api/auth/google', async (req, res) => {
                 await updateDoc(existingDoc.ref, { avatarUrl: googleAvatar });
             }
         } else {
-            // Email chưa tồn tại → tạo user mới với password = null
             const newUser = {
                 name: googleName,
                 email: googleEmail,
@@ -280,6 +273,7 @@ app.post('/api/auth/google', async (req, res) => {
                 address: "",
                 avatarUrl: googleAvatar,
                 role: "customer",
+                isLocked: false,
                 createdAt: new Date().toISOString()
             };
 

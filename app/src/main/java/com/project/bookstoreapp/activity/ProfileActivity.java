@@ -22,6 +22,7 @@ import com.bumptech.glide.Glide;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.project.bookstoreapp.R;
 import com.project.bookstoreapp.model.User;
@@ -80,6 +81,9 @@ public class ProfileActivity extends AppCompatActivity {
     private Ward selectedWard = null;
     private final String GHN_TOKEN = "dffec2e1-6725-11f1-a973-aee5264794df";
 
+    // 1. Khai báo Launcher để nhận kết quả từ Map
+    private ActivityResultLauncher<Intent> mapLauncher;
+
     // Trình chọn ảnh
     private final ActivityResultLauncher<String> getContentLauncher = registerForActivityResult(
             new ActivityResultContracts.GetContent(),
@@ -95,6 +99,24 @@ public class ProfileActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
+
+        // 2. Khởi tạo mapLauncher ngay trong onCreate
+        mapLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        // Nhận địa chỉ dạng chuỗi văn bản từ Map trả về
+                        String selectedAddress = result.getData().getStringExtra("SELECTED_ADDRESS");
+
+                        // Gán vào EditText địa chỉ
+                        if (etAddress != null) {
+                            etAddress.setText(selectedAddress);
+                            // Bạn có thể yêu cầu người dùng tự chọn lại Phường/Xã/Quận cho đúng chuẩn GHN
+                            Toast.makeText(this, "Vui lòng kiểm tra và chọn lại Tỉnh/Quận/Phường nếu cần", Toast.LENGTH_LONG).show();
+                        }
+                    }
+                }
+        );
 
         apiService = RetrofitClient.getClient().create(ApiService.class);
         sessionManager = new SessionManager(this);
@@ -143,7 +165,7 @@ public class ProfileActivity extends AppCompatActivity {
                     .placeholder(R.drawable.ic_launcher_background)
                     .into(ivAvatar);
         }
-        
+
         if (currentUser.getAddress() != null && !currentUser.getAddress().isEmpty()) {
             parseAndAutoFillAddress(currentUser.getAddress());
         }
@@ -152,7 +174,7 @@ public class ProfileActivity extends AppCompatActivity {
     private String targetProvinceName = null;
     private String targetDistrictName = null;
     private String targetWardName = null;
-    
+
     private void parseAndAutoFillAddress(String fullAddress) {
         if (fullAddress == null || fullAddress.isEmpty()) return;
         String[] parts = fullAddress.split(", ");
@@ -160,7 +182,7 @@ public class ProfileActivity extends AppCompatActivity {
             targetProvinceName = parts[parts.length - 1].trim();
             targetDistrictName = parts[parts.length - 2].trim();
             targetWardName = parts[parts.length - 3].trim();
-            
+
             StringBuilder street = new StringBuilder();
             for (int i = 0; i < parts.length - 3; i++) {
                 street.append(parts[i]);
@@ -173,6 +195,15 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
+        // 3. Ánh xạ TextInputLayout và bắt sự kiện bấm icon Bản đồ
+        TextInputLayout tilAddress = findViewById(R.id.tilAddress);
+        if (tilAddress != null) {
+            tilAddress.setEndIconOnClickListener(v -> {
+                Intent intent = new Intent(ProfileActivity.this, MapAddressActivity.class);
+                mapLauncher.launch(intent);
+            });
+        }
+
         fabChangeAvatar.setOnClickListener(v -> {
             getContentLauncher.launch("image/*");
         });
@@ -221,7 +252,7 @@ public class ProfileActivity extends AppCompatActivity {
                     provinceList = response.body().data;
                     ArrayAdapter<Province> adapter = new ArrayAdapter<>(ProfileActivity.this, android.R.layout.simple_list_item_1, provinceList);
                     spinProvince.setAdapter(adapter);
-                    
+
                     if (targetProvinceName != null && !targetProvinceName.isEmpty()) {
                         for (Province p : provinceList) {
                             if (p.ProvinceName != null && p.ProvinceName.equalsIgnoreCase(targetProvinceName)) {
@@ -253,7 +284,7 @@ public class ProfileActivity extends AppCompatActivity {
                     districtList = response.body().data;
                     ArrayAdapter<District> adapter = new ArrayAdapter<>(ProfileActivity.this, android.R.layout.simple_list_item_1, districtList);
                     spinDistrict.setAdapter(adapter);
-                    
+
                     if (targetDistrictName != null && !targetDistrictName.isEmpty()) {
                         for (District d : districtList) {
                             if (d.DistrictName != null && d.DistrictName.equalsIgnoreCase(targetDistrictName)) {
@@ -282,7 +313,7 @@ public class ProfileActivity extends AppCompatActivity {
                     wardList = response.body().data;
                     ArrayAdapter<Ward> adapter = new ArrayAdapter<>(ProfileActivity.this, android.R.layout.simple_list_item_1, wardList);
                     spinWard.setAdapter(adapter);
-                    
+
                     if (targetWardName != null && !targetWardName.isEmpty()) {
                         for (Ward w : wardList) {
                             if (w.WardName != null && w.WardName.equalsIgnoreCase(targetWardName)) {
@@ -322,12 +353,11 @@ public class ProfileActivity extends AppCompatActivity {
             Toast.makeText(this, "Vui lòng chọn đầy đủ địa chỉ", Toast.LENGTH_SHORT).show();
             return;
         }
-        
+
         String address = addressStreet + ", " + selectedWard.WardName + ", " + selectedDistrict.DistrictName + ", " + selectedProvince.ProvinceName;
 
         showLoading(true);
 
-        // Tạo các RequestBody cho form-data
         RequestBody uidPart = RequestBody.create(MediaType.parse("text/plain"), currentUser.getUid());
         RequestBody namePart = RequestBody.create(MediaType.parse("text/plain"), name);
         RequestBody phonePart = RequestBody.create(MediaType.parse("text/plain"), phone);
@@ -335,7 +365,6 @@ public class ProfileActivity extends AppCompatActivity {
 
         MultipartBody.Part avatarPart = null;
 
-        // Xử lý ảnh nếu có chọn
         if (selectedImageUri != null) {
             File file = getFileFromUri(selectedImageUri);
             if (file != null) {
@@ -352,11 +381,10 @@ public class ProfileActivity extends AppCompatActivity {
                         if (response.isSuccessful() && response.body() != null) {
                             if (response.body().isSuccess()) {
                                 Toast.makeText(ProfileActivity.this, "Cập nhật thành công!", Toast.LENGTH_SHORT).show();
-                                // Cập nhật Session
                                 User updatedUser = response.body().getData();
                                 sessionManager.saveUser(updatedUser);
                                 currentUser = updatedUser;
-                                selectedImageUri = null; // reset
+                                selectedImageUri = null;
                             } else {
                                 Toast.makeText(ProfileActivity.this, response.body().getMessage(), Toast.LENGTH_SHORT).show();
                             }
@@ -423,7 +451,7 @@ public class ProfileActivity extends AppCompatActivity {
                 public void onResponse(Call<ApiResponse<Void>> call, Response<ApiResponse<Void>> response) {
                     progressBar.setVisibility(View.GONE);
                     btnSubmit.setEnabled(true);
-                    
+
                     if (response.isSuccessful() && response.body() != null) {
                         if (response.body().isSuccess()) {
                             Toast.makeText(ProfileActivity.this, "Đổi mật khẩu thành công!", Toast.LENGTH_SHORT).show();
@@ -432,7 +460,6 @@ public class ProfileActivity extends AppCompatActivity {
                             Toast.makeText(ProfileActivity.this, response.body().getMessage(), Toast.LENGTH_SHORT).show();
                         }
                     } else {
-                        // Handle error body
                         try {
                             String err = response.errorBody().string();
                             if (err.contains("message")) {
@@ -459,7 +486,6 @@ public class ProfileActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    // Tiện ích để tạo file tạm từ URI (vì Retrofit Multipart cần File hoặc File path)
     private File getFileFromUri(Uri uri) {
         try {
             InputStream inputStream = getContentResolver().openInputStream(uri);
