@@ -25,11 +25,12 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"/>
 
+        <!-- Thay đổi ID từ tvOrderId thành tvItemDisplayId -->
         <TextView
-            android:id="@+id/tvOrderId"
+            android:id="@+id/tvItemDisplayId"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="#DH1001"
+            android:text="ORD123456"
             android:textStyle="bold"
             android:textSize="18sp"
             android:textColor="@color/text_primary"

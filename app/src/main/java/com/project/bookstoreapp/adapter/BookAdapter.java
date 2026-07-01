@@ -118,4 +118,10 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
         this.bookList = filteredList;
         notifyDataSetChanged();
     }
+
+    // Hàm dùng để cập nhật danh sách khi tìm kiếm
+    public void filterList(List<Book> filteredList) {
+        this.bookList = filteredList;
+        notifyDataSetChanged();
+    }
 }

@@ -36,6 +36,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+// 1. Storage cho Avatar User
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
@@ -44,6 +45,16 @@ const storage = new CloudinaryStorage({
   }
 });
 const upload = multer({ storage: storage });
+
+// 2. Storage riêng cho Ảnh Bìa Sách (Bổ sung mới)
+const bookStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'bookstore_covers',
+    allowedFormats: ['jpg', 'png', 'jpeg']
+  }
+});
+const uploadBookCover = multer({ storage: bookStorage });
 
 // =============================================
 // HELPER: Hash mật khẩu bằng MD5
@@ -279,7 +290,7 @@ app.post('/api/auth/google', async (req, res) => {
 app.put('/api/users/profile', upload.single('avatar'), async (req, res) => {
     try {
         const { uid, name, phone, address } = req.body;
-        
+
         if (!uid) {
             return res.status(400).json({ success: false, message: "Thiếu UID người dùng" });
         }
@@ -305,7 +316,7 @@ app.put('/api/users/profile', upload.single('avatar'), async (req, res) => {
 
         // Lấy dữ liệu mới nhất trả về
         const updatedSnap = await getDoc(userRef);
-        
+
         res.json({
             success: true,
             message: "Cập nhật hồ sơ thành công",
@@ -362,6 +373,55 @@ app.put('/api/users/password', async (req, res) => {
 });
 
 // =============================================
+// BOOK APIs (BỔ SUNG MỚI)
+// =============================================
+
+// Cập nhật hoặc Thêm mới Sách (có hỗ trợ upload ảnh bìa)
+app.post('/api/books/upload-cover', uploadBookCover.single('bookCover'), async (req, res) => {
+    try {
+        const { bookId } = req.body;
+
+        if (!bookId) {
+            return res.status(400).json({ success: false, message: "Thiếu ID của sách" });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: "Không tìm thấy file ảnh" });
+        }
+
+        // Lấy đường dẫn ảnh từ Cloudinary
+        const imageUrl = req.file.path;
+
+        // Cập nhật url ảnh vào Firestore
+        const bookRef = doc(db, "books", bookId);
+        const bookSnap = await getDoc(bookRef);
+
+        if (!bookSnap.exists()) {
+            // Nếu chưa tồn tại document (đang tạo mới sách chưa lưu), ta sẽ trả về URL để Client tự gắn vào object Book và lưu sau.
+            return res.json({
+                success: true,
+                message: "Upload ảnh tạm thời thành công",
+                imageUrl: imageUrl
+            });
+        }
+
+        // Nếu sách đã tồn tại, cập nhật trực tiếp vào Firestore
+        await updateDoc(bookRef, { imageUrl: imageUrl });
+
+        res.json({
+            success: true,
+            message: "Upload và cập nhật ảnh sách thành công",
+            imageUrl: imageUrl
+        });
+
+    } catch (error) {
+        console.error("Lỗi upload ảnh sách:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+
+// =============================================
 // REVIEW APIs (giữ nguyên)
 // =============================================
 
@@ -370,11 +430,11 @@ app.get('/api/reviews/:bookId', async (req, res) => {
     try {
         const bookId = req.params.bookId;
         const reviewsRef = collection(db, "reviews");
-        
+
         // Không dùng orderBy để tránh lỗi thiếu Index trên Firestore, ta sẽ sort ở backend
         const q = query(reviewsRef, where("bookId", "==", bookId));
         const querySnapshot = await getDocs(q);
-        
+
         let reviews = [];
         querySnapshot.forEach((docSnap) => {
             let data = docSnap.data();
@@ -399,13 +459,13 @@ app.get('/api/reviews/:bookId', async (req, res) => {
 app.post('/api/reviews', async (req, res) => {
     try {
         const { bookId, userId, orderId, userName, rating, comment } = req.body;
-        
+
         if (!bookId || !userId || !orderId || !rating || !comment) {
             return res.status(400).json({ success: false, message: "Thiếu dữ liệu bắt buộc" });
         }
 
         const reviewsRef = collection(db, "reviews");
-        
+
         // Tạo object đánh giá mới
         const newReview = {
             reviewId: "", // sẽ cập nhật sau
@@ -425,12 +485,12 @@ app.post('/api/reviews', async (req, res) => {
         // Cập nhật rating trung bình của sách
         const bookRef = doc(db, "books", bookId);
         const bookSnap = await getDoc(bookRef);
-        
+
         if (bookSnap.exists()) {
             const bookData = bookSnap.data();
             let currentAvgRating = bookData.rating || 0;
             let reviewCount = bookData.reviewCount || 0;
-            
+
             let newAvg = ((currentAvgRating * reviewCount) + parseFloat(rating)) / (reviewCount + 1);
             newAvg = Math.round(newAvg * 10) / 10;
 
@@ -452,13 +512,13 @@ app.post('/api/reviews', async (req, res) => {
 app.post('/api/reviews/check-purchase', async (req, res) => {
     try {
         const { userId, bookId } = req.body;
-        
+
         const ordersRef = collection(db, "orders");
         // Lấy tất cả đơn hàng của user, sau đó lọc trạng thái bằng code để tránh lỗi thiếu Index trên Firestore
         const q = query(ordersRef, where("userId", "==", userId));
-        
+
         const querySnapshot = await getDocs(q);
-        
+
         let hasPurchased = false;
         let orderId = null;
 
@@ -476,7 +536,7 @@ app.post('/api/reviews/check-purchase', async (req, res) => {
         } else {
             res.json({ success: true, canReview: false });
         }
-        
+
     } catch (error) {
         console.error("Lỗi kiểm tra mua hàng:", error);
         res.status(500).json({ success: false, message: error.message });
@@ -506,6 +566,6 @@ app.get('/api/orders/:orderId', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Node.js Backend đang chạy tại http://0.0.0.0:${PORT}`);
+app.listen(3000, '0.0.0.0', () => {
+  console.log('Server is running on port 3000');
 });

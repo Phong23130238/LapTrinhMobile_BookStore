@@ -11,8 +11,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.app.AlertDialog;
 import android.widget.EditText;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -198,7 +196,22 @@ public class OrderDetailActivity extends AppCompatActivity {
     }
 
     private void displayOrderDetails(Order order, String docId) {
-        tvOrderId.setVisibility(View.GONE);
+        tvOrderId.setVisibility(View.VISIBLE);
+        // Chỉ lấy displayId, nếu không có thì để "Chưa có mã" thay vì lấy ID ngẫu nhiên của Firebase
+        String displayId = (order.getDisplayId() != null && !order.getDisplayId().isEmpty())
+                ? order.getDisplayId()
+                : "Mã đơn đang cập nhật";
+
+        tvOrderId.setText("Mã đơn: " + displayId);
+        // Thêm tính năng bấm vào mã đơn để copy
+        tvOrderId.setOnClickListener(v -> {
+            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(android.content.Context.CLIPBOARD_SERVICE);
+            android.content.ClipData clip = android.content.ClipData.newPlainText("Order ID", displayId);
+            clipboard.setPrimaryClip(clip);
+            Toast.makeText(this, "Đã copy mã đơn hàng", Toast.LENGTH_SHORT).show();
+        });
+        tvOrderId.setTextColor(getResources().getColor(R.color.navy_dark)); // Bạn có thể tùy chỉnh màu cho nổi bật
+        tvOrderId.setTextSize(18); // Làm to hơn một chút cho dễ nhìn
         
         String statusText = "Đang xử lý";
         String status = order.getStatus();
