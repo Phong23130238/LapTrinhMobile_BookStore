@@ -69,4 +69,14 @@ public interface ApiService {
     @Headers("Bypass-Tunnel-Reminder: true")
     @GET("api/orders/{orderId}")
     Call<ApiResponse<Order>> getOrderDetails(@Path("orderId") String orderId);
+
+
+    // ===== MANAGE USERS APIs =====
+    // Lấy danh sách người dùng
+    @GET("/api/users")
+    Call<ApiResponse<List<User>>> getAllUsers();
+
+    // Khóa/Mở khóa tài khoản (Truyền UID vào đường dẫn, isLocked vào body)
+    @PUT("/api/users/{uid}/lock")
+    Call<ApiResponse<Object>> toggleUserLock(@Path("uid") String uid, @Body java.util.Map<String, Boolean> body);
 }

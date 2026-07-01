@@ -160,7 +160,26 @@ app.post('/api/auth/login', async (req, res) => {
                 message: "Tài khoản này được đăng ký bằng Google, vui lòng sử dụng nút Đăng nhập Google."
             });
         }
+// Kiểm tra tài khoản đăng ký bằng Google
+        if (!userData.password) {
+            return res.status(401).json({
+                success: false,
+                message: "Tài khoản này được đăng ký bằng Google, vui lòng sử dụng nút Đăng nhập Google."
+            });
+        }
 
+        // ==========================================
+        // THÊM ĐOẠN NÀY: Kiểm tra tài khoản có bị khóa không
+        if (userData.isLocked) {
+            return res.status(403).json({
+                success: false,
+                message: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên."
+            });
+        }
+        // ==========================================
+
+        // So sánh password đã hash
+        const hashedPassword = hashMD5(password);
         // So sánh password đã hash
         const hashedPassword = hashMD5(password);
         if (userData.password !== hashedPassword) {
@@ -226,6 +245,15 @@ app.post('/api/auth/google', async (req, res) => {
             // Email đã tồn tại (dù đăng ký thường hay Google) → đăng nhập thẳng
             const existingDoc = querySnapshot.docs[0];
             const existingData = existingDoc.data();
+
+            // ==========================================
+            // THÊM ĐOẠN NÀY: Kiểm tra tài khoản có bị khóa không
+            if (existingData.isLocked) {
+                return res.status(403).json({
+                    success: false,
+                    message: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên."
+                });
+            }
 
             userToReturn = {
                 uid: existingData.uid || existingDoc.id,
@@ -568,4 +596,52 @@ app.get('/api/orders/:orderId', async (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(3000, '0.0.0.0', () => {
   console.log('Server is running on port 3000');
+});
+
+// =============================================
+// ADMIN: QUẢN LÝ NGƯỜI DÙNG
+// =============================================
+
+// 1. Lấy danh sách toàn bộ người dùng
+app.get('/api/users', async (req, res) => {
+    try {
+        const usersRef = collection(db, "users");
+        const querySnapshot = await getDocs(usersRef);
+
+        let users = [];
+        querySnapshot.forEach((docSnap) => {
+            let data = docSnap.data();
+            // Đảm bảo luôn có uid trả về
+            data.uid = docSnap.id;
+            users.push(data);
+        });
+
+        res.json({ success: true, data: users });
+    } catch (error) {
+        console.error("Lỗi lấy danh sách user:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// 2. Cập nhật trạng thái Khóa/Mở khóa tài khoản
+app.put('/api/users/:uid/lock', async (req, res) => {
+    try {
+        const uid = req.params.uid;
+        const { isLocked } = req.body;
+
+        if (uid === undefined || isLocked === undefined) {
+            return res.status(400).json({ success: false, message: "Thiếu thông tin cập nhật" });
+        }
+
+        const userRef = doc(db, "users", uid);
+        await updateDoc(userRef, { isLocked: isLocked });
+
+        res.json({
+            success: true,
+            message: isLocked ? "Đã khóa tài khoản" : "Đã mở khóa tài khoản"
+        });
+    } catch (error) {
+        console.error("Lỗi cập nhật trạng thái khóa:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
 });
