@@ -565,6 +565,91 @@ app.get('/api/orders/:orderId', async (req, res) => {
     }
 });
 
+// =============================================
+// VNPAY APIs
+// =============================================
+const querystring = require('querystring');
+
+// Cấu hình VNPAY Sandbox (Test)
+const vnp_TmnCode = "5BNONW5M";
+const vnp_HashSecret = "C777AQAKMIXKG56BWNBE50H6CALW8IUR";
+const vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
+const vnp_ReturnUrl = "http://10.0.2.2:3000/api/vnpay_return"; 
+
+function sortObject(obj) {
+    let sorted = {};
+    let str = [];
+    let key;
+    for (key in obj){
+        if (obj.hasOwnProperty(key)) {
+            str.push(encodeURIComponent(key));
+        }
+    }
+    str.sort();
+    for (key = 0; key < str.length; key++) {
+        sorted[str[key]] = encodeURIComponent(obj[str[key]]).replace(/%20/g, "+");
+    }
+    return sorted;
+}
+
+app.post('/api/create_payment_url', (req, res) => {
+    let ipAddr = req.headers['x-forwarded-for'] ||
+        req.connection.remoteAddress ||
+        req.socket.remoteAddress ||
+        req.connection.socket.remoteAddress;
+
+    let date = new Date();
+    // format yyyyMMddHHmmss
+    const pad = (n) => (n < 10 ? '0' + n : n);
+    let createDate = date.getFullYear().toString() + pad(date.getMonth() + 1) + pad(date.getDate()) + pad(date.getHours()) + pad(date.getMinutes()) + pad(date.getSeconds());
+    
+    // expire in 15 minutes
+    let expireDateObj = new Date(date.getTime() + 15 * 60000);
+    let expireDate = expireDateObj.getFullYear().toString() + pad(expireDateObj.getMonth() + 1) + pad(expireDateObj.getDate()) + pad(expireDateObj.getHours()) + pad(expireDateObj.getMinutes()) + pad(expireDateObj.getSeconds());
+
+    let orderId = req.body.orderId || date.getTime().toString();
+    let amount = req.body.amount;
+    let bankCode = req.body.bankCode || ''; 
+    
+    let orderInfo = req.body.orderDescription || 'Thanh toan don hang Bookstore';
+    let orderType = req.body.orderType || 'billpayment';
+    let locale = req.body.language || 'vn';
+    
+    let currCode = 'VND';
+    let vnp_Params = {};
+    vnp_Params['vnp_Version'] = '2.1.0';
+    vnp_Params['vnp_Command'] = 'pay';
+    vnp_Params['vnp_TmnCode'] = vnp_TmnCode;
+    vnp_Params['vnp_Amount'] = amount * 100;
+    if(bankCode !== null && bankCode !== ''){
+        vnp_Params['vnp_BankCode'] = bankCode;
+    }
+    vnp_Params['vnp_CreateDate'] = createDate;
+    vnp_Params['vnp_CurrCode'] = currCode;
+    vnp_Params['vnp_IpAddr'] = ipAddr;
+    vnp_Params['vnp_Locale'] = locale;
+    vnp_Params['vnp_OrderInfo'] = orderInfo;
+    vnp_Params['vnp_OrderType'] = orderType;
+    vnp_Params['vnp_ReturnUrl'] = vnp_ReturnUrl;
+    vnp_Params['vnp_TxnRef'] = orderId;
+    vnp_Params['vnp_ExpireDate'] = expireDate;
+
+    vnp_Params = sortObject(vnp_Params);
+
+    let signData = Object.keys(vnp_Params)
+                         .map(key => key + '=' + vnp_Params[key])
+                         .join('&');
+    let hmac = crypto.createHmac("sha512", vnp_HashSecret);
+    let signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex"); 
+    vnp_Params['vnp_SecureHash'] = signed;
+    
+    let paymentUrl = vnp_Url + '?' + Object.keys(vnp_Params)
+                                           .map(key => key + '=' + vnp_Params[key])
+                                           .join('&');
+
+    res.json({ success: true, paymentUrl: paymentUrl });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(3000, '0.0.0.0', () => {
   console.log('Server is running on port 3000');
