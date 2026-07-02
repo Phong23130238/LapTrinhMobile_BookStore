@@ -119,4 +119,9 @@ public interface ApiService {
     // Lấy thống kê đơn hàng của người dùng
     @GET("/api/users/{uid}/stats")
     Call<ApiResponse<UserStats>> getUserStats(@Path("uid") String uid);
+
+    // ===== AI APIs =====
+    @Headers("Bypass-Tunnel-Reminder: true")
+    @POST("api/ai/summarize")
+    Call<ApiResponse<String>> summarizeBook(@Body HashMap<String, String> body);
 }
