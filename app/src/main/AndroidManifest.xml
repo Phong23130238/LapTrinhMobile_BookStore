@@ -88,6 +88,9 @@
         <activity
             android:name=".activity.ManageUsersActivity"
             android:exported="false" />
+        <activity
+            android:name=".activity.InventoryActivity"
+            android:exported="false" />
 
         <activity
             android:name=".activity.ForgotPasswordActivity"
@@ -113,5 +116,8 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
+        <activity android:name=".activity.PaymentWebViewActivity" android:exported="false" />
+        <activity android:name=".activity.AdminStatisticsActivity"
+            android:exported="false" />
     </application>
 </manifest>

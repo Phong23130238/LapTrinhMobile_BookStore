@@ -7,14 +7,14 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const { OAuth2Client } = require('google-auth-library');
-const nodemailer = require('nodemailer');
 const { initializeApp } = require('firebase/app');
 const { getFirestore, collection, query, where, getDocs, addDoc, updateDoc, doc, getDoc, setDoc, deleteDoc } = require('firebase/firestore');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAxkEKnqnAIX4FMWsb-jxmSkPLZLwf0wO4",
-  projectId: "bookstore-500314",
-  storageBucket: "bookstore-500314.firebasestorage.app"
+    apiKey: "AIzaSyAxkEKnqnAIX4FMWsb-jxmSkPLZLwf0wO4",
+    projectId: "bookstore-500314",
+    storageBucket: "bookstore-500314.firebasestorage.app"
 };
 
 // Khởi tạo Firebase
@@ -22,8 +22,8 @@ const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 
 // Google OAuth2 Client để verify idToken
-const GOOGLE_CLIENT_ID = "156167272606-ahuk0t1gr5biq7b69a24kh0i9so84vp4.apps.googleusercontent.com";
-const GOOGLE_ANDROID_CLIENT_ID = "156167272606-ftq1ike17ekmorja3trn0bbot04btoh6.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = "608811292447-d9cncbpmdbuf07npas15ack1o3cmdtsm.apps.googleusercontent.com"; // Web Client ID
+const GOOGLE_ANDROID_CLIENT_ID = "608811292447-d9cncbpmdbuf07npas15ack1o3cmdtsm.apps.googleusercontent.com"; // Thường trùng với Web Client ID khi verify
 const ACCEPTED_CLIENT_IDS = [GOOGLE_CLIENT_ID, GOOGLE_ANDROID_CLIENT_ID];
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
@@ -55,28 +55,28 @@ const emailTransporter = nodemailer.createTransport({
 app.use(express.json());
 
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
 // 1. Storage cho Avatar User
 const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'bookstore_avatars',
-    allowedFormats: ['jpg', 'png', 'jpeg']
-  }
+    cloudinary: cloudinary,
+    params: {
+        folder: 'bookstore_avatars',
+        allowedFormats: ['jpg', 'png', 'jpeg']
+    }
 });
 const upload = multer({ storage: storage });
 
 // 2. Storage riêng cho Ảnh Bìa Sách (Bổ sung mới)
 const bookStorage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'bookstore_covers',
-    allowedFormats: ['jpg', 'png', 'jpeg']
-  }
+    cloudinary: cloudinary,
+    params: {
+        folder: 'bookstore_covers',
+        allowedFormats: ['jpg', 'png', 'jpeg']
+    }
 });
 const uploadBookCover = multer({ storage: bookStorage });
 
@@ -152,7 +152,7 @@ app.post('/api/auth/register', async (req, res) => {
         }
 
         const otpData = otpDocSnap.data();
-        
+
         if (otpData.otp !== otp) {
             return res.status(400).json({ success: false, message: "Mã OTP không chính xác" });
         }
@@ -174,16 +174,16 @@ app.post('/api/auth/register', async (req, res) => {
         const hashedPassword = hashMD5(password);
 
         const newUser = {
-                    name,
-                    email,
-                    password: hashedPassword, // (hoặc null đối với Google)
-                    phone: "",
-                    address: "",
-                    avatarUrl: "", // (hoặc googleAvatar)
-                    role: "customer",
-                    isLocked: false, // THÊM DÒNG NÀY
-                    createdAt: new Date().toISOString()
-                };
+            name,
+            email,
+            password: hashedPassword, // (hoặc null đối với Google)
+            phone: "",
+            address: "",
+            avatarUrl: "", // (hoặc googleAvatar)
+            role: "customer",
+            isLocked: false, // THÊM DÒNG NÀY
+            createdAt: new Date().toISOString()
+        };
 
         const docRef = await addDoc(usersRef, newUser);
 
@@ -247,7 +247,7 @@ app.post('/api/auth/login', async (req, res) => {
         // ==========================================
         // THÊM ĐOẠN NÀY: Kiểm tra tài khoản có bị khóa không
         // Bắt chặt cả trường hợp lưu là boolean (true) hoặc chuỗi text ("true")
-                if (userData.isLocked === true || String(userData.isLocked).toLowerCase() === "true") {
+        if (userData.isLocked === true || String(userData.isLocked).toLowerCase() === "true") {
             return res.status(403).json({
                 success: false,
                 message: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên."
@@ -324,8 +324,8 @@ app.post('/api/auth/google', async (req, res) => {
 
             // ==========================================
             // THÊM ĐOẠN NÀY: Kiểm tra tài khoản có bị khóa không
-          // Bắt chặt cả trường hợp lưu là boolean (true) hoặc chuỗi text ("true")
-                  if (existingData.isLocked === true || String(existingData.isLocked).toLowerCase() === "true") {
+            // Bắt chặt cả trường hợp lưu là boolean (true) hoặc chuỗi text ("true")
+            if (existingData.isLocked === true || String(existingData.isLocked).toLowerCase() === "true") {
                 return res.status(403).json({
                     success: false,
                     message: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên."
@@ -705,7 +705,8 @@ const querystring = require('querystring');
 const vnp_TmnCode = "5BNONW5M";
 const vnp_HashSecret = "C777AQAKMIXKG56BWNBE50H6CALW8IUR";
 const vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-const vnp_ReturnUrl = "http://10.0.2.2:3000/api/vnpay_return"; 
+// Tự động nhận diện URL đang chạy (Render hoặc Localhost) thông qua process.env.HOST_URL
+const vnp_ReturnUrl = (process.env.HOST_URL || "http://10.0.2.2:3000") + "/api/vnpay_return"; 
 
 function sortObject(obj) {
     let sorted = {};
@@ -779,6 +780,9 @@ app.post('/api/create_payment_url', (req, res) => {
                                            .join('&');
 
     res.json({ success: true, paymentUrl: paymentUrl });
+});
+
+// =============================================
 // FORGOT PASSWORD APIs
 // =============================================
 
@@ -942,7 +946,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(3000, '0.0.0.0', () => {
-  console.log('Server is running on port 3000');
+    console.log('Server is running on port 3000');
 });
 
 // =============================================
@@ -1027,4 +1031,152 @@ app.get('/api/users/:uid/stats', async (req, res) => {
         console.error("Lỗi lấy thống kê user:", error);
         res.status(500).json({ success: false, message: error.message });
     }
+});
+
+// ==========================================
+// TÍCH HỢP GEMINI AI - TÓM TẮT SÁCH
+// ==========================================
+// 4. Lấy thống kê tổng hợp cho Admin (Theo Khoảng Thời Gian)
+app.get('/api/admin/stats', async (req, res) => {
+    try {
+        const { fromDate, toDate } = req.query;
+        if (!fromDate || !toDate) {
+            return res.status(400).json({ success: false, message: "Vui lòng chọn Từ ngày và Đến ngày" });
+        }
+
+        const start = new Date(fromDate);
+        start.setHours(0, 0, 0, 0); // Đầu ngày
+        
+        const end = new Date(toDate);
+        end.setHours(23, 59, 59, 999); // Cuối ngày
+
+        // Lấy tất cả sách để đối chiếu
+        const booksRef = collection(db, "books");
+        const booksSnap = await getDocs(booksRef);
+        
+        let allBooks = {};
+        let totalInventory = 0;
+
+        booksSnap.forEach(docSnap => {
+            const data = docSnap.data();
+            const id = docSnap.id;
+            allBooks[id] = {
+                bookId: id,
+                title: data.title || "Không tên",
+                imageUrl: data.imageUrl || "",
+                price: data.price || 0,
+                stock: data.stock || 0,
+                soldInMonth: 0 // Vẫn giữ nguyên tên biến hoặc đổi thành soldInPeriod
+            };
+            totalInventory += (data.stock || 0);
+        });
+
+        // Lấy tất cả đơn hàng
+        const ordersRef = collection(db, "orders");
+        const ordersSnap = await getDocs(ordersRef);
+
+        let totalRevenue = 0;
+        let totalSoldQty = 0;
+
+        ordersSnap.forEach(docSnap => {
+            const order = docSnap.data();
+            
+            // Bỏ qua đơn hàng bị hủy
+            if (order.status === "cancelled") return;
+
+            // Kiểm tra thời gian của đơn hàng
+            if (order.createdAt) {
+                const orderDate = new Date(order.createdAt);
+                if (orderDate.getTime() >= start.getTime() && orderDate.getTime() <= end.getTime()) {
+                    
+                    totalRevenue += (order.totalPrice || 0);
+
+                    // Quét các items trong đơn hàng
+                    if (order.items && Array.isArray(order.items)) {
+                        order.items.forEach(item => {
+                            const qty = item.quantity || 0;
+                            totalSoldQty += qty;
+                            
+                            if (allBooks[item.bookId]) {
+                                allBooks[item.bookId].soldInMonth += qty;
+                            }
+                        });
+                    }
+                }
+            }
+        });
+
+        // Chuyển object sách thành mảng để sort
+        let booksArray = Object.values(allBooks);
+
+        // Lọc Sách bán chạy (có bán được trong tháng, xếp giảm dần theo soldInMonth)
+        let soldBooks = booksArray.filter(b => b.soldInMonth > 0);
+        soldBooks.sort((a, b) => b.soldInMonth - a.soldInMonth);
+        let topBooks = soldBooks.slice(0, 10); // Lấy top 10
+
+        // Lọc Sách chưa bán được (soldInMonth == 0)
+        let unsoldBooks = booksArray.filter(b => b.soldInMonth === 0);
+
+        res.json({
+            success: true,
+            data: {
+                totalSoldQty,
+                totalRevenue,
+                totalInventory,
+                topBooks,
+                unsoldBooks
+            }
+        });
+
+    } catch (error) {
+        console.error("Lỗi lấy thống kê Admin:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// ==========================================
+// TÍCH HỢP GEMINI AI - TÓM TẮT SÁCH
+// ==========================================
+app.post('/api/ai/summarize', async (req, res) => {
+    try {
+        const { title, description } = req.body;
+
+        if (!title || !description) {
+            return res.status(400).json({ success: false, message: "Vui lòng cung cấp tên sách và mô tả!" });
+        }
+
+        // Lấy API Key từ biến môi trường
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+            return res.status(500).json({ success: false, message: "Lỗi cấu hình: Thiếu GEMINI_API_KEY trong file .env" });
+        }
+
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+        const prompt = `Bạn là một trợ lý AI đọc sách chuyên nghiệp. Dưới đây là thông tin về một cuốn sách:
+Tên sách: ${title}
+Mô tả nội dung: ${description}
+
+Yêu cầu: Hãy tham khảo thông tin từ các nguồn chính thống khác. Phân tích cuốn sách này theo đúng 3 ý sau đây (sử dụng gạch đầu dòng):
+1. Đối tượng độc giả: (Sách này dành cho ai?)
+2. Tóm tắt nội dung: (Nội dung chính là gì, cực kỳ ngắn gọn)
+3. Bài học rút ra: (Giá trị cốt lõi mang lại)
+Chỉ trả về 3 gạch đầu dòng này, tuyệt đối không dài dòng giải thích.`;
+
+        const result = await model.generateContent(prompt);
+        const responseText = result.response.text();
+
+        res.json({
+            success: true,
+            data: responseText
+        });
+    } catch (error) {
+        console.error("Lỗi AI Gemini:", error);
+        res.status(500).json({ success: false, message: "Lỗi khi gọi AI: " + error.message });
+    }
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server run http://localhost:${PORT}`);
 });

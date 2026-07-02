@@ -3,7 +3,7 @@
     <color name="navy_dark">#0F172A</color>
     <color name="navy_medium">#1E293B</color>
     <color name="navy_light">#334155</color> <color name="gold">#F59E0B</color>
-    <color name="cream">#F8FAFC</color>
+    <color name="cream">#FFFFFF</color>
     <color name="cream_dark">#E2E8F0</color> <color name="text_primary">#0F172A</color>
     <color name="text_secondary">#64748B</color>
     <color name="white">#FFFFFF</color>
@@ -11,14 +11,17 @@
     <color name="error_red">#EF4444</color>
     <color name="gray_light">#E2E8F0</color>
 
-    <!-- Gen Z Vibrant Theme Colors -->
-    <color name="bg_light">#F8FAFC</color>
-    <color name="violet_primary">#8B5CF6</color>
-    <color name="violet_dark">#6D28D9</color>
-    <color name="violet_light">#A78BFA</color>
+    <!-- Gen Z Vibrant Theme Colors Reverted to Navy/Warm -->
+    <color name="bg_light">#FFF9EA</color>
+    <color name="violet_primary">#0F172A</color> <!-- Previously #8B5CF6 -->
+    <color name="violet_dark">#1E293B</color> <!-- Previously #6D28D9 -->
+    <color name="violet_light">#334155</color> <!-- Previously #A78BFA -->
     <color name="peach_accent">#FDBA74</color>
     <color name="charcoal_dark">#0F172A</color>
     <color name="charcoal_medium">#334155</color>
+    <!-- Stats Colors -->
     <color name="green_success">#10B981</color>
     <color name="gray">#9CA3AF</color>
+    <color name="gray_text">#64748B</color>
+    <color name="gray_border">#E2E8F0</color>
 </resources>
