@@ -45,6 +45,16 @@
         android:layout_marginBottom="16dp"/>
 
     <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnManageInventory"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Quản lý Kho (Nhập / Xuất)"
+        android:textSize="16sp"
+        app:cornerRadius="8dp"
+        app:backgroundTint="@color/navy_medium"
+        android:layout_marginBottom="16dp"/>
+
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnManageUsers"
         android:layout_width="match_parent"
         android:layout_height="60dp"

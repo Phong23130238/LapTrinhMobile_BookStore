@@ -219,25 +219,29 @@ public class BookDetailActivity extends AppCompatActivity {
         if (author != null) tvAuthor.setText(author);
         if (description != null) tvDescription.setText(description);
 
-        String categoryName = "";
+        String categoryIdValue = "";
         try {
+            // Cố gắng lấy dưới dạng String trước
             String catIdStr = documentSnapshot.getString("categoryId");
-            if (catIdStr != null) categoryName = catIdStr;
+            if (catIdStr != null) categoryIdValue = catIdStr;
         } catch (Exception e) {
+            // Nếu bị lỗi (do dữ liệu cũ lưu là Number), tự động chuyển đổi
             Double catIdDouble = documentSnapshot.getDouble("categoryId");
-            if (catIdDouble != null) categoryName = String.valueOf(catIdDouble.intValue());
+            if (catIdDouble != null) categoryIdValue = String.valueOf(catIdDouble.intValue());
         }
         
-        if (!categoryName.isEmpty() && tvCategory != null) {
+        if (!categoryIdValue.isEmpty() && tvCategory != null) {
             tvCategory.setVisibility(android.view.View.VISIBLE);
             tvCategory.setText(" Đang tải... ");
             
+            // Lấy tên thật của thể loại từ collection "categories"
             FirebaseFirestore.getInstance().collection("categories")
-                    .document(categoryName)
+                    .document(categoryIdValue)
                     .get()
                     .addOnSuccessListener(catDoc -> {
                         if (catDoc.exists() && catDoc.contains("name")) {
-                            tvCategory.setText(" " + catDoc.getString("name") + " ");
+                            // Kết hợp giao diện dấu # của nhánh Phat và dữ liệu của nhánh main
+                            tvCategory.setText(" #" + catDoc.getString("name") + " ");
                         } else {
                             tvCategory.setVisibility(android.view.View.GONE);
                         }

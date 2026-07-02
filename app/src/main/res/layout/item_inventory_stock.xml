@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="12dp"
+    android:gravity="center_vertical"
+    android:background="@android:color/white"
+    android:layout_marginBottom="4dp">
+
+    <!-- Ảnh bìa thu nhỏ -->
+    <ImageView
+        android:id="@+id/ivInventoryCover"
+        android:layout_width="50dp"
+        android:layout_height="70dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_book_placeholder"
+        android:layout_marginEnd="12dp" />
+
+    <!-- Thông tin sách -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvInventoryTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tên sách"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/navy_dark"
+            android:maxLines="2"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/tvInventoryBookId"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="#ID"
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary"
+            android:layout_marginTop="2dp" />
+    </LinearLayout>
+
+    <!-- Số lượng tồn và trạng thái -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="end"
+        android:layout_marginStart="8dp">
+
+        <TextView
+            android:id="@+id/tvInventoryStock"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="100"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@color/navy_dark" />
+
+        <TextView
+            android:id="@+id/tvInventoryStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Còn hàng"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:paddingHorizontal="6dp"
+            android:paddingVertical="2dp"
+            android:layout_marginTop="4dp"
+            android:background="#D1FAE5"
+            android:textColor="#047857" />
+    </LinearLayout>
+
+</LinearLayout>
