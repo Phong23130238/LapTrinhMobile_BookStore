@@ -18,70 +18,186 @@
             app:titleTextColor="@color/white" />
     </com.google.android.material.appbar.AppBarLayout>
 
-    <LinearLayout
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="20dp">
+        android:layout_height="match_parent">
 
-        <com.google.android.material.textfield.TextInputLayout
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:boxStrokeColor="@color/navy_medium"
-            android:hint="Tên sách">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/edtBookTitle"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <!-- Thể loại sách (Spinner) -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Thể loại sách"
+                android:textColor="@color/navy_dark"
+                android:textStyle="bold"
+                android:layout_marginStart="4dp" />
+
+            <Spinner
+                android:id="@+id/spinnerCategory"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="16dp"
+                android:spinnerMode="dropdown" />
+
+            <!-- Phần hiển thị và chọn ảnh -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="@color/navy_dark" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:orientation="vertical"
+                android:gravity="center"
+                android:layout_marginBottom="16dp">
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:boxStrokeColor="@color/navy_medium"
-            android:hint="Tác giả">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/edtBookAuthor"
+                <ImageView
+                    android:id="@+id/ivBookCover"
+                    android:layout_width="120dp"
+                    android:layout_height="160dp"
+                    android:scaleType="centerCrop"
+                    android:background="#E0E0E0"
+                    android:src="@drawable/ic_book_placeholder" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnChooseImage"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="CHỌN ẢNH BÌA"
+                    app:strokeColor="@color/navy_dark"
+                    android:textColor="@color/navy_dark" />
+            </LinearLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="@color/navy_dark" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:layout_marginBottom="16dp"
+                app:boxStrokeColor="@color/navy_medium"
+                android:hint="Tên sách">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edtBookTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/navy_dark" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            app:boxStrokeColor="@color/navy_medium"
-            android:hint="Giá tiền (VNĐ)">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/edtBookPrice"
+            <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="numberDecimal"
-                android:textColor="@color/navy_dark" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:layout_marginBottom="16dp"
+                app:boxStrokeColor="@color/navy_medium"
+                android:hint="Tác giả">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edtBookAuthor"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/navy_dark" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.switchmaterial.SwitchMaterial
-            android:id="@+id/switchHideBook"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Ẩn sản phẩm này khỏi cửa hàng"
-            android:textSize="16sp"
-            android:textColor="@color/red_danger"
-            android:layout_marginBottom="32dp"/>
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:boxStrokeColor="@color/navy_medium"
+                android:hint="Nhà xuất bản">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edtPublisher"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/navy_dark" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnSaveBook"
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:text="LƯU THÔNG TIN"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            app:cornerRadius="8dp"
-            app:backgroundTint="@color/gold"
-            android:textColor="@color/navy_dark"/>
-    </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp"
+                android:baselineAligned="false">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    app:boxStrokeColor="@color/navy_medium"
+                    android:hint="Giá bán (VNĐ)">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/edtBookPrice"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="number"
+                        android:textColor="@color/navy_dark" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    app:boxStrokeColor="@color/navy_medium"
+                    android:hint="Giá gốc (VNĐ)">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/edtOriginalPrice"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="number"
+                        android:textColor="@color/navy_dark" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:boxStrokeColor="@color/navy_medium"
+                android:hint="Số lượng trong kho">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edtStock"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:textColor="@color/navy_dark" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                app:boxStrokeColor="@color/navy_medium"
+                android:hint="Mô tả sách">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edtDescription"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textMultiLine"
+                    android:lines="4"
+                    android:gravity="top"
+                    android:textColor="@color/navy_dark" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switchHideBook"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Ẩn sản phẩm này khỏi cửa hàng"
+                android:textSize="16sp"
+                android:textColor="@color/red_danger"
+                android:layout_marginBottom="32dp"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSaveBook"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:text="LƯU THÔNG TIN"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                app:cornerRadius="8dp"
+                app:backgroundTint="@color/gold"
+                android:textColor="@color/navy_dark"/>
+        </LinearLayout>
+    </ScrollView>
 </LinearLayout>

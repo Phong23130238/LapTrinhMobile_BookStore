@@ -462,28 +462,35 @@ app.put('/api/users/password', async (req, res) => {
 // Cập nhật hoặc Thêm mới Sách (có hỗ trợ upload ảnh bìa)
 app.post('/api/books/upload-cover', uploadBookCover.single('bookCover'), async (req, res) => {
     try {
-        const { bookId } = req.body;
-
-        if (!bookId) {
-            return res.status(400).json({ success: false, message: "Thiếu ID của sách" });
-        }
-
+        // 1. Kiểm tra file ảnh trước tiên
         if (!req.file) {
             return res.status(400).json({ success: false, message: "Không tìm thấy file ảnh" });
         }
 
         // Lấy đường dẫn ảnh từ Cloudinary
         const imageUrl = req.file.path;
+        const { bookId } = req.body;
 
-        // Cập nhật url ảnh vào Firestore
+        // 2. TRƯỜNG HỢP: THÊM SÁCH MỚI
+        // Nếu không truyền bookId, hoặc bookId rỗng/null, chỉ trả về Link ảnh
+        if (!bookId || bookId === "null" || bookId === "") {
+            return res.json({
+                success: true,
+                message: "Upload ảnh thành công (Chế độ tạo mới)",
+                imageUrl: imageUrl
+            });
+        }
+
+        // 3. TRƯỜNG HỢP: CẬP NHẬT SÁCH
+        // Chỉ chạy đoạn này khi client gửi kèm bookId hợp lệ
         const bookRef = doc(db, "books", bookId);
         const bookSnap = await getDoc(bookRef);
 
         if (!bookSnap.exists()) {
-            // Nếu chưa tồn tại document (đang tạo mới sách chưa lưu), ta sẽ trả về URL để Client tự gắn vào object Book và lưu sau.
+            // Sách không tồn tại nhưng vẫn trả về link ảnh để Client tự xử lý nếu cần
             return res.json({
                 success: true,
-                message: "Upload ảnh tạm thời thành công",
+                message: "Upload ảnh thành công (Không tìm thấy ID sách trên database)",
                 imageUrl: imageUrl
             });
         }
@@ -491,7 +498,7 @@ app.post('/api/books/upload-cover', uploadBookCover.single('bookCover'), async (
         // Nếu sách đã tồn tại, cập nhật trực tiếp vào Firestore
         await updateDoc(bookRef, { imageUrl: imageUrl });
 
-        res.json({
+        return res.json({
             success: true,
             message: "Upload và cập nhật ảnh sách thành công",
             imageUrl: imageUrl
@@ -499,10 +506,9 @@ app.post('/api/books/upload-cover', uploadBookCover.single('bookCover'), async (
 
     } catch (error) {
         console.error("Lỗi upload ảnh sách:", error);
-        res.status(500).json({ success: false, message: error.message });
+        return res.status(500).json({ success: false, message: error.message });
     }
 });
-
 
 // =============================================
 // REVIEW APIs (giữ nguyên)

@@ -38,11 +38,17 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
     @Override
     public void onBindViewHolder(@NonNull OrderViewHolder holder, int position) {
         Order order = orderList.get(position);
-        if (order == null) return;
 
-        String displayId = (order.getDisplayId() != null) ? order.getDisplayId() : "N/A";
-        // Trong hàm onBindViewHolder của OrderAdapter
-        holder.tvItemDisplayId.setText(order.getDisplayId()); // Gắn dữ liệu displayId vào TextView
+        // Kiểm tra xem đơn hàng đã có mã GHN chưa
+        String ghnCode = order.getGhnOrderCode(); // Tên hàm tùy thuộc vào model Order của bạn
+
+        if (ghnCode != null && !ghnCode.trim().isEmpty()) {
+            // Nếu đã có mã GHN, hiển thị mã GHN
+            holder.tvItemDisplayId.setText(ghnCode);
+        } else {
+            // Nếu chưa có (đơn mới tạo chưa đẩy sang GHN), hiển thị mã mặc định để dự phòng
+            holder.tvItemDisplayId.setText(order.getDisplayId());
+        }
 
         // 1. BẢO VỆ LỖI NULL NGÀY THÁNG
         String dateStr = order.getCreatedAt();
