@@ -12,7 +12,14 @@
         android:supportsRtl="true"
 
         android:usesCleartextTraffic="true"
+        android:enableOnBackInvokedCallback="true"
         android:theme="@style/Theme.BookStore">
+
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyApfnG8yX_JdqmnkUV4ycnxBxJV-2auQZY" />
+
+        <activity android:name=".activity.MapAddressActivity" />
 
         <activity
             android:name=".MainActivity"
