@@ -58,7 +58,11 @@ public interface ApiService {
             @Part("uid") RequestBody uid,
             @Part("name") RequestBody name,
             @Part("phone") RequestBody phone,
-            @Part("address") RequestBody address
+            @Part("address") RequestBody address);
+
+
+    @Multipart
+    @Headers("Bypass-Tunnel-Reminder: true")
     @POST("api/books/upload-cover")
     Call<UploadResponse> uploadBookCover(
             @Part MultipartBody.Part bookCover,
