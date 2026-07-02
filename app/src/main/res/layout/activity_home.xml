@@ -16,7 +16,7 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="64dp"
-            android:background="@color/navy_dark"
+            android:background="@color/bg_light"
             app:contentInsetStart="20dp">
 
             <LinearLayout
@@ -31,14 +31,14 @@
                     android:layout_height="32dp"
                     android:src="@drawable/ic_launcher_background"
                     app:civ_border_width="1dp"
-                    app:civ_border_color="@color/gold" />
+                    app:civ_border_color="@color/peach_accent" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
                     android:text="BookStore"
-                    android:textColor="@color/gold"
+                    android:textColor="@color/violet_primary"
                     android:textSize="20sp"
                     android:textStyle="bold"
                     android:letterSpacing="0.08" />
@@ -56,7 +56,7 @@
                     android:layout_height="40dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@drawable/ic_bag"
-                    app:tint="@color/gold" />
+                    app:tint="@color/peach_accent" />
 
                 <TextView
                     android:id="@+id/tvCartBadge"
@@ -91,13 +91,13 @@
                 android:layout_width="match_parent"
                 android:layout_height="200dp"
                 android:layout_margin="16dp"
-                app:cardCornerRadius="16dp"
+                app:cardCornerRadius="28dp"
                 app:cardElevation="8dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:background="@color/navy_medium"
+                    android:background="@color/violet_primary"
                     android:orientation="vertical"
                     android:gravity="center"
                     android:padding="28dp">
@@ -106,7 +106,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Khám phá thế giới tri thức"
-                        android:textColor="@color/gold"
+                        android:textColor="@color/white"
                         android:textSize="22sp"
                         android:textStyle="bold"
                         android:gravity="center" />
@@ -116,7 +116,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
                         android:text="Hàng nghìn đầu sách chất lượng cao"
-                        android:textColor="@color/cream"
+                        android:textColor="@color/white"
+                        android:alpha="0.8"
                         android:textSize="13sp"
                         android:gravity="center" />
 
@@ -127,7 +128,10 @@
                         android:layout_marginTop="20dp"
                         android:paddingHorizontal="32dp"
                         android:text="Mua sắm ngay"
-                        style="@style/GoldButton" />
+                        android:textColor="@color/charcoal_dark"
+                        app:backgroundTint="@color/peach_accent"
+                        app:cornerRadius="28dp"
+                        android:textStyle="bold" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
@@ -135,11 +139,11 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="16dp"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="8dp"
                 android:hint="Tìm kiếm sách..."
                 app:startIconDrawable="@android:drawable/ic_menu_search"
-                app:startIconTint="@color/navy_medium"
-                app:hintTextColor="@color/navy_dark"
+                app:startIconTint="@color/violet_light"
+                app:hintTextColor="@color/violet_primary"
                 style="@style/OutlinedInput">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -148,85 +152,45 @@
                     android:layout_height="wrap_content"
                     android:imeOptions="actionSearch"
                     android:inputType="text"
-                    android:textColor="@color/navy_dark"
-                    android:textColorHint="@color/navy_medium" />
+                    android:textColor="@color/charcoal_dark"
+                    android:textColorHint="@color/violet_light" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <HorizontalScrollView
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvCategories"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
                 android:layout_marginBottom="16dp"
-                android:paddingHorizontal="16dp"
-                android:scrollbars="none">
+                android:clipToPadding="false"
+                android:paddingHorizontal="16dp" />
 
-                <com.google.android.material.chip.ChipGroup
-                    android:id="@+id/chipGroup"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    app:singleSelection="true">
-
-                    <com.google.android.material.chip.Chip
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Tất cả"
-                        android:checked="true"
-                        app:chipBackgroundColor="@color/navy_medium"
-                        android:textColor="@color/white"
-                        style="@style/Widget.MaterialComponents.Chip.Filter" />
-
-                    <com.google.android.material.chip.Chip
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Văn học"
-                        style="@style/Widget.MaterialComponents.Chip.Filter" />
-
-                    <com.google.android.material.chip.Chip
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Khoa học"
-                        style="@style/Widget.MaterialComponents.Chip.Filter" />
-
-                    <com.google.android.material.chip.Chip
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Kinh tế"
-                        style="@style/Widget.MaterialComponents.Chip.Filter" />
-
-                    <com.google.android.material.chip.Chip
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Kỹ năng"
-                        style="@style/Widget.MaterialComponents.Chip.Filter" />
-                </com.google.android.material.chip.ChipGroup>
-            </HorizontalScrollView>
-
-            <LinearLayout
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
                 android:paddingHorizontal="16dp"
-                android:layout_marginBottom="12dp"
-                android:gravity="center_vertical">
+                android:layout_marginBottom="12dp">
 
                 <TextView
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="📖 Sách nổi bật"
-                    android:textColor="@color/navy_dark"
-                    android:textSize="17sp"
+                    android:layout_alignParentStart="true"
+                    android:layout_centerVertical="true"
+                    android:text="📖 Sách bán chạy"
+                    android:textColor="#333333"
+                    android:textSize="18sp"
                     android:textStyle="bold" />
 
                 <TextView
-                    android:id="@+id/tvSeeAll"
+                    android:id="@+id/tvViewAll"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
                     android:text="Xem tất cả →"
-                    android:textColor="@color/gold"
-                    android:textSize="13sp"
-                    android:clickable="true"
-                    android:focusable="true" />
-            </LinearLayout>
+                    android:textColor="#F57C00"
+                    android:textSize="14sp" />
+            </RelativeLayout>
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvBooks"
@@ -244,10 +208,11 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:background="@color/navy_dark"
-        app:itemIconTint="@color/gold"
-        app:itemTextColor="@color/gold"
+        android:background="@color/white"
+        app:itemIconTint="@color/bottom_nav_selector"
+        app:itemTextColor="@color/bottom_nav_selector"
         app:labelVisibilityMode="labeled"
-        app:menu="@menu/bottom_nav_menu" />
+        app:menu="@menu/bottom_nav_menu"
+        android:elevation="16dp" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

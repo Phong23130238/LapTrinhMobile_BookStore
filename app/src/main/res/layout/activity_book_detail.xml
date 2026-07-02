@@ -35,7 +35,7 @@
                     android:layout_height="260dp"
                     android:layout_gravity="center"
                     android:layout_marginTop="16dp"
-                    app:cardCornerRadius="16dp"
+                    app:cardCornerRadius="28dp"
                     app:cardElevation="12dp">
 
                     <ImageView

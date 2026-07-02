@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
-    app:cardCornerRadius="12dp"
+    app:cardCornerRadius="28dp"
     app:cardElevation="4dp"
     android:clickable="true"
     android:focusable="true"
@@ -17,14 +17,20 @@
         android:orientation="vertical"
         android:padding="8dp">
 
-        <!-- Đã tăng chiều cao lên 180dp để phù hợp với tỷ lệ bìa sách -->
-        <ImageView
-            android:id="@+id/ivItemBookCover"
+        <!-- Tăng chiều cao lên 180dp và bo góc ảnh -->
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="180dp"
-            android:scaleType="centerCrop"
-            android:background="@color/gray_light"
-            android:src="@mipmap/ic_launcher" />
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp">
+            <ImageView
+                android:id="@+id/ivItemBookCover"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:background="@color/gray_light"
+                android:src="@mipmap/ic_launcher" />
+        </androidx.cardview.widget.CardView>
 
         <TextView
             android:id="@+id/tvItemBookTitle"

@@ -5,9 +5,11 @@ const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 const { OAuth2Client } = require('google-auth-library');
+const nodemailer = require('nodemailer');
 const { initializeApp } = require('firebase/app');
-const { getFirestore, collection, query, where, getDocs, addDoc, updateDoc, doc, getDoc, setDoc } = require('firebase/firestore');
+const { getFirestore, collection, query, where, getDocs, addDoc, updateDoc, doc, getDoc, setDoc, deleteDoc } = require('firebase/firestore');
 
 const firebaseConfig = {
   apiKey: "AIzaSyAxkEKnqnAIX4FMWsb-jxmSkPLZLwf0wO4",
@@ -20,16 +22,38 @@ const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 
 // Google OAuth2 Client để verify idToken
-const GOOGLE_CLIENT_ID = "608811292447-d9cncbpmdbuf07npas15ack1o3cmdtsm.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = "156167272606-ahuk0t1gr5biq7b69a24kh0i9so84vp4.apps.googleusercontent.com";
+const GOOGLE_ANDROID_CLIENT_ID = "156167272606-ftq1ike17ekmorja3trn0bbot04btoh6.apps.googleusercontent.com";
+const ACCEPTED_CLIENT_IDS = [GOOGLE_CLIENT_ID, GOOGLE_ANDROID_CLIENT_ID];
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 const app = express();
 app.use(cors());
-app.use(express.json());
 
 // =============================================
-// CẤU HÌNH CLOUDINARY & MULTER
+// OTP & RESET TOKEN IN-MEMORY STORE
 // =============================================
+const otpStore = new Map();      // email -> { otp, expiresAt }
+const resetTokenStore = new Map(); // email -> { token, expiresAt }
+
+// Cấu hình Nodemailer - Gmail SMTP
+const emailTransporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // Dùng STARTTLS thay vì SSL trực tiếp
+    auth: {
+        user: 'aurasound.contact@gmail.com',
+        pass: 'vssg ofwa bqcw yjll'
+    },
+    tls: {
+        rejectUnauthorized: false
+    },
+    connectionTimeout: 5000, // Timeout 5s để không làm treo Android app
+    greetingTimeout: 5000,
+    socketTimeout: 5000
+});
+app.use(express.json());
+
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -56,29 +80,85 @@ const bookStorage = new CloudinaryStorage({
 });
 const uploadBookCover = multer({ storage: bookStorage });
 
-// =============================================
-// HELPER: Hash mật khẩu bằng MD5
-// =============================================
 function hashMD5(password) {
     return crypto.createHash('md5').update(password).digest('hex');
 }
 
-// =============================================
-// AUTH APIs
-// =============================================
+// Cấu hình Nodemailer để gửi mã OTP
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: '23130327@st.hcmuaf.edu.vn',
+        pass: 'wtovolspzipsbvae'
+    }
+});
 
-// API: Đăng ký tài khoản thường
+// API: Gửi mã OTP xác thực Email
+app.post('/api/auth/send-otp', async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ success: false, message: "Vui lòng cung cấp email" });
+        }
+
+        // Tạo mã OTP 6 số
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        // Thời gian hết hạn (5 phút)
+        const expiresAt = Date.now() + 5 * 60 * 1000;
+
+        // Lưu vào Firestore collection 'otps' (ghi đè nếu đã tồn tại)
+        await setDoc(doc(db, "otps", email), {
+            otp: otp,
+            expiresAt: expiresAt
+        });
+
+        // Gửi email
+        const mailOptions = {
+            from: '"Bookstore App" <23130327@st.hcmuaf.edu.vn>',
+            to: email,
+            subject: 'Mã xác nhận đăng ký tài khoản Bookstore',
+            text: `Chào bạn,\n\nMã xác nhận (OTP) của bạn là: ${otp}\n\nMã này sẽ hết hạn trong vòng 5 phút.\n\nTrân trọng,\nĐội ngũ Bookstore`
+        };
+
+        await transporter.sendMail(mailOptions);
+
+        res.json({ success: true, message: "Mã OTP đã được gửi đến email của bạn." });
+    } catch (error) {
+        console.error("Lỗi gửi OTP:", error);
+        res.status(500).json({ success: false, message: "Không thể gửi OTP. " + error.message });
+    }
+});
+
+// Đky tài khoản thường
 app.post('/api/auth/register', async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        const { name, email, password, otp } = req.body;
 
         // Validate dữ liệu đầu vào
-        if (!name || !email || !password) {
-            return res.status(400).json({ success: false, message: "Vui lòng điền đầy đủ thông tin" });
+        if (!name || !email || !password || !otp) {
+            return res.status(400).json({ success: false, message: "Vui lòng điền đầy đủ thông tin và mã OTP" });
         }
 
         if (password.length < 6) {
             return res.status(400).json({ success: false, message: "Mật khẩu phải có ít nhất 6 ký tự" });
+        }
+
+        // Kiểm tra mã OTP
+        const otpDocRef = doc(db, "otps", email);
+        const otpDocSnap = await getDoc(otpDocRef);
+
+        if (!otpDocSnap.exists()) {
+            return res.status(400).json({ success: false, message: "Chưa gửi mã OTP cho email này" });
+        }
+
+        const otpData = otpDocSnap.data();
+        
+        if (otpData.otp !== otp) {
+            return res.status(400).json({ success: false, message: "Mã OTP không chính xác" });
+        }
+
+        if (Date.now() > otpData.expiresAt) {
+            return res.status(400).json({ success: false, message: "Mã OTP đã hết hạn" });
         }
 
         // Kiểm tra email đã tồn tại chưa
@@ -93,22 +173,25 @@ app.post('/api/auth/register', async (req, res) => {
         // Hash mật khẩu bằng MD5
         const hashedPassword = hashMD5(password);
 
-        // Tạo user mới
         const newUser = {
-            name,
-            email,
-            password: hashedPassword,
-            phone: "",
-            address: "",
-            avatarUrl: "",
-            role: "customer",
-            createdAt: new Date().toISOString()
-        };
+                    name,
+                    email,
+                    password: hashedPassword, // (hoặc null đối với Google)
+                    phone: "",
+                    address: "",
+                    avatarUrl: "", // (hoặc googleAvatar)
+                    role: "customer",
+                    isLocked: false, // THÊM DÒNG NÀY
+                    createdAt: new Date().toISOString()
+                };
 
         const docRef = await addDoc(usersRef, newUser);
 
         // Cập nhật uid = document ID
         await updateDoc(docRef, { uid: docRef.id });
+
+        // Xóa mã OTP sau khi đăng ký thành công
+        await deleteDoc(otpDocRef);
 
         // Trả về user data (không trả password)
         res.json({
@@ -161,6 +244,18 @@ app.post('/api/auth/login', async (req, res) => {
             });
         }
 
+        // ==========================================
+        // THÊM ĐOẠN NÀY: Kiểm tra tài khoản có bị khóa không
+        // Bắt chặt cả trường hợp lưu là boolean (true) hoặc chuỗi text ("true")
+                if (userData.isLocked === true || String(userData.isLocked).toLowerCase() === "true") {
+            return res.status(403).json({
+                success: false,
+                message: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên."
+            });
+        }
+        // ==========================================
+
+
         // So sánh password đã hash
         const hashedPassword = hashMD5(password);
         if (userData.password !== hashedPassword) {
@@ -203,7 +298,7 @@ app.post('/api/auth/google', async (req, res) => {
         try {
             const ticket = await googleClient.verifyIdToken({
                 idToken: idToken,
-                audience: GOOGLE_CLIENT_ID,
+                audience: ACCEPTED_CLIENT_IDS,
             });
             payload = ticket.getPayload();
         } catch (verifyError) {
@@ -227,6 +322,16 @@ app.post('/api/auth/google', async (req, res) => {
             const existingDoc = querySnapshot.docs[0];
             const existingData = existingDoc.data();
 
+            // ==========================================
+            // THÊM ĐOẠN NÀY: Kiểm tra tài khoản có bị khóa không
+          // Bắt chặt cả trường hợp lưu là boolean (true) hoặc chuỗi text ("true")
+                  if (existingData.isLocked === true || String(existingData.isLocked).toLowerCase() === "true") {
+                return res.status(403).json({
+                    success: false,
+                    message: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên."
+                });
+            }
+
             userToReturn = {
                 uid: existingData.uid || existingDoc.id,
                 name: existingData.name,
@@ -243,7 +348,6 @@ app.post('/api/auth/google', async (req, res) => {
                 await updateDoc(existingDoc.ref, { avatarUrl: googleAvatar });
             }
         } else {
-            // Email chưa tồn tại → tạo user mới với password = null
             const newUser = {
                 name: googleName,
                 email: googleEmail,
@@ -252,6 +356,7 @@ app.post('/api/auth/google', async (req, res) => {
                 address: "",
                 avatarUrl: googleAvatar,
                 role: "customer",
+                isLocked: false,
                 createdAt: new Date().toISOString()
             };
 
@@ -316,11 +421,15 @@ app.put('/api/users/profile', upload.single('avatar'), async (req, res) => {
 
         // Lấy dữ liệu mới nhất trả về
         const updatedSnap = await getDoc(userRef);
+        let updatedData = updatedSnap.data();
+        if (updatedData && !updatedData.uid) {
+            updatedData.uid = uid;
+        }
 
         res.json({
             success: true,
             message: "Cập nhật hồ sơ thành công",
-            data: updatedSnap.data()
+            data: updatedData
         });
 
     } catch (error) {
@@ -379,28 +488,35 @@ app.put('/api/users/password', async (req, res) => {
 // Cập nhật hoặc Thêm mới Sách (có hỗ trợ upload ảnh bìa)
 app.post('/api/books/upload-cover', uploadBookCover.single('bookCover'), async (req, res) => {
     try {
-        const { bookId } = req.body;
-
-        if (!bookId) {
-            return res.status(400).json({ success: false, message: "Thiếu ID của sách" });
-        }
-
+        // 1. Kiểm tra file ảnh trước tiên
         if (!req.file) {
             return res.status(400).json({ success: false, message: "Không tìm thấy file ảnh" });
         }
 
         // Lấy đường dẫn ảnh từ Cloudinary
         const imageUrl = req.file.path;
+        const { bookId } = req.body;
 
-        // Cập nhật url ảnh vào Firestore
+        // 2. TRƯỜNG HỢP: THÊM SÁCH MỚI
+        // Nếu không truyền bookId, hoặc bookId rỗng/null, chỉ trả về Link ảnh
+        if (!bookId || bookId === "null" || bookId === "") {
+            return res.json({
+                success: true,
+                message: "Upload ảnh thành công (Chế độ tạo mới)",
+                imageUrl: imageUrl
+            });
+        }
+
+        // 3. TRƯỜNG HỢP: CẬP NHẬT SÁCH
+        // Chỉ chạy đoạn này khi client gửi kèm bookId hợp lệ
         const bookRef = doc(db, "books", bookId);
         const bookSnap = await getDoc(bookRef);
 
         if (!bookSnap.exists()) {
-            // Nếu chưa tồn tại document (đang tạo mới sách chưa lưu), ta sẽ trả về URL để Client tự gắn vào object Book và lưu sau.
+            // Sách không tồn tại nhưng vẫn trả về link ảnh để Client tự xử lý nếu cần
             return res.json({
                 success: true,
-                message: "Upload ảnh tạm thời thành công",
+                message: "Upload ảnh thành công (Không tìm thấy ID sách trên database)",
                 imageUrl: imageUrl
             });
         }
@@ -408,7 +524,7 @@ app.post('/api/books/upload-cover', uploadBookCover.single('bookCover'), async (
         // Nếu sách đã tồn tại, cập nhật trực tiếp vào Firestore
         await updateDoc(bookRef, { imageUrl: imageUrl });
 
-        res.json({
+        return res.json({
             success: true,
             message: "Upload và cập nhật ảnh sách thành công",
             imageUrl: imageUrl
@@ -416,10 +532,9 @@ app.post('/api/books/upload-cover', uploadBookCover.single('bookCover'), async (
 
     } catch (error) {
         console.error("Lỗi upload ảnh sách:", error);
-        res.status(500).json({ success: false, message: error.message });
+        return res.status(500).json({ success: false, message: error.message });
     }
 });
-
 
 // =============================================
 // REVIEW APIs (giữ nguyên)
@@ -431,19 +546,35 @@ app.get('/api/reviews/:bookId', async (req, res) => {
         const bookId = req.params.bookId;
         const reviewsRef = collection(db, "reviews");
 
-        // Không dùng orderBy để tránh lỗi thiếu Index trên Firestore, ta sẽ sort ở backend
-        const q = query(reviewsRef, where("bookId", "==", bookId));
-        const querySnapshot = await getDocs(q);
+        // Hỗ trợ query cả string và number để tránh lỗi không đồng nhất kiểu dữ liệu trên Firestore
+        const qStr = query(reviewsRef, where("bookId", "==", bookId));
+        const querySnapshotStr = await getDocs(qStr);
 
         let reviews = [];
-        querySnapshot.forEach((docSnap) => {
+        querySnapshotStr.forEach((docSnap) => {
             let data = docSnap.data();
-            // Xử lý timestamp để trả về dạng string/number
             if (data.createdAt && data.createdAt.toDate) {
                 data.createdAt = data.createdAt.toDate().toISOString();
             }
             reviews.push(data);
         });
+
+        // Query thêm theo số nguyên
+        const bookIdNum = Number(bookId);
+        if (!isNaN(bookIdNum)) {
+            const qNum = query(reviewsRef, where("bookId", "==", bookIdNum));
+            const querySnapshotNum = await getDocs(qNum);
+            querySnapshotNum.forEach((docSnap) => {
+                let data = docSnap.data();
+                if (data.createdAt && data.createdAt.toDate) {
+                    data.createdAt = data.createdAt.toDate().toISOString();
+                }
+                // Tránh trùng lặp
+                if (!reviews.find(r => r.reviewId === data.reviewId)) {
+                    reviews.push(data);
+                }
+            });
+        }
 
         // Sort mới nhất lên đầu
         reviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -648,9 +779,252 @@ app.post('/api/create_payment_url', (req, res) => {
                                            .join('&');
 
     res.json({ success: true, paymentUrl: paymentUrl });
+// FORGOT PASSWORD APIs
+// =============================================
+
+// API 1: Gửi OTP qua email
+app.post('/api/auth/forgot-password', async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ success: false, message: "Vui lòng nhập email" });
+        }
+
+        // Tìm user theo email
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("email", "==", email));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            return res.status(404).json({ success: false, message: "Email không tồn tại trong hệ thống" });
+        }
+
+        const userData = querySnapshot.docs[0].data();
+
+        // Kiểm tra tài khoản Google-only (không có password)
+        if (!userData.password) {
+            return res.status(400).json({
+                success: false,
+                message: "Tài khoản này được đăng ký bằng Google, không có mật khẩu để khôi phục."
+            });
+        }
+
+        // Sinh OTP 6 chữ số
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = Date.now() + 5 * 60 * 1000; // 5 phút
+
+        // Lưu OTP vào bộ nhớ
+        otpStore.set(email, { otp, expiresAt });
+
+        // Gửi email
+        const mailOptions = {
+            from: '"BookStore App" <aurasound.contact@gmail.com>',
+            to: email,
+            subject: 'Mã xác thực đặt lại mật khẩu - BookStore',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 30px; background: #f8fafc; border-radius: 12px;">
+                    <h2 style="color: #0F172A; text-align: center;">📚 BookStore</h2>
+                    <p style="color: #334155;">Xin chào,</p>
+                    <p style="color: #334155;">Bạn đã yêu cầu đặt lại mật khẩu. Dưới đây là mã xác thực của bạn:</p>
+                    <div style="text-align: center; margin: 24px 0;">
+                        <span style="display: inline-block; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0F172A; background: #E2E8F0; padding: 16px 32px; border-radius: 8px;">${otp}</span>
+                    </div>
+                    <p style="color: #64748B; font-size: 14px; text-align: center;">Mã có hiệu lực trong <strong>5 phút</strong>.</p>
+                    <p style="color: #64748B; font-size: 13px; text-align: center;">Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này.</p>
+                </div>
+            `
+        };
+
+        await emailTransporter.sendMail(mailOptions);
+
+        console.log(`OTP ${otp} đã gửi đến ${email}`);
+        res.json({ success: true, message: "Mã xác thực đã được gửi đến email của bạn" });
+
+    } catch (error) {
+        console.error("Lỗi gửi OTP:", error);
+        res.status(500).json({ success: false, message: "Không thể gửi email. Vui lòng thử lại sau." });
+    }
+});
+
+// API 2: Xác thực OTP
+app.post('/api/auth/verify-otp', async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+
+        if (!email || !otp) {
+            return res.status(400).json({ success: false, message: "Vui lòng nhập đầy đủ thông tin" });
+        }
+
+        const storedData = otpStore.get(email);
+
+        if (!storedData) {
+            return res.status(400).json({ success: false, message: "Mã xác thực không tồn tại. Vui lòng gửi lại." });
+        }
+
+        // Kiểm tra hết hạn
+        if (Date.now() > storedData.expiresAt) {
+            otpStore.delete(email);
+            return res.status(400).json({ success: false, message: "Mã xác thực đã hết hạn. Vui lòng gửi lại." });
+        }
+
+        // So sánh OTP
+        if (storedData.otp !== otp) {
+            return res.status(400).json({ success: false, message: "Mã xác thực không đúng" });
+        }
+
+        // OTP đúng → tạo resetToken
+        otpStore.delete(email);
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const tokenExpiresAt = Date.now() + 10 * 60 * 1000; // 10 phút
+        resetTokenStore.set(email, { token: resetToken, expiresAt: tokenExpiresAt });
+
+        res.json({ success: true, message: "Xác thực thành công", resetToken });
+
+    } catch (error) {
+        console.error("Lỗi verify OTP:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// API 3: Đặt lại mật khẩu mới
+app.post('/api/auth/reset-password', async (req, res) => {
+    try {
+        const { email, resetToken, newPassword } = req.body;
+
+        if (!email || !resetToken || !newPassword) {
+            return res.status(400).json({ success: false, message: "Thiếu thông tin bắt buộc" });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({ success: false, message: "Mật khẩu mới phải có ít nhất 6 ký tự" });
+        }
+
+        // Verify resetToken
+        const storedData = resetTokenStore.get(email);
+
+        if (!storedData) {
+            return res.status(400).json({ success: false, message: "Phiên đặt lại mật khẩu không hợp lệ" });
+        }
+
+        if (Date.now() > storedData.expiresAt) {
+            resetTokenStore.delete(email);
+            return res.status(400).json({ success: false, message: "Phiên đặt lại mật khẩu đã hết hạn" });
+        }
+
+        if (storedData.token !== resetToken) {
+            return res.status(400).json({ success: false, message: "Token không hợp lệ" });
+        }
+
+        // Tìm user và cập nhật password
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("email", "==", email));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            return res.status(404).json({ success: false, message: "Không tìm thấy tài khoản" });
+        }
+
+        const userDoc = querySnapshot.docs[0];
+        const hashedNew = hashMD5(newPassword);
+        await updateDoc(userDoc.ref, { password: hashedNew });
+
+        // Xóa resetToken
+        resetTokenStore.delete(email);
+
+        res.json({ success: true, message: "Đổi mật khẩu thành công! Vui lòng đăng nhập lại." });
+
+    } catch (error) {
+        console.error("Lỗi đặt lại mật khẩu:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(3000, '0.0.0.0', () => {
   console.log('Server is running on port 3000');
+});
+
+// =============================================
+// ADMIN: QUẢN LÝ NGƯỜI DÙNG
+// =============================================
+
+// 1. Lấy danh sách toàn bộ người dùng
+app.get('/api/users', async (req, res) => {
+    try {
+        const usersRef = collection(db, "users");
+        const querySnapshot = await getDocs(usersRef);
+
+        let users = [];
+        querySnapshot.forEach((docSnap) => {
+            let data = docSnap.data();
+            // Đảm bảo luôn có uid trả về
+            data.uid = docSnap.id;
+            users.push(data);
+        });
+
+        res.json({ success: true, data: users });
+    } catch (error) {
+        console.error("Lỗi lấy danh sách user:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// 2. Cập nhật trạng thái Khóa/Mở khóa tài khoản
+app.put('/api/users/:uid/lock', async (req, res) => {
+    try {
+        const uid = req.params.uid;
+        const { isLocked } = req.body;
+
+        if (uid === undefined || isLocked === undefined) {
+            return res.status(400).json({ success: false, message: "Thiếu thông tin cập nhật" });
+        }
+
+        const userRef = doc(db, "users", uid);
+        await updateDoc(userRef, { isLocked: isLocked });
+
+        res.json({
+            success: true,
+            message: isLocked ? "Đã khóa tài khoản" : "Đã mở khóa tài khoản"
+        });
+    } catch (error) {
+        console.error("Lỗi cập nhật trạng thái khóa:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// 3. Lấy thống kê mua hàng của 1 user
+app.get('/api/users/:uid/stats', async (req, res) => {
+    try {
+        const uid = req.params.uid;
+
+        // Tìm các đơn hàng của user này
+        const ordersRef = collection(db, "orders");
+        const q = query(ordersRef, where("userId", "==", uid));
+        const querySnapshot = await getDocs(q);
+
+        let totalOrders = 0;
+        let totalSpent = 0;
+
+        querySnapshot.forEach((docSnap) => {
+            const orderData = docSnap.data();
+            // Không tính các đơn hàng đã bị hủy (nếu có trường status)
+            if (orderData.status !== "cancelled") {
+                totalOrders++;
+                // Giả sử tổng tiền đơn hàng được lưu trong biến totalPrice
+                totalSpent += (orderData.totalPrice || 0);
+            }
+        });
+
+        res.json({
+            success: true,
+            data: {
+                totalOrders: totalOrders,
+                totalSpent: totalSpent
+            }
+        });
+    } catch (error) {
+        console.error("Lỗi lấy thống kê user:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
 });

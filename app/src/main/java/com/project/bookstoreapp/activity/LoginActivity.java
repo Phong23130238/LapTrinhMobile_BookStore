@@ -42,13 +42,13 @@ public class LoginActivity extends AppCompatActivity {
 
     // Web Client ID cho Google Sign-In
     private static final String WEB_CLIENT_ID =
-            "608811292447-d9cncbpmdbuf07npas15ack1o3cmdtsm.apps.googleusercontent.com";
+            "156167272606-ahuk0t1gr5biq7b69a24kh0i9so84vp4.apps.googleusercontent.com";
 
     // UI Components
     private TextInputLayout tilEmail, tilPassword;
     private TextInputEditText etEmail, etPassword;
     private MaterialButton btnLogin, btnGoogleLogin;
-    private TextView tvRegister;
+    private TextView tvRegister, tvForgotPassword;
     private ProgressBar progressBar;
 
     // Google Sign-In
@@ -76,6 +76,7 @@ public class LoginActivity extends AppCompatActivity {
         btnLogin = findViewById(R.id.btnLogin);
         btnGoogleLogin = findViewById(R.id.btnGoogleLogin);
         tvRegister = findViewById(R.id.tvRegister);
+        tvForgotPassword = findViewById(R.id.tvForgotPassword);
         progressBar = findViewById(R.id.progressBar);
 
         // Cấu hình Google Sign-In
@@ -85,12 +86,13 @@ public class LoginActivity extends AppCompatActivity {
         googleSignInLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
-                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                        Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(result.getData());
+                    if (result.getData() != null) {
+                        Task<GoogleSignInAccount> task =
+                                GoogleSignIn.getSignedInAccountFromIntent(result.getData());
                         handleGoogleSignInResult(task);
                     } else {
                         hideLoading();
-                        Log.w(TAG, "Google Sign-In bị hủy hoặc thất bại, resultCode=" + result.getResultCode());
+                        Log.w(TAG, "Google Sign-In: không nhận được data, resultCode=" + result.getResultCode());
                     }
                 }
         );
@@ -106,6 +108,12 @@ public class LoginActivity extends AppCompatActivity {
         // 3. Nhấn "Đăng ký ngay" → Mở màn hình Đăng ký
         tvRegister.setOnClickListener(v -> {
             Intent intent = new Intent(LoginActivity.this, RegisterActivity.class);
+            startActivity(intent);
+        });
+
+        // 4. Nhấn "Quên mật khẩu?" → Mở màn hình Quên mật khẩu
+        tvForgotPassword.setOnClickListener(v -> {
+            Intent intent = new Intent(LoginActivity.this, ForgotPasswordActivity.class);
             startActivity(intent);
         });
     }

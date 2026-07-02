@@ -92,7 +92,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_margin="16dp"
-                app:cardCornerRadius="16dp"
+                app:cardCornerRadius="28dp"
                 app:cardElevation="4dp"
                 app:cardBackgroundColor="@android:color/white">
 
@@ -121,6 +121,7 @@
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilPhone"
                         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -194,16 +195,21 @@
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilAddress"
                         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:hint="Số nhà, Tên đường"
-                        app:startIconDrawable="@android:drawable/ic_dialog_map"
+                        app:startIconDrawable="@android:drawable/ic_menu_mylocation"
+                        app:endIconMode="custom"
+                        app:endIconDrawable="@android:drawable/ic_dialog_map"
+                        app:endIconContentDescription="Chọn từ bản đồ"
                         app:boxCornerRadiusTopStart="12dp"
                         app:boxCornerRadiusTopEnd="12dp"
                         app:boxCornerRadiusBottomStart="12dp"
                         app:boxCornerRadiusBottomEnd="12dp">
+
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/etAddress"
                             android:layout_width="match_parent"
@@ -223,7 +229,7 @@
                 android:layout_marginHorizontal="20dp"
                 android:layout_marginTop="16dp"
                 android:text="Lưu thay đổi"
-                app:cornerRadius="12dp"
+                app:cornerRadius="28dp"
                 android:textSize="16sp" />
 
             <com.google.android.material.button.MaterialButton
@@ -236,7 +242,7 @@
                 android:text="Đổi mật khẩu"
                 android:textColor="#546E7A"
                 app:strokeColor="#B0BEC5"
-                app:cornerRadius="12dp"
+                app:cornerRadius="28dp"
                 android:textSize="16sp" />
 
             <com.google.android.material.button.MaterialButton
@@ -249,7 +255,7 @@
                 android:text="Đăng xuất"
                 android:textColor="#E53935"
                 app:strokeColor="#EF9A9A"
-                app:cornerRadius="12dp"
+                app:cornerRadius="28dp"
                 android:textSize="16sp" />
 
         </LinearLayout>
