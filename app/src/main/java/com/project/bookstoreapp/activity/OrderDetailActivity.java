@@ -13,10 +13,12 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.app.AlertDialog;
 import android.widget.EditText;
-import com.google.firebase.firestore.FirebaseFirestore;
+
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.card.MaterialCardView;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.project.bookstoreapp.R;
 import com.project.bookstoreapp.adapter.OrderDetailAdapter;
 import com.project.bookstoreapp.model.Order;
@@ -28,6 +30,7 @@ import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -47,19 +50,33 @@ public class OrderDetailActivity extends AppCompatActivity {
     private List<Map<String, Object>> itemList;
     private ApiService apiService;
     private DecimalFormat formatter = new DecimalFormat("###,###,###");
+
+    // Nút User
     private MaterialButton btnCancelOrder;
+
+    // Card & Nút Admin
+    private MaterialCardView cardAdminUpdateStatus;
+    private MaterialButton btnAdminConfirm;
+    private MaterialButton btnAdminShipping;
+    private MaterialButton btnAdminDelivered;
+    private MaterialButton btnAdminCancel;
+    private TextView tvAdminStatusLocked;
+
     private String currentOrderId;
+    private boolean isAdmin = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_order_detail);
 
-        // 1.1 Khởi tạo và thiết lập (onCreate & initViews)
         apiService = RetrofitClient.getClient().create(ApiService.class);
+
+        // Đọc flag IS_ADMIN từ Intent
+        isAdmin = getIntent().getBooleanExtra("IS_ADMIN", false);
+
         initViews();
 
-        // 1.1.2 Lấy tham số ORDER_ID từ Intent.getStringExtra("ORDER_ID") do màn hình trước truyền sang.
         currentOrderId = getIntent().getStringExtra("ORDER_ID");
         if (currentOrderId != null && !currentOrderId.isEmpty()) {
             loadOrderDetails(currentOrderId);
@@ -69,7 +86,6 @@ public class OrderDetailActivity extends AppCompatActivity {
         }
     }
 
-    // 1.1.1 Khởi tạo các View, Toolbar, BottomNav và gán sự kiện click trong hàm initViews.
     private void initViews() {
         MaterialToolbar toolbar = findViewById(R.id.toolbarOrderDetail);
         setSupportActionBar(toolbar);
@@ -79,6 +95,7 @@ public class OrderDetailActivity extends AppCompatActivity {
         }
         toolbar.setNavigationOnClickListener(v -> finish());
 
+        // Các TextView thông tin đơn hàng
         tvOrderId = findViewById(R.id.tvOrderId);
         tvOrderStatus = findViewById(R.id.tvOrderStatus);
         tvOrderDate = findViewById(R.id.tvOrderDate);
@@ -90,9 +107,34 @@ public class OrderDetailActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBarOrder);
         rvOrderItems = findViewById(R.id.rvOrderItems);
         bottomNav = findViewById(R.id.bottomNav);
-        btnCancelOrder = findViewById(R.id.btnCancelOrder);
 
+        // Nút User: hủy đơn
+        btnCancelOrder = findViewById(R.id.btnCancelOrder);
         btnCancelOrder.setOnClickListener(v -> showCancelDialog());
+
+        // Card và nút Admin
+        cardAdminUpdateStatus = findViewById(R.id.cardAdminUpdateStatus);
+        btnAdminConfirm = findViewById(R.id.btnAdminConfirm);
+        btnAdminShipping = findViewById(R.id.btnAdminShipping);
+        btnAdminDelivered = findViewById(R.id.btnAdminDelivered);
+        btnAdminCancel = findViewById(R.id.btnAdminCancel);
+        tvAdminStatusLocked = findViewById(R.id.tvAdminStatusLocked);
+
+        // Gán sự kiện nút Admin
+        btnAdminConfirm.setOnClickListener(v ->
+                showAdminUpdateDialog("Xác nhận đơn hàng?",
+                        "Chuyển trạng thái sang 'Đã xác nhận'.", "confirmed"));
+
+        btnAdminShipping.setOnClickListener(v ->
+                showAdminUpdateDialog("Chuyển sang Đang giao?",
+                        "Chuyển trạng thái sang 'Đang giao hàng'.", "shipping"));
+
+        btnAdminDelivered.setOnClickListener(v ->
+                showAdminUpdateDialog("Xác nhận đã giao?",
+                        "Chuyển trạng thái sang 'Đã giao thành công'.", "delivered"));
+
+        btnAdminCancel.setOnClickListener(v ->
+                showAdminCancelDialog());
 
         rvOrderItems.setLayoutManager(new LinearLayoutManager(this));
         itemList = new ArrayList<>();
@@ -104,6 +146,11 @@ public class OrderDetailActivity extends AppCompatActivity {
 
     private void setupBottomNav() {
         if (bottomNav != null) {
+            // Nếu là Admin thì ẩn BottomNav (không dùng nav user)
+            if (isAdmin) {
+                bottomNav.setVisibility(View.GONE);
+                return;
+            }
             bottomNav.setSelectedItemId(R.id.nav_orders);
             bottomNav.setOnItemSelectedListener(item -> {
                 int itemId = item.getItemId();
@@ -134,15 +181,15 @@ public class OrderDetailActivity extends AppCompatActivity {
         }
     }
 
-    // 1.2 Tải dữ liệu từ backend (loadOrderDetails)
+    // =============================================
+    // TẢI DỮ LIỆU ĐƠN HÀNG
+    // =============================================
     private void loadOrderDetails(String orderId) {
-        // 1.2.1 Hiển thị ProgressBar, gọi apiService.getOrderDetails(orderId).enqueue để gửi HTTP GET đến Node.js.
         progressBar.setVisibility(View.VISIBLE);
         apiService.getOrderDetails(orderId).enqueue(new Callback<ApiResponse<Order>>() {
             @Override
             public void onResponse(Call<ApiResponse<Order>> call, Response<ApiResponse<Order>> response) {
                 progressBar.setVisibility(View.GONE);
-                // 1.2.2 Xử lý Response: Nếu isSuccessful, gọi hàm displayOrderDetails truyền data.
                 if (response.isSuccessful() && response.body() != null) {
                     if (response.body().isSuccess() && response.body().getData() != null) {
                         displayOrderDetails(response.body().getData(), orderId);
@@ -163,89 +210,35 @@ public class OrderDetailActivity extends AppCompatActivity {
         });
     }
 
-    // 1.4 Xử lý hủy đơn (showCancelDialog)
-    private void showCancelDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Hủy đơn hàng");
-        
-        // 1.4.1 Tạo AlertDialog chứa một EditText (input) để người dùng nhập lý do hủy đơn.
-        final EditText input = new EditText(this);
-        input.setHint("Nhập lý do hủy đơn...");
-        builder.setView(input);
-
-        // 1.4.2 Bắt sự kiện PositiveButton (Xác nhận), kiểm tra chuỗi rỗng và gọi hàm cancelOrder(reason).
-        builder.setPositiveButton("Xác nhận", (dialog, which) -> {
-            String reason = input.getText().toString().trim();
-            if (reason.isEmpty()) {
-                Toast.makeText(OrderDetailActivity.this, "Vui lòng nhập lý do hủy", Toast.LENGTH_SHORT).show();
-            } else {
-                cancelOrder(reason);
-            }
-        });
-        builder.setNegativeButton("Đóng", (dialog, which) -> dialog.cancel());
-        builder.show();
-    }
-
-    // 1.5 Cập nhật Firestore (cancelOrder)
-    private void cancelOrder(String reason) {
-        if (currentOrderId == null) return;
-        progressBar.setVisibility(View.VISIBLE);
-        
-        // 1.5.1 Gọi FirebaseFirestore.getInstance().collection("orders").document(currentOrderId).update() để đổi trạng thái (cancelled) và lý do (cancelReason).
-        FirebaseFirestore.getInstance().collection("orders").document(currentOrderId)
-            .update("status", "cancelled", "cancelReason", reason)
-            // 1.5.2 Lắng nghe addOnSuccessListener để Toast thông báo thành công và gọi lại loadOrderDetails() cập nhật UI.
-            .addOnSuccessListener(aVoid -> {
-                progressBar.setVisibility(View.GONE);
-                Toast.makeText(OrderDetailActivity.this, "Đã hủy đơn hàng", Toast.LENGTH_SHORT).show();
-                loadOrderDetails(currentOrderId); 
-            })
-            .addOnFailureListener(e -> {
-                progressBar.setVisibility(View.GONE);
-                Toast.makeText(OrderDetailActivity.this, "Lỗi khi hủy đơn", Toast.LENGTH_SHORT).show();
-                Log.e("OrderDetail", "Lỗi hủy đơn: ", e);
-            });
-    }
-
-    // 1.3 Hiển thị giao diện (displayOrderDetails)
+    // =============================================
+    // HIỂN THỊ CHI TIẾT ĐƠN HÀNG
+    // =============================================
     private void displayOrderDetails(Order order, String docId) {
         tvOrderId.setVisibility(View.VISIBLE);
-        // Chỉ lấy displayId, nếu không có thì để "Chưa có mã" thay vì lấy ID ngẫu nhiên của Firebase
         String displayId = (order.getDisplayId() != null && !order.getDisplayId().isEmpty())
                 ? order.getDisplayId()
                 : "Mã đơn đang cập nhật";
 
         tvOrderId.setText("Mã đơn: " + displayId);
-        // Thêm tính năng bấm vào mã đơn để copy
         tvOrderId.setOnClickListener(v -> {
-            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(android.content.Context.CLIPBOARD_SERVICE);
+            android.content.ClipboardManager clipboard =
+                    (android.content.ClipboardManager) getSystemService(android.content.Context.CLIPBOARD_SERVICE);
             android.content.ClipData clip = android.content.ClipData.newPlainText("Order ID", displayId);
             clipboard.setPrimaryClip(clip);
             Toast.makeText(this, "Đã copy mã đơn hàng", Toast.LENGTH_SHORT).show();
         });
-        tvOrderId.setTextColor(getResources().getColor(R.color.navy_dark)); // Bạn có thể tùy chỉnh màu cho nổi bật
-        tvOrderId.setTextSize(18); // Làm to hơn một chút cho dễ nhìn
-        
-        String statusText = "Đang xử lý";
-        // 1.3.1 Dựa vào trường order.getStatus() để chuyển đổi thành text tiếng Việt (Đang xử lý, Đang giao...).
+        tvOrderId.setTextColor(getResources().getColor(R.color.navy_dark));
+        tvOrderId.setTextSize(18);
+
+        // Chuyển đổi trạng thái sang text tiếng Việt
         String status = order.getStatus();
-        if ("delivered".equals(status)) statusText = "Đã giao thành công";
-        else if ("shipping".equals(status)) statusText = "Đang giao hàng";
-        else if ("cancelled".equals(status)) statusText = "Đã hủy";
-        
+        String statusText = getStatusText(status);
         tvOrderStatus.setText("Trạng thái: " + statusText);
-        
-        // 1.3.2 Xử lý logic ẩn/hiện nút btnCancelOrder (chỉ hiện khi status là 'pending').
-        if ("pending".equals(status)) {
-            btnCancelOrder.setVisibility(View.VISIBLE);
-        } else {
-            btnCancelOrder.setVisibility(View.GONE);
-        }
-        
-        // 1.3.3 Format (SimpleDateFormat) và hiển thị ngày đặt, phương thức thanh toán, địa chỉ, các loại phí (DecimalFormat).
+        tvOrderStatus.setTextColor(getStatusColor(status));
+
+        // Ngày đặt
         String dateStr = order.getCreatedAt();
         if (dateStr != null && !dateStr.isEmpty()) {
-            // Payment Method
             if (tvPaymentMethod != null) {
                 String paymentMethod = order.getPaymentMethod();
                 if ("banking".equalsIgnoreCase(paymentMethod)) {
@@ -254,15 +247,13 @@ public class OrderDetailActivity extends AppCompatActivity {
                     tvPaymentMethod.setText("Trả tiền mặt (COD)");
                 }
             }
-
             Date date = null;
             try {
                 date = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").parse(dateStr);
             } catch (Exception e) {
                 try {
                     date = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").parse(dateStr);
-                } catch (Exception e2) {
-                }
+                } catch (Exception e2) { /* ignore */ }
             }
             if (date != null) {
                 tvOrderDate.setText("Ngày đặt: " + new SimpleDateFormat("dd/MM/yyyy - HH:mm").format(date));
@@ -276,16 +267,198 @@ public class OrderDetailActivity extends AppCompatActivity {
         double total = order.getTotalPrice();
         double shipping = order.getShippingFee();
         double sub = total - shipping;
-
         tvSubtotal.setText(formatter.format(sub) + " đ");
         tvShippingFee.setText(formatter.format(shipping) + " đ");
         tvTotal.setText(formatter.format(total) + " đ");
 
-        // 1.3.4 Làm mới danh sách itemList (clear), thêm item mới và gọi adapter.notifyDataSetChanged() để render RecyclerView.
         if (order.getItems() != null) {
             itemList.clear();
             itemList.addAll(order.getItems());
             adapter.notifyDataSetChanged();
+        }
+
+        // Hiển thị nút phù hợp
+        if (isAdmin) {
+            // Admin mode: hiện Card Admin, ẩn nút hủy của User
+            btnCancelOrder.setVisibility(View.GONE);
+            cardAdminUpdateStatus.setVisibility(View.VISIBLE);
+            setupAdminButtons(status);
+        } else {
+            // User mode: ẩn Card Admin, chỉ hiện nút hủy khi pending
+            cardAdminUpdateStatus.setVisibility(View.GONE);
+            if ("pending".equals(status)) {
+                btnCancelOrder.setVisibility(View.VISIBLE);
+            } else {
+                btnCancelOrder.setVisibility(View.GONE);
+            }
+        }
+    }
+
+    // =============================================
+    // LOGIC NÚT ADMIN THEO TRẠNG THÁI
+    // =============================================
+    private void setupAdminButtons(String status) {
+        // Ẩn tất cả trước
+        btnAdminConfirm.setVisibility(View.GONE);
+        btnAdminShipping.setVisibility(View.GONE);
+        btnAdminDelivered.setVisibility(View.GONE);
+        btnAdminCancel.setVisibility(View.GONE);
+        tvAdminStatusLocked.setVisibility(View.GONE);
+
+        if (status == null) status = "";
+        switch (status.toLowerCase()) {
+            case "pending":
+                // pending → có thể Xác nhận hoặc Hủy
+                btnAdminConfirm.setVisibility(View.VISIBLE);
+                btnAdminCancel.setVisibility(View.VISIBLE);
+                break;
+            case "confirmed":
+                // confirmed → có thể chuyển sang Đang giao hoặc Hủy
+                btnAdminShipping.setVisibility(View.VISIBLE);
+                btnAdminCancel.setVisibility(View.VISIBLE);
+                break;
+            case "shipping":
+                // shipping → chỉ có thể Đã giao
+                btnAdminDelivered.setVisibility(View.VISIBLE);
+                break;
+            case "delivered":
+            case "cancelled":
+                // Đã kết thúc → không cho sửa
+                tvAdminStatusLocked.setVisibility(View.VISIBLE);
+                break;
+            default:
+                tvAdminStatusLocked.setVisibility(View.VISIBLE);
+                break;
+        }
+    }
+
+    // =============================================
+    // DIALOG XÁC NHẬN ADMIN (không hủy)
+    // =============================================
+    private void showAdminUpdateDialog(String title, String message, String newStatus) {
+        new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setMessage(message)
+                .setPositiveButton("Xác nhận", (dialog, which) -> updateOrderStatus(newStatus, null))
+                .setNegativeButton("Đóng", (dialog, which) -> dialog.cancel())
+                .show();
+    }
+
+    // =============================================
+    // DIALOG HỦY ĐƠN ADMIN (kèm lý do)
+    // =============================================
+    private void showAdminCancelDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Hủy đơn hàng");
+        final EditText input = new EditText(this);
+        input.setHint("Nhập lý do hủy đơn...");
+        builder.setView(input);
+        builder.setPositiveButton("Xác nhận", (dialog, which) -> {
+            String reason = input.getText().toString().trim();
+            if (reason.isEmpty()) {
+                Toast.makeText(this, "Vui lòng nhập lý do hủy", Toast.LENGTH_SHORT).show();
+            } else {
+                updateOrderStatus("cancelled", reason);
+            }
+        });
+        builder.setNegativeButton("Đóng", (dialog, which) -> dialog.cancel());
+        builder.show();
+    }
+
+    // =============================================
+    // CẬP NHẬT TRẠNG THÁI LÊN FIREBASE
+    // =============================================
+    private void updateOrderStatus(String newStatus, String cancelReason) {
+        if (currentOrderId == null) return;
+        progressBar.setVisibility(View.VISIBLE);
+
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("status", newStatus);
+        updates.put("updatedAt", new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+                .format(new Date()));
+        if (cancelReason != null && !cancelReason.isEmpty()) {
+            updates.put("cancelReason", cancelReason);
+        }
+
+        FirebaseFirestore.getInstance()
+                .collection("orders")
+                .document(currentOrderId)
+                .update(updates)
+                .addOnSuccessListener(aVoid -> {
+                    progressBar.setVisibility(View.GONE);
+                    Toast.makeText(this,
+                            "✓ Cập nhật trạng thái thành công!", Toast.LENGTH_SHORT).show();
+                    loadOrderDetails(currentOrderId); // Reload lại UI
+                })
+                .addOnFailureListener(e -> {
+                    progressBar.setVisibility(View.GONE);
+                    Toast.makeText(this, "Lỗi khi cập nhật trạng thái", Toast.LENGTH_SHORT).show();
+                    Log.e("OrderDetail", "Lỗi cập nhật trạng thái: ", e);
+                });
+    }
+
+    // =============================================
+    // HỦY ĐƠN CHO USER (giữ nguyên chức năng cũ)
+    // =============================================
+    private void showCancelDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Hủy đơn hàng");
+        final EditText input = new EditText(this);
+        input.setHint("Nhập lý do hủy đơn...");
+        builder.setView(input);
+        builder.setPositiveButton("Xác nhận", (dialog, which) -> {
+            String reason = input.getText().toString().trim();
+            if (reason.isEmpty()) {
+                Toast.makeText(this, "Vui lòng nhập lý do hủy", Toast.LENGTH_SHORT).show();
+            } else {
+                cancelOrder(reason);
+            }
+        });
+        builder.setNegativeButton("Đóng", (dialog, which) -> dialog.cancel());
+        builder.show();
+    }
+
+    private void cancelOrder(String reason) {
+        if (currentOrderId == null) return;
+        progressBar.setVisibility(View.VISIBLE);
+        FirebaseFirestore.getInstance().collection("orders").document(currentOrderId)
+                .update("status", "cancelled", "cancelReason", reason)
+                .addOnSuccessListener(aVoid -> {
+                    progressBar.setVisibility(View.GONE);
+                    Toast.makeText(this, "Đã hủy đơn hàng", Toast.LENGTH_SHORT).show();
+                    loadOrderDetails(currentOrderId);
+                })
+                .addOnFailureListener(e -> {
+                    progressBar.setVisibility(View.GONE);
+                    Toast.makeText(this, "Lỗi khi hủy đơn", Toast.LENGTH_SHORT).show();
+                    Log.e("OrderDetail", "Lỗi hủy đơn: ", e);
+                });
+    }
+
+    // =============================================
+    // HÀM TIỆN ÍCH: Text & màu trạng thái
+    // =============================================
+    private String getStatusText(String status) {
+        if (status == null) return "Đang xử lý";
+        switch (status.toLowerCase()) {
+            case "pending":   return "Chờ xác nhận";
+            case "confirmed": return "Đã xác nhận";
+            case "shipping":  return "Đang giao hàng";
+            case "delivered": return "Đã giao thành công";
+            case "cancelled": return "Đã hủy";
+            default:          return "Đang xử lý";
+        }
+    }
+
+    private int getStatusColor(String status) {
+        if (status == null) return 0xFFD97706;
+        switch (status.toLowerCase()) {
+            case "pending":   return 0xFFD97706; // Orange
+            case "confirmed": return 0xFF0284C7; // Blue
+            case "shipping":  return 0xFF7C3AED; // Purple
+            case "delivered": return 0xFF047857; // Green
+            case "cancelled": return 0xFFBE123C; // Rose
+            default:          return 0xFFD97706;
         }
     }
 }

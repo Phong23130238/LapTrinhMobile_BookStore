@@ -224,8 +224,8 @@ public class BookDetailActivity extends AppCompatActivity {
         if (author != null) tvAuthor.setText(author);
         if (description != null) tvDescription.setText(description);
 
-        Double categoryId = documentSnapshot.getDouble("categoryId");
-        if (categoryId != null && tvCategory != null) tvCategory.setText(" #" + categoryId.intValue() + " ");
+        String catId = documentSnapshot.getString("categoryId");
+        if (catId != null && tvCategory != null) tvCategory.setText(" #" + catId + " ");
 
         java.text.DecimalFormat formatter = new java.text.DecimalFormat("###,###,###");
 

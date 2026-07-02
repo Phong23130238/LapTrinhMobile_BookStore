@@ -88,6 +88,9 @@
         <activity
             android:name=".activity.ManageUsersActivity"
             android:exported="false" />
+        <activity
+            android:name=".activity.InventoryActivity"
+            android:exported="false" />
 
         <activity android:name=".activity.AllBooksActivity"
             android:exported="false" />

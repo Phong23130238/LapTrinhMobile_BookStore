@@ -27,7 +27,7 @@
         android:layout_below="@id/appBarManageOrders"
         android:orientation="vertical"
         android:background="@color/cream"
-        android:paddingBottom="8dp">
+        android:paddingBottom="4dp">
 
         <!-- Thanh tìm kiếm -->
         <androidx.cardview.widget.CardView
@@ -49,7 +49,49 @@
                 app:searchIcon="@android:drawable/ic_menu_search" />
         </androidx.cardview.widget.CardView>
 
-        <!-- Bộ lọc trạng thái đơn hàng (Có thể cuộn ngang nếu màn hình hẹp) -->
+        <!-- Hàng: Sort + số lượng đơn -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingHorizontal="12dp"
+            android:paddingBottom="6dp"
+            android:gravity="center_vertical">
+
+            <!-- Icon sort + label -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sắp xếp:"
+                android:textSize="13sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginEnd="4dp"/>
+
+            <!-- Spinner chọn sort -->
+            <Spinner
+                android:id="@+id/spinnerSort"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_spinner"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp" />
+
+            <!-- Số lượng đơn hàng đang hiển thị -->
+            <TextView
+                android:id="@+id/tvOrderCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:text="0 đơn"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary"
+                android:background="#1A0F172A"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"/>
+        </LinearLayout>
+
+        <!-- Bộ lọc trạng thái đơn hàng -->
         <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -81,6 +123,13 @@
                     android:text="Chờ xác nhận"/>
 
                 <com.google.android.material.chip.Chip
+                    android:id="@+id/chipConfirmed"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Đã xác nhận"/>
+
+                <com.google.android.material.chip.Chip
                     android:id="@+id/chipShipping"
                     style="@style/Widget.MaterialComponents.Chip.Choice"
                     android:layout_width="wrap_content"
@@ -102,9 +151,10 @@
                     android:text="Đã hủy"/>
             </com.google.android.material.chip.ChipGroup>
         </HorizontalScrollView>
+
     </LinearLayout>
 
-    <!-- RecyclerView chứa danh sách đơn hàng được đẩy xuống dưới bộ lọc -->
+    <!-- RecyclerView chứa danh sách đơn hàng -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvAdminOrders"
         android:layout_width="match_parent"
