@@ -2,6 +2,7 @@ package com.project.bookstoreapp.network;
 
 import com.project.bookstoreapp.model.Order;
 import com.project.bookstoreapp.model.Review;
+import com.project.bookstoreapp.model.UploadResponse;
 import com.project.bookstoreapp.model.User;
 import com.project.bookstoreapp.model.UserStats;
 import java.util.HashMap;
@@ -45,6 +46,13 @@ public interface ApiService {
             @Part("phone") RequestBody phone,
             @Part("address") RequestBody address,
             @Part MultipartBody.Part avatar
+    );
+
+    @Multipart
+    @POST("api/books/upload-cover")
+    Call<UploadResponse> uploadBookCover(
+            @Part MultipartBody.Part bookCover,
+            @Part("bookId") RequestBody bookId
     );
 
     @Headers("Bypass-Tunnel-Reminder: true")
