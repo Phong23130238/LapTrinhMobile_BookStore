@@ -33,12 +33,15 @@ public class AdminDashboardActivity extends AppCompatActivity {
              startActivity(new Intent(AdminDashboardActivity.this, ManageUsersActivity.class));
         });
 
-        btnManageInventory.setOnClickListener(v -> {
+        findViewById(R.id.btnManageInventory).setOnClickListener(v -> {
             startActivity(new Intent(AdminDashboardActivity.this, InventoryActivity.class));
         });
 
-        // Đăng xuất quay về Login
-        btnAdminLogout.setOnClickListener(v -> {
+        findViewById(R.id.btnAdminStats).setOnClickListener(v -> {
+            startActivity(new Intent(AdminDashboardActivity.this, AdminStatisticsActivity.class));
+        });
+
+        findViewById(R.id.btnAdminLogout).setOnClickListener(v -> {
             Intent intent = new Intent(AdminDashboardActivity.this, LoginActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK); // Xóa lịch sử trang Admin
             startActivity(intent);
