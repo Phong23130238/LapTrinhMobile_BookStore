@@ -35,6 +35,9 @@ public interface ApiService {
     @POST("api/auth/google")
     Call<ApiResponse<User>> googleLogin(@Body HashMap<String, Object> body);
 
+    @POST("/api/auth/send-otp")
+    Call<ApiResponse<Void>> sendOtp(@Body HashMap<String, Object> body);
+
     // ===== USER PROFILE APIs =====
 
     @Multipart
@@ -49,6 +52,13 @@ public interface ApiService {
     );
 
     @Multipart
+    @Headers("Bypass-Tunnel-Reminder: true")
+    @PUT("api/users/profile")
+    Call<ApiResponse<User>> updateProfileWithoutAvatar(
+            @Part("uid") RequestBody uid,
+            @Part("name") RequestBody name,
+            @Part("phone") RequestBody phone,
+            @Part("address") RequestBody address
     @POST("api/books/upload-cover")
     Call<UploadResponse> uploadBookCover(
             @Part MultipartBody.Part bookCover,

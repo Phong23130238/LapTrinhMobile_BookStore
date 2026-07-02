@@ -76,6 +76,8 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
         // Ảnh bìa
         if (currentItem.getImageUrl() != null && !currentItem.getImageUrl().isEmpty()) {
             Glide.with(context).load(currentItem.getImageUrl())
+                    .override(200, 300)
+                    .thumbnail(0.2f)
                     .placeholder(R.drawable.ic_book_placeholder)
                     .error(R.drawable.ic_book_placeholder)
                     .into(holder.ivCover);

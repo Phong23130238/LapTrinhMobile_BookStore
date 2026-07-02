@@ -6,8 +6,9 @@ const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const crypto = require('crypto');
 const { OAuth2Client } = require('google-auth-library');
+const nodemailer = require('nodemailer');
 const { initializeApp } = require('firebase/app');
-const { getFirestore, collection, query, where, getDocs, addDoc, updateDoc, doc, getDoc, setDoc } = require('firebase/firestore');
+const { getFirestore, collection, query, where, getDocs, addDoc, updateDoc, doc, getDoc, setDoc, deleteDoc } = require('firebase/firestore');
 
 const firebaseConfig = {
   apiKey: "AIzaSyAxkEKnqnAIX4FMWsb-jxmSkPLZLwf0wO4",
@@ -27,9 +28,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// =============================================
-// CẤU HÌNH CLOUDINARY & MULTER
-// =============================================
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -56,29 +54,85 @@ const bookStorage = new CloudinaryStorage({
 });
 const uploadBookCover = multer({ storage: bookStorage });
 
-// =============================================
-// HELPER: Hash mật khẩu bằng MD5
-// =============================================
 function hashMD5(password) {
     return crypto.createHash('md5').update(password).digest('hex');
 }
 
-// =============================================
-// AUTH APIs
-// =============================================
+// Cấu hình Nodemailer để gửi mã OTP
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: '23130327@st.hcmuaf.edu.vn',
+        pass: 'wtovolspzipsbvae'
+    }
+});
 
-// API: Đăng ký tài khoản thường
+// API: Gửi mã OTP xác thực Email
+app.post('/api/auth/send-otp', async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ success: false, message: "Vui lòng cung cấp email" });
+        }
+
+        // Tạo mã OTP 6 số
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        // Thời gian hết hạn (5 phút)
+        const expiresAt = Date.now() + 5 * 60 * 1000;
+
+        // Lưu vào Firestore collection 'otps' (ghi đè nếu đã tồn tại)
+        await setDoc(doc(db, "otps", email), {
+            otp: otp,
+            expiresAt: expiresAt
+        });
+
+        // Gửi email
+        const mailOptions = {
+            from: '"Bookstore App" <23130327@st.hcmuaf.edu.vn>',
+            to: email,
+            subject: 'Mã xác nhận đăng ký tài khoản Bookstore',
+            text: `Chào bạn,\n\nMã xác nhận (OTP) của bạn là: ${otp}\n\nMã này sẽ hết hạn trong vòng 5 phút.\n\nTrân trọng,\nĐội ngũ Bookstore`
+        };
+
+        await transporter.sendMail(mailOptions);
+
+        res.json({ success: true, message: "Mã OTP đã được gửi đến email của bạn." });
+    } catch (error) {
+        console.error("Lỗi gửi OTP:", error);
+        res.status(500).json({ success: false, message: "Không thể gửi OTP. " + error.message });
+    }
+});
+
+// Đky tài khoản thường
 app.post('/api/auth/register', async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        const { name, email, password, otp } = req.body;
 
         // Validate dữ liệu đầu vào
-        if (!name || !email || !password) {
-            return res.status(400).json({ success: false, message: "Vui lòng điền đầy đủ thông tin" });
+        if (!name || !email || !password || !otp) {
+            return res.status(400).json({ success: false, message: "Vui lòng điền đầy đủ thông tin và mã OTP" });
         }
 
         if (password.length < 6) {
             return res.status(400).json({ success: false, message: "Mật khẩu phải có ít nhất 6 ký tự" });
+        }
+
+        // Kiểm tra mã OTP
+        const otpDocRef = doc(db, "otps", email);
+        const otpDocSnap = await getDoc(otpDocRef);
+
+        if (!otpDocSnap.exists()) {
+            return res.status(400).json({ success: false, message: "Chưa gửi mã OTP cho email này" });
+        }
+
+        const otpData = otpDocSnap.data();
+        
+        if (otpData.otp !== otp) {
+            return res.status(400).json({ success: false, message: "Mã OTP không chính xác" });
+        }
+
+        if (Date.now() > otpData.expiresAt) {
+            return res.status(400).json({ success: false, message: "Mã OTP đã hết hạn" });
         }
 
         // Kiểm tra email đã tồn tại chưa
@@ -109,6 +163,9 @@ app.post('/api/auth/register', async (req, res) => {
 
         // Cập nhật uid = document ID
         await updateDoc(docRef, { uid: docRef.id });
+
+        // Xóa mã OTP sau khi đăng ký thành công
+        await deleteDoc(otpDocRef);
 
         // Trả về user data (không trả password)
         res.json({
@@ -338,11 +395,15 @@ app.put('/api/users/profile', upload.single('avatar'), async (req, res) => {
 
         // Lấy dữ liệu mới nhất trả về
         const updatedSnap = await getDoc(userRef);
+        let updatedData = updatedSnap.data();
+        if (updatedData && !updatedData.uid) {
+            updatedData.uid = uid;
+        }
 
         res.json({
             success: true,
             message: "Cập nhật hồ sơ thành công",
-            data: updatedSnap.data()
+            data: updatedData
         });
 
     } catch (error) {

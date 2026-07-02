@@ -391,7 +391,12 @@ public class ProfileActivity extends AppCompatActivity {
 
         showLoading(true);
 
-        // 5.3.1 Khởi tạo các RequestBody dạng Multipart kiểu 'text/plain' chứa Name, Phone, Address.
+        if (currentUser.getUid() == null) {
+            Toast.makeText(this, "Lỗi dữ liệu người dùng, vui lòng đăng nhập lại", Toast.LENGTH_SHORT).show();
+            showLoading(false);
+            return;
+        }
+
         RequestBody uidPart = RequestBody.create(MediaType.parse("text/plain"), currentUser.getUid());
         RequestBody namePart = RequestBody.create(MediaType.parse("text/plain"), name);
         RequestBody phonePart = RequestBody.create(MediaType.parse("text/plain"), phone);
@@ -408,8 +413,14 @@ public class ProfileActivity extends AppCompatActivity {
             }
         }
 
-        apiService.updateProfile(uidPart, namePart, phonePart, addressPart, avatarPart)
-                .enqueue(new Callback<ApiResponse<User>>() {
+        Call<ApiResponse<User>> call;
+        if (avatarPart != null) {
+            call = apiService.updateProfile(uidPart, namePart, phonePart, addressPart, avatarPart);
+        } else {
+            call = apiService.updateProfileWithoutAvatar(uidPart, namePart, phonePart, addressPart);
+        }
+
+        call.enqueue(new Callback<ApiResponse<User>>() {
                     @Override
                     public void onResponse(Call<ApiResponse<User>> call, Response<ApiResponse<User>> response) {
                         showLoading(false);

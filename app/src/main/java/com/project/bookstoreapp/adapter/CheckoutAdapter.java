@@ -49,6 +49,8 @@ public class CheckoutAdapter extends RecyclerView.Adapter<CheckoutAdapter.Checko
         if (item.getImageUrl() != null && !item.getImageUrl().isEmpty()) {
             Glide.with(context)
                     .load(item.getImageUrl())
+                    .override(200, 300)
+                    .thumbnail(0.2f)
                     .placeholder(R.drawable.ic_book_placeholder)
                     .error(R.drawable.ic_book_placeholder)
                     .into(holder.ivCover);
