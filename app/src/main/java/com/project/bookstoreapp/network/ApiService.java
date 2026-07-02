@@ -63,8 +63,7 @@ public interface ApiService {
             @Part("name") RequestBody name,
             @Part("phone") RequestBody phone,
             @Part("address") RequestBody address,
-            @Part MultipartBody.Part avatar
-    );
+            @Part MultipartBody.Part avatar);
 
     @Multipart
     @Headers("Bypass-Tunnel-Reminder: true")

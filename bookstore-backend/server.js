@@ -8,8 +8,7 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const { OAuth2Client } = require('google-auth-library');
 const { initializeApp } = require('firebase/app');
-const { getFirestore, collection, query, where, getDocs, addDoc, updateDoc, doc, getDoc, setDoc, deleteDoc } = require('firebase/firestore');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { getFirestore, collection, query, where, getDocs, addDoc, updateDoc, doc, getDoc, setDoc } = require('firebase/firestore');
 
 const firebaseConfig = {
     apiKey: "AIzaSyAxkEKnqnAIX4FMWsb-jxmSkPLZLwf0wO4",
@@ -22,8 +21,8 @@ const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 
 // Google OAuth2 Client để verify idToken
-const GOOGLE_CLIENT_ID = "608811292447-d9cncbpmdbuf07npas15ack1o3cmdtsm.apps.googleusercontent.com"; // Web Client ID
-const GOOGLE_ANDROID_CLIENT_ID = "608811292447-d9cncbpmdbuf07npas15ack1o3cmdtsm.apps.googleusercontent.com"; // Thường trùng với Web Client ID khi verify
+const GOOGLE_CLIENT_ID = "156167272606-ahuk0t1gr5biq7b69a24kh0i9so84vp4.apps.googleusercontent.com";
+const GOOGLE_ANDROID_CLIENT_ID = "156167272606-ftq1ike17ekmorja3trn0bbot04btoh6.apps.googleusercontent.com";
 const ACCEPTED_CLIENT_IDS = [GOOGLE_CLIENT_ID, GOOGLE_ANDROID_CLIENT_ID];
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
@@ -54,6 +53,9 @@ const emailTransporter = nodemailer.createTransport({
 });
 app.use(express.json());
 
+// =============================================
+// CẤU HÌNH CLOUDINARY & MULTER
+// =============================================
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
@@ -84,52 +86,19 @@ function hashMD5(password) {
     return crypto.createHash('md5').update(password).digest('hex');
 }
 
-// Cấu hình Nodemailer để gửi mã OTP
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: '23130327@st.hcmuaf.edu.vn',
-        pass: 'wtovolspzipsbvae'
-    }
-});
+// =============================================
+// AUTH APIs
+// =============================================
 
-// API: Gửi mã OTP xác thực Email
-app.post('/api/auth/send-otp', async (req, res) => {
-    try {
-        const { email } = req.body;
-        if (!email) {
-            return res.status(400).json({ success: false, message: "Vui lòng cung cấp email" });
-        }
-
-        // Tạo mã OTP 6 số
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        // Thời gian hết hạn (5 phút)
-        const expiresAt = Date.now() + 5 * 60 * 1000;
-
-        // Lưu vào Firestore collection 'otps' (ghi đè nếu đã tồn tại)
-        await setDoc(doc(db, "otps", email), {
-            otp: otp,
-            expiresAt: expiresAt
-        });
-
-        // Gửi email
-        const mailOptions = {
-            from: '"Bookstore App" <23130327@st.hcmuaf.edu.vn>',
-            to: email,
-            subject: 'Mã xác nhận đăng ký tài khoản Bookstore',
-            text: `Chào bạn,\n\nMã xác nhận (OTP) của bạn là: ${otp}\n\nMã này sẽ hết hạn trong vòng 5 phút.\n\nTrân trọng,\nĐội ngũ Bookstore`
-        };
-
-        await transporter.sendMail(mailOptions);
-
-        res.json({ success: true, message: "Mã OTP đã được gửi đến email của bạn." });
-    } catch (error) {
-        console.error("Lỗi gửi OTP:", error);
-        res.status(500).json({ success: false, message: "Không thể gửi OTP. " + error.message });
-    }
-});
-
-// Đky tài khoản thường
+/**
+ * @api {post} /api/auth/register Đăng ký tài khoản thường
+ * @description Xử lý luồng tạo tài khoản mới bằng Email/Password.
+ * 1. Nhận Name, Email, Password từ body. Validate đầu vào (rỗng, độ dài pass >= 6).
+ * 2. Query collection 'users' xem email đã tồn tại chưa. Nếu có -> trả về lỗi 400.
+ * 3. Băm mật khẩu (Hash) bằng thuật toán MD5 để bảo mật trước khi lưu.
+ * 4. Tạo document mới trong collection 'users', mặc định role = 'customer'.
+ * 5. Update document để lưu 'uid' bằng chính ID của document vừa tạo.
+ */
 app.post('/api/auth/register', async (req, res) => {
     try {
         const { name, email, password, otp } = req.body;
@@ -152,7 +121,7 @@ app.post('/api/auth/register', async (req, res) => {
         }
 
         const otpData = otpDocSnap.data();
-
+        
         if (otpData.otp !== otp) {
             return res.status(400).json({ success: false, message: "Mã OTP không chính xác" });
         }
@@ -173,17 +142,18 @@ app.post('/api/auth/register', async (req, res) => {
         // Hash mật khẩu bằng MD5
         const hashedPassword = hashMD5(password);
 
+        // Tạo user mới
         const newUser = {
-            name,
-            email,
-            password: hashedPassword, // (hoặc null đối với Google)
-            phone: "",
-            address: "",
-            avatarUrl: "", // (hoặc googleAvatar)
-            role: "customer",
-            isLocked: false, // THÊM DÒNG NÀY
-            createdAt: new Date().toISOString()
-        };
+                    name,
+                    email,
+                    password: hashedPassword, // (hoặc null đối với Google)
+                    phone: "",
+                    address: "",
+                    avatarUrl: "", // (hoặc googleAvatar)
+                    role: "customer",
+                    isLocked: false, // THÊM DÒNG NÀY
+                    createdAt: new Date().toISOString()
+                };
 
         const docRef = await addDoc(usersRef, newUser);
 
@@ -215,7 +185,15 @@ app.post('/api/auth/register', async (req, res) => {
     }
 });
 
-// API: Đăng nhập thường (email + password)
+/**
+ * @api {post} /api/auth/login Đăng nhập thường
+ * @description Xử lý luồng đăng nhập bằng Email/Password.
+ * 1. Nhận Email, Password từ body.
+ * 2. Query collection 'users' để tìm user theo Email.
+ * 3. Kiểm tra trường 'password': nếu rỗng (null), tức là tài khoản này được tạo bởi Google -> Bắt buộc dùng Google Login.
+ * 4. Băm mật khẩu (MD5) nhập vào và so sánh với mật khẩu trong DB.
+ * 5. Trả về thông tin User (loại bỏ trường password) để Client lưu phiên đăng nhập.
+ */
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -244,16 +222,13 @@ app.post('/api/auth/login', async (req, res) => {
             });
         }
 
-        // ==========================================
-        // THÊM ĐOẠN NÀY: Kiểm tra tài khoản có bị khóa không
-        // Bắt chặt cả trường hợp lưu là boolean (true) hoặc chuỗi text ("true")
-        if (userData.isLocked === true || String(userData.isLocked).toLowerCase() === "true") {
+        // Kiểm tra tài khoản có bị khóa không                if (userData.isLocked === true || String(userData.isLocked).toLowerCase() === "true") {
             return res.status(403).json({
                 success: false,
                 message: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên."
             });
         }
-        // ==========================================
+
 
 
         // So sánh password đã hash
@@ -284,7 +259,16 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
-// API: Đăng nhập bằng Google
+/**
+ * @api {post} /api/auth/google Đăng nhập bằng Google
+ * @description Xử lý luồng OAuth2 Google Sign-In.
+ * 1. Client truyền lên 'idToken' do Google cấp.
+ * 2. Dùng thư viện google-auth-library (googleClient.verifyIdToken) để verify token với ACCEPTED_CLIENT_IDS (Web & Android).
+ * 3. Giải mã lấy Payload (Email, Name, Picture).
+ * 4. Query Firestore theo Email.
+ *    - Nếu có: Cho đăng nhập thẳng. Cập nhật avatar nếu trước đó chưa có.
+ *    - Nếu chưa có: Tạo mới User trong DB với trường 'password' là null.
+ */
 app.post('/api/auth/google', async (req, res) => {
     try {
         const { idToken } = req.body;
@@ -322,9 +306,7 @@ app.post('/api/auth/google', async (req, res) => {
             const existingDoc = querySnapshot.docs[0];
             const existingData = existingDoc.data();
 
-            // ==========================================
-            // THÊM ĐOẠN NÀY: Kiểm tra tài khoản có bị khóa không
-            // Bắt chặt cả trường hợp lưu là boolean (true) hoặc chuỗi text ("true")
+            // Kiểm tra tài khoản có bị khóa không
             if (existingData.isLocked === true || String(existingData.isLocked).toLowerCase() === "true") {
                 return res.status(403).json({
                     success: false,
@@ -348,6 +330,7 @@ app.post('/api/auth/google', async (req, res) => {
                 await updateDoc(existingDoc.ref, { avatarUrl: googleAvatar });
             }
         } else {
+            // Email chưa tồn tại → tạo user mới với password = null
             const newUser = {
                 name: googleName,
                 email: googleEmail,
@@ -706,7 +689,7 @@ const vnp_TmnCode = "5BNONW5M";
 const vnp_HashSecret = "C777AQAKMIXKG56BWNBE50H6CALW8IUR";
 const vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
 // Tự động nhận diện URL đang chạy (Render hoặc Localhost) thông qua process.env.HOST_URL
-const vnp_ReturnUrl = (process.env.HOST_URL || "http://10.0.2.2:3000") + "/api/vnpay_return"; 
+const vnp_ReturnUrl = (process.env.HOST_URL || "http://10.0.2.2:3000") + "/api/vnpay_return";
 
 function sortObject(obj) {
     let sorted = {};
@@ -734,19 +717,19 @@ app.post('/api/create_payment_url', (req, res) => {
     // format yyyyMMddHHmmss
     const pad = (n) => (n < 10 ? '0' + n : n);
     let createDate = date.getFullYear().toString() + pad(date.getMonth() + 1) + pad(date.getDate()) + pad(date.getHours()) + pad(date.getMinutes()) + pad(date.getSeconds());
-    
+
     // expire in 15 minutes
     let expireDateObj = new Date(date.getTime() + 15 * 60000);
     let expireDate = expireDateObj.getFullYear().toString() + pad(expireDateObj.getMonth() + 1) + pad(expireDateObj.getDate()) + pad(expireDateObj.getHours()) + pad(expireDateObj.getMinutes()) + pad(expireDateObj.getSeconds());
 
     let orderId = req.body.orderId || date.getTime().toString();
     let amount = req.body.amount;
-    let bankCode = req.body.bankCode || ''; 
-    
+    let bankCode = req.body.bankCode || '';
+
     let orderInfo = req.body.orderDescription || 'Thanh toan don hang Bookstore';
     let orderType = req.body.orderType || 'billpayment';
     let locale = req.body.language || 'vn';
-    
+
     let currCode = 'VND';
     let vnp_Params = {};
     vnp_Params['vnp_Version'] = '2.1.0';
@@ -772,9 +755,9 @@ app.post('/api/create_payment_url', (req, res) => {
                          .map(key => key + '=' + vnp_Params[key])
                          .join('&');
     let hmac = crypto.createHmac("sha512", vnp_HashSecret);
-    let signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex"); 
+    let signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex");
     vnp_Params['vnp_SecureHash'] = signed;
-    
+
     let paymentUrl = vnp_Url + '?' + Object.keys(vnp_Params)
                                            .map(key => key + '=' + vnp_Params[key])
                                            .join('&');
@@ -851,7 +834,14 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     }
 });
 
-// API 2: Xác thực OTP
+/**
+ * @api {post} /api/auth/verify-otp Xác thực mã OTP (Bước 2 - Quên MK)
+ * @description
+ * 1. Lấy thông tin (OTP, thời gian hết hạn) từ bộ nhớ 'otpStore' dựa vào email.
+ * 2. So khớp chuỗi OTP và kiểm tra thời gian (TTL 5 phút).
+ * 3. Nếu hợp lệ: Xóa OTP cũ, sinh 'resetToken' ngẫu nhiên 32 byte.
+ * 4. Lưu resetToken vào 'resetTokenStore' (TTL 10 phút) và trả về cho Client.
+ */
 app.post('/api/auth/verify-otp', async (req, res) => {
     try {
         const { email, otp } = req.body;
@@ -891,7 +881,14 @@ app.post('/api/auth/verify-otp', async (req, res) => {
     }
 });
 
-// API 3: Đặt lại mật khẩu mới
+/**
+ * @api {post} /api/auth/reset-password Đặt lại mật khẩu (Bước 3 - Quên MK)
+ * @description
+ * 1. Nhận email, resetToken, newPassword. Validate pass >= 6 ký tự.
+ * 2. Kiểm tra tính hợp lệ và thời hạn (TTL 10 phút) của 'resetToken' trong 'resetTokenStore'.
+ * 3. Nếu token đúng, băm MD5 mật khẩu mới và update vào document user trong Firestore.
+ * 4. Xóa resetToken khỏi bộ nhớ để không bị dùng lại.
+ */
 app.post('/api/auth/reset-password', async (req, res) => {
     try {
         const { email, resetToken, newPassword } = req.body;
@@ -1046,14 +1043,14 @@ app.get('/api/admin/stats', async (req, res) => {
 
         const start = new Date(fromDate);
         start.setHours(0, 0, 0, 0); // Đầu ngày
-        
+
         const end = new Date(toDate);
         end.setHours(23, 59, 59, 999); // Cuối ngày
 
         // Lấy tất cả sách để đối chiếu
         const booksRef = collection(db, "books");
         const booksSnap = await getDocs(booksRef);
-        
+
         let allBooks = {};
         let totalInventory = 0;
 
@@ -1080,7 +1077,7 @@ app.get('/api/admin/stats', async (req, res) => {
 
         ordersSnap.forEach(docSnap => {
             const order = docSnap.data();
-            
+
             // Bỏ qua đơn hàng bị hủy
             if (order.status === "cancelled") return;
 
@@ -1088,7 +1085,7 @@ app.get('/api/admin/stats', async (req, res) => {
             if (order.createdAt) {
                 const orderDate = new Date(order.createdAt);
                 if (orderDate.getTime() >= start.getTime() && orderDate.getTime() <= end.getTime()) {
-                    
+
                     totalRevenue += (order.totalPrice || 0);
 
                     // Quét các items trong đơn hàng
@@ -1096,7 +1093,7 @@ app.get('/api/admin/stats', async (req, res) => {
                         order.items.forEach(item => {
                             const qty = item.quantity || 0;
                             totalSoldQty += qty;
-                            
+
                             if (allBooks[item.bookId]) {
                                 allBooks[item.bookId].soldInMonth += qty;
                             }

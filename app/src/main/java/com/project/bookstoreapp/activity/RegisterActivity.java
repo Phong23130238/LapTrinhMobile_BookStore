@@ -30,13 +30,11 @@ public class RegisterActivity extends AppCompatActivity {
 
     private static final String TAG = "RegisterActivity";
 
-    // UI Components
-    private TextInputLayout tilFullName, tilEmail, tilPassword, tilConfirmPassword, tilOtp;
-    private TextInputEditText etFullName, etEmail, etPassword, etConfirmPassword, etOtp;
-    private MaterialButton btnRegister, btnSendOtp;
+    private TextInputLayout tilFullName, tilEmail, tilPassword, tilConfirmPassword;
+    private TextInputEditText etFullName, etEmail, etPassword, etConfirmPassword;
+    private MaterialButton btnRegister;
     private ProgressBar progressBar;
 
-    // Network
     private ApiService apiService;
 
     @Override
@@ -47,101 +45,40 @@ public class RegisterActivity extends AppCompatActivity {
         // Khởi tạo Network
         apiService = RetrofitClient.getClient().create(ApiService.class);
 
-        // Ánh xạ UI
         tilFullName = findViewById(R.id.tilFullName);
         tilEmail = findViewById(R.id.tilEmail);
         tilPassword = findViewById(R.id.tilPassword);
         tilConfirmPassword = findViewById(R.id.tilConfirmPassword);
-        tilOtp = findViewById(R.id.tilOtp);
         etFullName = findViewById(R.id.etFullName);
         etEmail = findViewById(R.id.etEmail);
         etPassword = findViewById(R.id.etPassword);
         etConfirmPassword = findViewById(R.id.etConfirmPassword);
-        etOtp = findViewById(R.id.etOtp);
         btnRegister = findViewById(R.id.btnRegister);
-        btnSendOtp = findViewById(R.id.btnSendOtp);
         progressBar = findViewById(R.id.progressBarRegister);
 
-        // Ánh xạ dòng chữ quay lại đăng nhập
         TextView tvBackToLogin = findViewById(R.id.tvBackToLogin);
 
-        // Khi nhấn vào, đóng màn hình hiện tại để quay về Login
+        // quay về Login
         tvBackToLogin.setOnClickListener(v -> finish());
 
-        // Nhấn "Tạo tài khoản" → Đăng ký
+        // form đăng ký
         btnRegister.setOnClickListener(v -> performRegister());
-
-        // Nhấn "Gửi mã"
-        btnSendOtp.setOnClickListener(v -> sendOtp());
-    }
-
-    // =============================================
-    // GỬI MÃ OTP
-    // =============================================
-    private void sendOtp() {
-        tilEmail.setError(null);
-        String email = etEmail.getText() != null ? etEmail.getText().toString().trim() : "";
-        if (email.isEmpty()) {
-            tilEmail.setError("Vui lòng nhập email");
-            etEmail.requestFocus();
-            return;
-        }
-        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            tilEmail.setError("Email không hợp lệ");
-            etEmail.requestFocus();
-            return;
-        }
-
-        // Bắt đầu đếm ngược 60s
-        btnSendOtp.setEnabled(false);
-        new android.os.CountDownTimer(60000, 1000) {
-            public void onTick(long millisUntilFinished) {
-                btnSendOtp.setText(millisUntilFinished / 1000 + "s");
-            }
-            public void onFinish() {
-                btnSendOtp.setEnabled(true);
-                btnSendOtp.setText("Gửi lại");
-            }
-        }.start();
-
-        // Gọi API gửi OTP
-        HashMap<String, Object> body = new HashMap<>();
-        body.put("email", email);
-
-        apiService.sendOtp(body).enqueue(new Callback<ApiResponse<Void>>() {
-            @Override
-            public void onResponse(Call<ApiResponse<Void>> call, Response<ApiResponse<Void>> response) {
-                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
-                    Toast.makeText(RegisterActivity.this, "Đã gửi mã OTP đến email của bạn", Toast.LENGTH_SHORT).show();
-                    etOtp.requestFocus();
-                } else {
-                    Toast.makeText(RegisterActivity.this, "Lỗi gửi OTP, vui lòng thử lại sau", Toast.LENGTH_SHORT).show();
-                }
-            }
-
-            @Override
-            public void onFailure(Call<ApiResponse<Void>> call, Throwable t) {
-                Toast.makeText(RegisterActivity.this, "Lỗi kết nối mạng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
     }
 
     // =============================================
     // ĐĂNG KÝ TÀI KHOẢN
     // =============================================
     private void performRegister() {
-        // Xóa lỗi cũ
         tilFullName.setError(null);
         tilEmail.setError(null);
         tilPassword.setError(null);
         tilConfirmPassword.setError(null);
-        tilOtp.setError(null);
 
         String name = etFullName.getText() != null ? etFullName.getText().toString().trim() : "";
         String email = etEmail.getText() != null ? etEmail.getText().toString().trim() : "";
         String password = etPassword.getText() != null ? etPassword.getText().toString().trim() : "";
-        String confirmPassword = etConfirmPassword.getText() != null ? etConfirmPassword.getText().toString().trim() : "";
-        String otp = etOtp.getText() != null ? etOtp.getText().toString().trim() : "";
+        String confirmPassword = etConfirmPassword.getText() != null ? etConfirmPassword.getText().toString().trim()
+                : "";
 
         // ===== VALIDATE =====
         if (name.isEmpty()) {
@@ -174,14 +111,6 @@ public class RegisterActivity extends AppCompatActivity {
             return;
         }
 
-        // Kiểm tra mật khẩu phải có chữ hoa, chữ thường, số, ký tự đặc biệt
-        String passwordPattern = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!_]).{6,}$";
-        if (!password.matches(passwordPattern)) {
-            tilPassword.setError("Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt");
-            etPassword.requestFocus();
-            return;
-        }
-
         if (confirmPassword.isEmpty()) {
             tilConfirmPassword.setError("Vui lòng xác nhận mật khẩu");
             etConfirmPassword.requestFocus();
@@ -194,12 +123,6 @@ public class RegisterActivity extends AppCompatActivity {
             return;
         }
 
-        if (otp.isEmpty()) {
-            tilOtp.setError("Vui lòng nhập mã xác nhận OTP");
-            etOtp.requestFocus();
-            return;
-        }
-
         // ===== GỌI API ĐĂNG KÝ =====
         showLoading();
 
@@ -207,7 +130,6 @@ public class RegisterActivity extends AppCompatActivity {
         body.put("name", name);
         body.put("email", email);
         body.put("password", password);
-        body.put("otp", otp);
 
         apiService.register(body).enqueue(new Callback<ApiResponse<User>>() {
             @Override
@@ -218,12 +140,12 @@ public class RegisterActivity extends AppCompatActivity {
                     ApiResponse<User> apiResponse = response.body();
 
                     if (apiResponse.isSuccess()) {
-                        // Đăng ký thành công
+                        // thành công
                         Toast.makeText(RegisterActivity.this,
                                 "Đăng ký thành công! Vui lòng đăng nhập.", Toast.LENGTH_LONG).show();
-                        finish(); // Quay về màn hình Login
+                        finish();
                     } else {
-                        // Server trả success=false (VD: email đã tồn tại)
+                        // thất bại
                         Toast.makeText(RegisterActivity.this,
                                 apiResponse.getMessage(), Toast.LENGTH_LONG).show();
                     }
@@ -259,12 +181,14 @@ public class RegisterActivity extends AppCompatActivity {
     // LOADING UI
     // =============================================
     private void showLoading() {
-        if (progressBar != null) progressBar.setVisibility(View.VISIBLE);
+        if (progressBar != null)
+            progressBar.setVisibility(View.VISIBLE);
         btnRegister.setEnabled(false);
     }
 
     private void hideLoading() {
-        if (progressBar != null) progressBar.setVisibility(View.GONE);
+        if (progressBar != null)
+            progressBar.setVisibility(View.GONE);
         btnRegister.setEnabled(true);
     }
 }
