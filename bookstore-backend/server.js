@@ -780,6 +780,8 @@ app.post('/api/create_payment_url', (req, res) => {
 
     res.json({ success: true, paymentUrl: paymentUrl });
 });
+
+// =============================================
 // FORGOT PASSWORD APIs
 // =============================================
 
