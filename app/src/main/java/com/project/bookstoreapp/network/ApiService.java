@@ -1,6 +1,8 @@
 package com.project.bookstoreapp.network;
 
+import com.project.bookstoreapp.model.AdminStatsResponse;
 import com.project.bookstoreapp.model.Order;
+import com.project.bookstoreapp.model.PaymentResponse;
 import com.project.bookstoreapp.model.Review;
 import com.project.bookstoreapp.model.UploadResponse;
 import com.project.bookstoreapp.model.User;
@@ -99,14 +101,23 @@ public interface ApiService {
     @POST("api/reviews")
     Call<ApiResponse<Void>> submitReview(@Body HashMap<String, Object> body);
 
-    // ===== ORDER APIs =====
+    // ===== ORDER & PAYMENT APIs =====
 
     @Headers("Bypass-Tunnel-Reminder: true")
     @GET("api/orders/{orderId}")
     Call<ApiResponse<Order>> getOrderDetails(@Path("orderId") String orderId);
 
+    @Headers("Bypass-Tunnel-Reminder: true")
+    @POST("api/create_payment_url")
+    Call<PaymentResponse> createPaymentUrl(@Body HashMap<String, Object> body);
+
 
     // ===== MANAGE USERS APIs =====
+    
+    // API lấy thống kê Admin
+    @GET("api/admin/stats")
+    Call<ApiResponse<AdminStatsResponse>> getAdminStats(@retrofit2.http.Query("fromDate") String fromDate, @retrofit2.http.Query("toDate") String toDate);
+
     // Lấy danh sách người dùng
     @GET("/api/users")
     Call<ApiResponse<List<User>>> getAllUsers();
@@ -118,4 +129,9 @@ public interface ApiService {
     // Lấy thống kê đơn hàng của người dùng
     @GET("/api/users/{uid}/stats")
     Call<ApiResponse<UserStats>> getUserStats(@Path("uid") String uid);
+
+    // ===== AI APIs =====
+    @Headers("Bypass-Tunnel-Reminder: true")
+    @POST("api/ai/summarize")
+    Call<ApiResponse<String>> summarizeBook(@Body HashMap<String, String> body);
 }

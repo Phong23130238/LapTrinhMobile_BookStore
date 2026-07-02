@@ -18,7 +18,7 @@
             android:layout_height="?attr/actionBarSize"
             android:background="@color/bg_light"
             app:title="Giỏ hàng của bạn"
-            app:titleTextColor="@color/white"
+            app:titleTextColor="@color/navy_dark"
             app:navigationIcon="@android:drawable/ic_menu_revert" />
     </com.google.android.material.appbar.AppBarLayout>
 

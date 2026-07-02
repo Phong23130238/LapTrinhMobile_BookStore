@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.project.bookstoreapp.R;
 import com.project.bookstoreapp.adapter.ReviewAdapter;
@@ -38,7 +39,7 @@ public class BookDetailActivity extends AppCompatActivity {
     private ImageView ivCover, ivCoverBg;
     private TextView tvTitle, tvAuthor, tvPrice, tvDescription;
     private TextView tvOriginalPrice, tvRating, tvReviewCount, tvSold, tvCategory, tvStock, tvPublisher;
-    private Button btnAddToCart, btnWriteReview;
+    private Button btnAddToCart, btnWriteReview, btnAiSummary;
     private RecyclerView rvReviews;
     private TextView tvNoReview;
     private ReviewAdapter reviewAdapter;
@@ -94,6 +95,9 @@ public class BookDetailActivity extends AppCompatActivity {
         if (btnAddToCart != null) {
             btnAddToCart.setOnClickListener(v -> addToCart());
         }
+        if (btnAiSummary != null) {
+            btnAiSummary.setOnClickListener(v -> summarizeWithAI());
+        }
     }
 
     private void initViews() {
@@ -114,6 +118,7 @@ public class BookDetailActivity extends AppCompatActivity {
 
         btnAddToCart = findViewById(R.id.btnAddToCart);
         btnWriteReview = findViewById(R.id.btnWriteReview);
+        btnAiSummary = findViewById(R.id.btnAiSummary);
         
         // Review views
         rvReviews = findViewById(R.id.rvReviews);
@@ -145,7 +150,7 @@ public class BookDetailActivity extends AppCompatActivity {
                         bindBookData(documentSnapshot);
                     } else {
                         // 3.2.2 Xử lý Fallback: Nếu không thấy (exists=false), tiếp tục gọi whereEqualTo("bookId", bookId) (Thử ép sang kiểu long trước, thất bại thử String).
-                        android.util.Log.d("FIRESTORE", "==> Document ID không tồn tại, thử whereEqualTo bookId=" + bookId);
+                        android.util.Log.d("FIRESTORE", "Document ID không tồn tại, thử whereEqualTo bookId=" + bookId);
                         long bookIdLong = -1;
                         try { bookIdLong = Long.parseLong(bookId); } catch (NumberFormatException ignored) {}
                         final long finalId = bookIdLong;
@@ -171,7 +176,7 @@ public class BookDetailActivity extends AppCompatActivity {
                                         }
                                     })
                                     .addOnFailureListener(e -> {
-                                        android.util.Log.e("FIRESTORE", "==> Lỗi whereEqualTo: " + e.getMessage());
+                                        android.util.Log.e("FIRESTORE", "lỗi whereEqualTo: " + e.getMessage());
                                         Toast.makeText(BookDetailActivity.this, "Lỗi mạng: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                                     });
                         } else {
@@ -187,13 +192,13 @@ public class BookDetailActivity extends AppCompatActivity {
                     }
                 })
                 .addOnFailureListener(e -> {
-                    android.util.Log.e("FIRESTORE", "==> Lỗi get document: " + e.getMessage());
+                    android.util.Log.e("FIRESTORE", "Lỗi get document: " + e.getMessage());
                     Toast.makeText(BookDetailActivity.this, "Lỗi mạng: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
 
     // 3.3 Hiển thị thông tin sách (bindBookData)
-    private void bindBookData(com.google.firebase.firestore.DocumentSnapshot documentSnapshot) {
+    private void bindBookData(DocumentSnapshot documentSnapshot) {
         // 3.3.1 Trích xuất title, author, price, rating, reviewCount, stock bằng documentSnapshot.getString() và getDouble().
         String title = documentSnapshot.getString("title");
         String author = documentSnapshot.getString("author");
@@ -219,25 +224,29 @@ public class BookDetailActivity extends AppCompatActivity {
         if (author != null) tvAuthor.setText(author);
         if (description != null) tvDescription.setText(description);
 
-        String categoryName = "";
+        String categoryIdValue = "";
         try {
+            // Cố gắng lấy dưới dạng String trước
             String catIdStr = documentSnapshot.getString("categoryId");
-            if (catIdStr != null) categoryName = catIdStr;
+            if (catIdStr != null) categoryIdValue = catIdStr;
         } catch (Exception e) {
+            // Nếu bị lỗi (do dữ liệu cũ lưu là Number), tự động chuyển đổi
             Double catIdDouble = documentSnapshot.getDouble("categoryId");
-            if (catIdDouble != null) categoryName = String.valueOf(catIdDouble.intValue());
+            if (catIdDouble != null) categoryIdValue = String.valueOf(catIdDouble.intValue());
         }
         
-        if (!categoryName.isEmpty() && tvCategory != null) {
+        if (!categoryIdValue.isEmpty() && tvCategory != null) {
             tvCategory.setVisibility(android.view.View.VISIBLE);
             tvCategory.setText(" Đang tải... ");
             
+            // Lấy tên thật của thể loại từ collection "categories"
             FirebaseFirestore.getInstance().collection("categories")
-                    .document(categoryName)
+                    .document(categoryIdValue)
                     .get()
                     .addOnSuccessListener(catDoc -> {
                         if (catDoc.exists() && catDoc.contains("name")) {
-                            tvCategory.setText(" " + catDoc.getString("name") + " ");
+                            // Kết hợp giao diện dấu # của nhánh Phat và dữ liệu của nhánh main
+                            tvCategory.setText(" #" + catDoc.getString("name") + " ");
                         } else {
                             tvCategory.setVisibility(android.view.View.GONE);
                         }
@@ -445,6 +454,68 @@ public class BookDetailActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<ApiResponse<Void>> call, Throwable t) {
                 Toast.makeText(BookDetailActivity.this, "Lỗi kết nối Node.js Server: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void summarizeWithAI() {
+        if (currentBookId.isEmpty()) {
+            Toast.makeText(this, "Chưa tải xong dữ liệu sách", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        String title = tvTitle != null ? tvTitle.getText().toString() : loadedTitle;
+        String desc = tvDescription != null ? tvDescription.getText().toString() : "";
+        
+        if (title.isEmpty() || desc.isEmpty()) {
+            Toast.makeText(this, "Không có đủ thông tin để tóm tắt", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Show loading dialog
+        android.app.ProgressDialog progressDialog = new android.app.ProgressDialog(this);
+        progressDialog.setMessage("AI đang đọc sách và tóm tắt giúp bạn...\nVui lòng chờ trong giây lát.");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+
+        java.util.HashMap<String, String> body = new java.util.HashMap<>();
+        body.put("title", title);
+        body.put("description", desc);
+
+        ApiService apiService = RetrofitClient.getClient().create(ApiService.class);
+        apiService.summarizeBook(body).enqueue(new Callback<ApiResponse<String>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<String>> call, Response<ApiResponse<String>> response) {
+                progressDialog.dismiss();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    String summary = response.body().getData();
+                    
+                    // Show result in Dialog
+                    new androidx.appcompat.app.AlertDialog.Builder(BookDetailActivity.this)
+                            .setTitle("Tóm tắt sách bằng AI")
+                            .setMessage(summary)
+                            .setPositiveButton("Tuyệt vời", null)
+                            .show();
+                } else {
+                    String errorMsg = "";
+                    try {
+                        if (response.errorBody() != null) {
+                            org.json.JSONObject jObjError = new org.json.JSONObject(response.errorBody().string());
+                            errorMsg = jObjError.getString("message");
+                        } else if (response.body() != null) {
+                            errorMsg = response.body().getMessage();
+                        }
+                    } catch (Exception e) {
+                        errorMsg = "Lỗi không xác định";
+                    }
+                    Toast.makeText(BookDetailActivity.this, "Lỗi từ AI: " + errorMsg, Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<String>> call, Throwable t) {
+                progressDialog.dismiss();
+                Toast.makeText(BookDetailActivity.this, "Lỗi mạng khi gọi AI: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }

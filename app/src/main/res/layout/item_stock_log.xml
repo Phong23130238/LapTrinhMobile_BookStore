@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="16dp"
+    android:gravity="center_vertical"
+    android:background="@android:color/white"
+    android:layout_marginBottom="1dp"> <!-- divider giả -->
+
+    <!-- Icon delta (số lượng +/-) -->
+    <TextView
+        android:id="@+id/tvLogDeltaIcon"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:text="+"
+        android:textColor="@android:color/white"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:background="#047857"
+        android:backgroundTint="#047857"
+        android:layout_marginEnd="16dp" />
+
+    <!-- Thông tin log -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvLogBookTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tên sách"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/navy_dark"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/tvLogSource"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Từ: Phiếu nhập #PN-001"
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary"
+            android:layout_marginTop="2dp" />
+
+        <TextView
+            android:id="@+id/tvLogTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="10:00 25/10/2026"
+            android:textSize="11sp"
+            android:textColor="@color/text_secondary"
+            android:layout_marginTop="2dp" />
+    </LinearLayout>
+
+    <!-- Số lượng -->
+    <TextView
+        android:id="@+id/tvLogDelta"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="+10"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="#047857"
+        android:layout_marginStart="8dp" />
+
+</LinearLayout>

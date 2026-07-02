@@ -82,9 +82,6 @@ const bookStorage = new CloudinaryStorage({
 });
 const uploadBookCover = multer({ storage: bookStorage });
 
-// =============================================
-// HELPER: Hash mật khẩu bằng MD5
-// =============================================
 function hashMD5(password) {
     return crypto.createHash('md5').update(password).digest('hex');
 }
@@ -124,7 +121,7 @@ app.post('/api/auth/register', async (req, res) => {
         }
 
         const otpData = otpDocSnap.data();
-
+        
         if (otpData.otp !== otp) {
             return res.status(400).json({ success: false, message: "Mã OTP không chính xác" });
         }
@@ -309,6 +306,14 @@ app.post('/api/auth/google', async (req, res) => {
             const existingDoc = querySnapshot.docs[0];
             const existingData = existingDoc.data();
 
+            // Kiểm tra tài khoản có bị khóa không
+            if (existingData.isLocked === true || String(existingData.isLocked).toLowerCase() === "true") {
+                return res.status(403).json({
+                    success: false,
+                    message: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên."
+                });
+            }
+
             userToReturn = {
                 uid: existingData.uid || existingDoc.id,
                 name: existingData.name,
@@ -334,6 +339,7 @@ app.post('/api/auth/google', async (req, res) => {
                 address: "",
                 avatarUrl: googleAvatar,
                 role: "customer",
+                isLocked: false,
                 createdAt: new Date().toISOString()
             };
 
@@ -513,7 +519,6 @@ app.post('/api/books/upload-cover', uploadBookCover.single('bookCover'), async (
     }
 });
 
-
 // =============================================
 // REVIEW APIs (giữ nguyên)
 // =============================================
@@ -672,6 +677,92 @@ app.get('/api/orders/:orderId', async (req, res) => {
         console.error("Lỗi lấy chi tiết đơn hàng:", error);
         res.status(500).json({ success: false, message: error.message });
     }
+});
+
+// =============================================
+// VNPAY APIs
+// =============================================
+const querystring = require('querystring');
+
+// Cấu hình VNPAY Sandbox (Test)
+const vnp_TmnCode = "5BNONW5M";
+const vnp_HashSecret = "C777AQAKMIXKG56BWNBE50H6CALW8IUR";
+const vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
+// Tự động nhận diện URL đang chạy (Render hoặc Localhost) thông qua process.env.HOST_URL
+const vnp_ReturnUrl = (process.env.HOST_URL || "http://10.0.2.2:3000") + "/api/vnpay_return";
+
+function sortObject(obj) {
+    let sorted = {};
+    let str = [];
+    let key;
+    for (key in obj){
+        if (obj.hasOwnProperty(key)) {
+            str.push(encodeURIComponent(key));
+        }
+    }
+    str.sort();
+    for (key = 0; key < str.length; key++) {
+        sorted[str[key]] = encodeURIComponent(obj[str[key]]).replace(/%20/g, "+");
+    }
+    return sorted;
+}
+
+app.post('/api/create_payment_url', (req, res) => {
+    let ipAddr = req.headers['x-forwarded-for'] ||
+        req.connection.remoteAddress ||
+        req.socket.remoteAddress ||
+        req.connection.socket.remoteAddress;
+
+    let date = new Date();
+    // format yyyyMMddHHmmss
+    const pad = (n) => (n < 10 ? '0' + n : n);
+    let createDate = date.getFullYear().toString() + pad(date.getMonth() + 1) + pad(date.getDate()) + pad(date.getHours()) + pad(date.getMinutes()) + pad(date.getSeconds());
+
+    // expire in 15 minutes
+    let expireDateObj = new Date(date.getTime() + 15 * 60000);
+    let expireDate = expireDateObj.getFullYear().toString() + pad(expireDateObj.getMonth() + 1) + pad(expireDateObj.getDate()) + pad(expireDateObj.getHours()) + pad(expireDateObj.getMinutes()) + pad(expireDateObj.getSeconds());
+
+    let orderId = req.body.orderId || date.getTime().toString();
+    let amount = req.body.amount;
+    let bankCode = req.body.bankCode || '';
+
+    let orderInfo = req.body.orderDescription || 'Thanh toan don hang Bookstore';
+    let orderType = req.body.orderType || 'billpayment';
+    let locale = req.body.language || 'vn';
+
+    let currCode = 'VND';
+    let vnp_Params = {};
+    vnp_Params['vnp_Version'] = '2.1.0';
+    vnp_Params['vnp_Command'] = 'pay';
+    vnp_Params['vnp_TmnCode'] = vnp_TmnCode;
+    vnp_Params['vnp_Amount'] = amount * 100;
+    if(bankCode !== null && bankCode !== ''){
+        vnp_Params['vnp_BankCode'] = bankCode;
+    }
+    vnp_Params['vnp_CreateDate'] = createDate;
+    vnp_Params['vnp_CurrCode'] = currCode;
+    vnp_Params['vnp_IpAddr'] = ipAddr;
+    vnp_Params['vnp_Locale'] = locale;
+    vnp_Params['vnp_OrderInfo'] = orderInfo;
+    vnp_Params['vnp_OrderType'] = orderType;
+    vnp_Params['vnp_ReturnUrl'] = vnp_ReturnUrl;
+    vnp_Params['vnp_TxnRef'] = orderId;
+    vnp_Params['vnp_ExpireDate'] = expireDate;
+
+    vnp_Params = sortObject(vnp_Params);
+
+    let signData = Object.keys(vnp_Params)
+                         .map(key => key + '=' + vnp_Params[key])
+                         .join('&');
+    let hmac = crypto.createHmac("sha512", vnp_HashSecret);
+    let signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex");
+    vnp_Params['vnp_SecureHash'] = signed;
+
+    let paymentUrl = vnp_Url + '?' + Object.keys(vnp_Params)
+                                           .map(key => key + '=' + vnp_Params[key])
+                                           .join('&');
+
+    res.json({ success: true, paymentUrl: paymentUrl });
 });
 
 // =============================================
@@ -937,4 +1028,152 @@ app.get('/api/users/:uid/stats', async (req, res) => {
         console.error("Lỗi lấy thống kê user:", error);
         res.status(500).json({ success: false, message: error.message });
     }
+});
+
+// ==========================================
+// TÍCH HỢP GEMINI AI - TÓM TẮT SÁCH
+// ==========================================
+// 4. Lấy thống kê tổng hợp cho Admin (Theo Khoảng Thời Gian)
+app.get('/api/admin/stats', async (req, res) => {
+    try {
+        const { fromDate, toDate } = req.query;
+        if (!fromDate || !toDate) {
+            return res.status(400).json({ success: false, message: "Vui lòng chọn Từ ngày và Đến ngày" });
+        }
+
+        const start = new Date(fromDate);
+        start.setHours(0, 0, 0, 0); // Đầu ngày
+
+        const end = new Date(toDate);
+        end.setHours(23, 59, 59, 999); // Cuối ngày
+
+        // Lấy tất cả sách để đối chiếu
+        const booksRef = collection(db, "books");
+        const booksSnap = await getDocs(booksRef);
+
+        let allBooks = {};
+        let totalInventory = 0;
+
+        booksSnap.forEach(docSnap => {
+            const data = docSnap.data();
+            const id = docSnap.id;
+            allBooks[id] = {
+                bookId: id,
+                title: data.title || "Không tên",
+                imageUrl: data.imageUrl || "",
+                price: data.price || 0,
+                stock: data.stock || 0,
+                soldInMonth: 0 // Vẫn giữ nguyên tên biến hoặc đổi thành soldInPeriod
+            };
+            totalInventory += (data.stock || 0);
+        });
+
+        // Lấy tất cả đơn hàng
+        const ordersRef = collection(db, "orders");
+        const ordersSnap = await getDocs(ordersRef);
+
+        let totalRevenue = 0;
+        let totalSoldQty = 0;
+
+        ordersSnap.forEach(docSnap => {
+            const order = docSnap.data();
+
+            // Bỏ qua đơn hàng bị hủy
+            if (order.status === "cancelled") return;
+
+            // Kiểm tra thời gian của đơn hàng
+            if (order.createdAt) {
+                const orderDate = new Date(order.createdAt);
+                if (orderDate.getTime() >= start.getTime() && orderDate.getTime() <= end.getTime()) {
+
+                    totalRevenue += (order.totalPrice || 0);
+
+                    // Quét các items trong đơn hàng
+                    if (order.items && Array.isArray(order.items)) {
+                        order.items.forEach(item => {
+                            const qty = item.quantity || 0;
+                            totalSoldQty += qty;
+
+                            if (allBooks[item.bookId]) {
+                                allBooks[item.bookId].soldInMonth += qty;
+                            }
+                        });
+                    }
+                }
+            }
+        });
+
+        // Chuyển object sách thành mảng để sort
+        let booksArray = Object.values(allBooks);
+
+        // Lọc Sách bán chạy (có bán được trong tháng, xếp giảm dần theo soldInMonth)
+        let soldBooks = booksArray.filter(b => b.soldInMonth > 0);
+        soldBooks.sort((a, b) => b.soldInMonth - a.soldInMonth);
+        let topBooks = soldBooks.slice(0, 10); // Lấy top 10
+
+        // Lọc Sách chưa bán được (soldInMonth == 0)
+        let unsoldBooks = booksArray.filter(b => b.soldInMonth === 0);
+
+        res.json({
+            success: true,
+            data: {
+                totalSoldQty,
+                totalRevenue,
+                totalInventory,
+                topBooks,
+                unsoldBooks
+            }
+        });
+
+    } catch (error) {
+        console.error("Lỗi lấy thống kê Admin:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// ==========================================
+// TÍCH HỢP GEMINI AI - TÓM TẮT SÁCH
+// ==========================================
+app.post('/api/ai/summarize', async (req, res) => {
+    try {
+        const { title, description } = req.body;
+
+        if (!title || !description) {
+            return res.status(400).json({ success: false, message: "Vui lòng cung cấp tên sách và mô tả!" });
+        }
+
+        // Lấy API Key từ biến môi trường
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+            return res.status(500).json({ success: false, message: "Lỗi cấu hình: Thiếu GEMINI_API_KEY trong file .env" });
+        }
+
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+        const prompt = `Bạn là một trợ lý AI đọc sách chuyên nghiệp. Dưới đây là thông tin về một cuốn sách:
+Tên sách: ${title}
+Mô tả nội dung: ${description}
+
+Yêu cầu: Hãy tham khảo thông tin từ các nguồn chính thống khác. Phân tích cuốn sách này theo đúng 3 ý sau đây (sử dụng gạch đầu dòng):
+1. Đối tượng độc giả: (Sách này dành cho ai?)
+2. Tóm tắt nội dung: (Nội dung chính là gì, cực kỳ ngắn gọn)
+3. Bài học rút ra: (Giá trị cốt lõi mang lại)
+Chỉ trả về 3 gạch đầu dòng này, tuyệt đối không dài dòng giải thích.`;
+
+        const result = await model.generateContent(prompt);
+        const responseText = result.response.text();
+
+        res.json({
+            success: true,
+            data: responseText
+        });
+    } catch (error) {
+        console.error("Lỗi AI Gemini:", error);
+        res.status(500).json({ success: false, message: "Lỗi khi gọi AI: " + error.message });
+    }
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server run http://localhost:${PORT}`);
 });
