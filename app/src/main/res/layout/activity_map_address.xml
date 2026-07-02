@@ -30,9 +30,9 @@
             android:id="@+id/toolbarMap"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@color/bg_light"
+            
             app:title="Chọn địa chỉ"
-            app:titleTextColor="@color/white"
+            
             app:navigationIcon="@android:drawable/ic_menu_revert" />
     </com.google.android.material.appbar.AppBarLayout>
 

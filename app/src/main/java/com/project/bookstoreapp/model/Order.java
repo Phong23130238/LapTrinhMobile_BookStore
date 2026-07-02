@@ -17,6 +17,8 @@ public class Order implements Serializable {
     private String note;
     private String createdAt;
     private String updatedAt;
+    private String voucherCode;
+    private double discountAmount;
     // Firebase seeder của bạn có list
     private List<String> bookIds;
     private List<Map<String, Object>> items;
@@ -142,11 +144,12 @@ public class Order implements Serializable {
         this.items = items;
     }
 
-    public String getGhnOrderCode() {
-        return ghnOrderCode;
-    }
+    public String getGhnOrderCode() { return ghnOrderCode; }
+    public void setGhnOrderCode(String ghnOrderCode) { this.ghnOrderCode = ghnOrderCode; }
 
-    public void setGhnOrderCode(String ghnOrderCode) {
-        this.ghnOrderCode = ghnOrderCode;
-    }
+    public String getVoucherCode() { return voucherCode; }
+    public void setVoucherCode(String voucherCode) { this.voucherCode = voucherCode; }
+
+    public double getDiscountAmount() { return discountAmount; }
+    public void setDiscountAmount(double discountAmount) { this.discountAmount = discountAmount; }
 }

@@ -14,9 +14,9 @@
             android:id="@+id/toolbarInventory"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@color/navy_dark"
+            
             app:title="Quản lý Kho"
-            app:titleTextColor="@color/white" />
+             />
 
         <com.google.android.material.tabs.TabLayout
             android:id="@+id/tabLayoutInventory"
@@ -36,3 +36,4 @@
         android:layout_height="match_parent" />
 
 </LinearLayout>
+

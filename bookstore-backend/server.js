@@ -9,7 +9,7 @@ const nodemailer = require('nodemailer');
 const { OAuth2Client } = require('google-auth-library');
 const { initializeApp } = require('firebase/app');
 const { getFirestore, collection, query, where, getDocs, addDoc, updateDoc, doc, getDoc, setDoc } = require('firebase/firestore');
-
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const firebaseConfig = {
     apiKey: "AIzaSyAxkEKnqnAIX4FMWsb-jxmSkPLZLwf0wO4",
     projectId: "bookstore-500314",
@@ -21,8 +21,10 @@ const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 
 // Google OAuth2 Client để verify idToken
-const GOOGLE_CLIENT_ID = "156167272606-ahuk0t1gr5biq7b69a24kh0i9so84vp4.apps.googleusercontent.com";
-const GOOGLE_ANDROID_CLIENT_ID = "156167272606-ftq1ike17ekmorja3trn0bbot04btoh6.apps.googleusercontent.com";
+// Web Client ID (client_type=3) - phải khớp với WEB_CLIENT_ID trong LoginActivity.java
+const GOOGLE_CLIENT_ID = "608811292447-d9cncbpmdbuf07npas15ack1o3cmdtsm.apps.googleusercontent.com";
+// Android Client ID (client_type=1) cho package com.project.bookstoreapp
+const GOOGLE_ANDROID_CLIENT_ID = "608811292447-cje2a9lmp75pieq6g2l8la04lriq5npg.apps.googleusercontent.com";
 const ACCEPTED_CLIENT_IDS = [GOOGLE_CLIENT_ID, GOOGLE_ANDROID_CLIENT_ID];
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
@@ -990,10 +992,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
     }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(3000, '0.0.0.0', () => {
-    console.log('Server is running on port 3000');
-});
+
 
 // =============================================
 // ADMIN: QUẢN LÝ NGƯỜI DÙNG
@@ -1223,6 +1222,7 @@ Chỉ trả về 3 gạch đầu dòng này, tuyệt đối không dài dòng gi
     }
 });
 
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server run http://localhost:${PORT}`);
 });

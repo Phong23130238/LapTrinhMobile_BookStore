@@ -12,11 +12,11 @@
         android:elevation="6dp"
         app:liftOnScroll="true">
 
-        <com.google.android.material.appbar.MaterialToolbar
+        <com.google.android.material.appbar.MaterialToolbar 
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="64dp"
-            android:background="@color/bg_light"
+            
             app:contentInsetStart="20dp">
 
             <LinearLayout
@@ -216,3 +216,5 @@
         android:elevation="16dp" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+

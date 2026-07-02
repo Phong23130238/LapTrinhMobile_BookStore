@@ -18,9 +18,9 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:title="Thêm/Sửa Voucher"
-            app:titleTextColor="@color/charcoal_dark"
+            
             app:navigationIcon="@drawable/ic_back"
-            app:navigationIconTint="@color/charcoal_dark" />
+             />
 
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -135,3 +135,4 @@
         app:backgroundTint="@color/violet_light" />
 
 </LinearLayout>
+

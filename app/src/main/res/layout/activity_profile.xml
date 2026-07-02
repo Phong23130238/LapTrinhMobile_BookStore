@@ -16,11 +16,11 @@
         app:elevation="0dp"
         app:layout_constraintTop_toTopOf="parent">
 
-        <com.google.android.material.appbar.MaterialToolbar
+        <com.google.android.material.appbar.MaterialToolbar 
             android:id="@+id/toolbarProfile"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@android:color/white"
+            
             app:title="Hồ sơ cá nhân"
             app:titleCentered="true"
             app:titleTextAppearance="@style/TextAppearance.MaterialComponents.Headline6" />
@@ -273,3 +273,5 @@
         app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
+
+

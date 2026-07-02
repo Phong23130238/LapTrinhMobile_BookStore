@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.app.AlertDialog;
+import android.widget.LinearLayout;
 import android.widget.EditText;
 
 import com.google.android.material.appbar.MaterialToolbar;
@@ -42,6 +43,8 @@ public class OrderDetailActivity extends AppCompatActivity {
 
     private TextView tvOrderId, tvOrderStatus, tvOrderDate, tvShippingAddress;
     private TextView tvSubtotal, tvShippingFee, tvTotal, tvPaymentMethod;
+    private LinearLayout llVoucherContainer;
+    private TextView tvVoucherLabel, tvVoucherDiscount;
     private RecyclerView rvOrderItems;
     private ProgressBar progressBar;
     private BottomNavigationView bottomNav;
@@ -62,6 +65,7 @@ public class OrderDetailActivity extends AppCompatActivity {
     private MaterialButton btnAdminCancel;
     private TextView tvAdminStatusLocked;
 
+    private Order currentOrder;
     private String currentOrderId;
     private boolean isAdmin = false;
 
@@ -104,6 +108,9 @@ public class OrderDetailActivity extends AppCompatActivity {
         tvShippingFee = findViewById(R.id.tvShippingFee);
         tvTotal = findViewById(R.id.tvTotal);
         tvPaymentMethod = findViewById(R.id.tvPaymentMethod);
+        llVoucherContainer = findViewById(R.id.llVoucherContainer);
+        tvVoucherLabel = findViewById(R.id.tvVoucherLabel);
+        tvVoucherDiscount = findViewById(R.id.tvVoucherDiscount);
         progressBar = findViewById(R.id.progressBarOrder);
         rvOrderItems = findViewById(R.id.rvOrderItems);
         bottomNav = findViewById(R.id.bottomNav);
@@ -192,7 +199,8 @@ public class OrderDetailActivity extends AppCompatActivity {
                 progressBar.setVisibility(View.GONE);
                 if (response.isSuccessful() && response.body() != null) {
                     if (response.body().isSuccess() && response.body().getData() != null) {
-                        displayOrderDetails(response.body().getData(), orderId);
+                        currentOrder = response.body().getData();
+                        displayOrderDetails(currentOrder, orderId);
                     } else {
                         Toast.makeText(OrderDetailActivity.this, response.body().getMessage(), Toast.LENGTH_SHORT).show();
                     }
@@ -266,7 +274,17 @@ public class OrderDetailActivity extends AppCompatActivity {
 
         double total = order.getTotalPrice();
         double shipping = order.getShippingFee();
-        double sub = total - shipping;
+        
+        // Cập nhật voucher UI
+        if (order.getVoucherCode() != null && !order.getVoucherCode().isEmpty()) {
+            llVoucherContainer.setVisibility(View.VISIBLE);
+            tvVoucherLabel.setText("Voucher: " + order.getVoucherCode());
+            tvVoucherDiscount.setText("- " + formatter.format(order.getDiscountAmount()) + " đ");
+        } else {
+            llVoucherContainer.setVisibility(View.GONE);
+        }
+
+        double sub = total - shipping + order.getDiscountAmount(); // subtotal gốc trước khi trừ voucher
         tvSubtotal.setText(formatter.format(sub) + " đ");
         tvShippingFee.setText(formatter.format(shipping) + " đ");
         tvTotal.setText(formatter.format(total) + " đ");
@@ -385,6 +403,7 @@ public class OrderDetailActivity extends AppCompatActivity {
                 .document(currentOrderId)
                 .update(updates)
                 .addOnSuccessListener(aVoid -> {
+                    syncInventoryForOrder(newStatus);
                     progressBar.setVisibility(View.GONE);
                     Toast.makeText(this,
                             "✓ Cập nhật trạng thái thành công!", Toast.LENGTH_SHORT).show();
@@ -424,6 +443,7 @@ public class OrderDetailActivity extends AppCompatActivity {
         FirebaseFirestore.getInstance().collection("orders").document(currentOrderId)
                 .update("status", "cancelled", "cancelReason", reason)
                 .addOnSuccessListener(aVoid -> {
+                    syncInventoryForOrder("cancelled");
                     progressBar.setVisibility(View.GONE);
                     Toast.makeText(this, "Đã hủy đơn hàng", Toast.LENGTH_SHORT).show();
                     loadOrderDetails(currentOrderId);
@@ -447,6 +467,71 @@ public class OrderDetailActivity extends AppCompatActivity {
             case "delivered": return "Đã giao thành công";
             case "cancelled": return "Đã hủy";
             default:          return "Đang xử lý";
+        }
+    }
+
+    // =============================================
+    // ĐỒNG BỘ TỒN KHO
+    // =============================================
+    private void syncInventoryForOrder(String newStatus) {
+        if (currentOrder == null || currentOrder.getItems() == null) return;
+        String oldStatus = currentOrder.getStatus() != null ? currentOrder.getStatus() : "pending";
+
+        // Nếu trạng thái cũ là pending, chưa trừ kho. Nếu chuyển sang confirmed, shipping, hoặc delivered -> Trừ kho
+        boolean oldWasPending = oldStatus.equals("pending");
+        boolean newIsActive = newStatus.equals("confirmed") || newStatus.equals("shipping") || newStatus.equals("delivered");
+        boolean shouldDeduct = newIsActive && oldWasPending;
+
+        // Nếu chuyển sang cancelled từ trạng thái đã trừ kho (confirmed, shipping, delivered) -> Cộng lại
+        boolean oldWasActive = oldStatus.equals("confirmed") || oldStatus.equals("shipping") || oldStatus.equals("delivered");
+        boolean shouldRefund = newStatus.equals("cancelled") && oldWasActive;
+
+        if (!shouldDeduct && !shouldRefund) return;
+
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        String displayId = (currentOrder.getDisplayId() != null && !currentOrder.getDisplayId().isEmpty()) 
+                ? currentOrder.getDisplayId() : currentOrderId;
+
+        for (Map<String, Object> item : currentOrder.getItems()) {
+            String bookId = (String) item.get("bookId");
+            String title = (String) item.get("title");
+            Object qtyObj = item.get("quantity");
+            int quantity = 0;
+            if (qtyObj instanceof Number) {
+                quantity = ((Number) qtyObj).intValue();
+            } else if (qtyObj instanceof String) {
+                try { quantity = Integer.parseInt((String) qtyObj); } catch(Exception ignored) {}
+            }
+            if (bookId == null || quantity == 0) continue;
+
+            final int finalQty = quantity;
+            int delta = shouldDeduct ? -quantity : quantity;
+            String changeType = shouldDeduct ? "sold" : "returned";
+            
+            // 1. Tạo StockLog
+            com.project.bookstoreapp.model.StockLog log = new com.project.bookstoreapp.model.StockLog(
+                bookId, title, changeType, delta, "order", currentOrderId, "Đơn hàng #" + displayId
+            );
+            db.collection("stock_logs").add(log);
+
+            // 2. Cập nhật số lượng kho trong sách
+            db.collection("books").document(bookId).get().addOnSuccessListener(doc -> {
+                if (doc.exists()) {
+                    Long currentStockObj = doc.getLong("stock");
+                    Long currentSoldObj = doc.getLong("sold");
+                    int currentStock = currentStockObj != null ? currentStockObj.intValue() : 0;
+                    int currentSold = currentSoldObj != null ? currentSoldObj.intValue() : 0;
+                    
+                    int newStock = Math.max(0, currentStock + delta);
+                    // sold tăng khi trừ kho (sold), giảm khi hoàn (returned)
+                    int newSold = Math.max(0, currentSold - delta);
+
+                    db.collection("books").document(bookId).update(
+                        "stock", newStock,
+                        "sold", newSold
+                    );
+                }
+            });
         }
     }
 

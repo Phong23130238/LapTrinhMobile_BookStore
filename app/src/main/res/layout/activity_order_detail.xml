@@ -15,11 +15,11 @@
         app:elevation="0dp"
         app:layout_constraintTop_toTopOf="parent">
 
-        <com.google.android.material.appbar.MaterialToolbar
+        <com.google.android.material.appbar.MaterialToolbar 
             android:id="@+id/toolbarOrderDetail"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@android:color/white"
+            
             app:title="Chi tiết đơn hàng"
             app:titleCentered="true"
             app:titleTextAppearance="@style/TextAppearance.MaterialComponents.Headline6" />
@@ -367,6 +367,28 @@
                             android:textColor="#333"/>
                     </LinearLayout>
 
+                    <LinearLayout
+                        android:id="@+id/llVoucherContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="12dp"
+                        android:visibility="gone">
+                        <TextView
+                            android:id="@+id/tvVoucherLabel"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Voucher:"
+                            android:textColor="@color/text_secondary"/>
+                        <TextView
+                            android:id="@+id/tvVoucherDiscount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="- 0 đ"
+                            android:textColor="#047857"/>
+                    </LinearLayout>
+
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
@@ -435,3 +457,6 @@
         app:menu="@menu/bottom_nav_menu" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+
