@@ -1036,6 +1036,107 @@ app.get('/api/users/:uid/stats', async (req, res) => {
 // ==========================================
 // TÍCH HỢP GEMINI AI - TÓM TẮT SÁCH
 // ==========================================
+// 4. Lấy thống kê tổng hợp cho Admin (Theo Khoảng Thời Gian)
+app.get('/api/admin/stats', async (req, res) => {
+    try {
+        const { fromDate, toDate } = req.query;
+        if (!fromDate || !toDate) {
+            return res.status(400).json({ success: false, message: "Vui lòng chọn Từ ngày và Đến ngày" });
+        }
+
+        const start = new Date(fromDate);
+        start.setHours(0, 0, 0, 0); // Đầu ngày
+        
+        const end = new Date(toDate);
+        end.setHours(23, 59, 59, 999); // Cuối ngày
+
+        // Lấy tất cả sách để đối chiếu
+        const booksRef = collection(db, "books");
+        const booksSnap = await getDocs(booksRef);
+        
+        let allBooks = {};
+        let totalInventory = 0;
+
+        booksSnap.forEach(docSnap => {
+            const data = docSnap.data();
+            const id = docSnap.id;
+            allBooks[id] = {
+                bookId: id,
+                title: data.title || "Không tên",
+                imageUrl: data.imageUrl || "",
+                price: data.price || 0,
+                stock: data.stock || 0,
+                soldInMonth: 0 // Vẫn giữ nguyên tên biến hoặc đổi thành soldInPeriod
+            };
+            totalInventory += (data.stock || 0);
+        });
+
+        // Lấy tất cả đơn hàng
+        const ordersRef = collection(db, "orders");
+        const ordersSnap = await getDocs(ordersRef);
+
+        let totalRevenue = 0;
+        let totalSoldQty = 0;
+
+        ordersSnap.forEach(docSnap => {
+            const order = docSnap.data();
+            
+            // Bỏ qua đơn hàng bị hủy
+            if (order.status === "cancelled") return;
+
+            // Kiểm tra thời gian của đơn hàng
+            if (order.createdAt) {
+                const orderDate = new Date(order.createdAt);
+                if (orderDate.getTime() >= start.getTime() && orderDate.getTime() <= end.getTime()) {
+                    
+                    totalRevenue += (order.totalPrice || 0);
+
+                    // Quét các items trong đơn hàng
+                    if (order.items && Array.isArray(order.items)) {
+                        order.items.forEach(item => {
+                            const qty = item.quantity || 0;
+                            totalSoldQty += qty;
+                            
+                            if (allBooks[item.bookId]) {
+                                allBooks[item.bookId].soldInMonth += qty;
+                            }
+                        });
+                    }
+                }
+            }
+        });
+
+        // Chuyển object sách thành mảng để sort
+        let booksArray = Object.values(allBooks);
+
+        // Lọc Sách bán chạy (có bán được trong tháng, xếp giảm dần theo soldInMonth)
+        let soldBooks = booksArray.filter(b => b.soldInMonth > 0);
+        soldBooks.sort((a, b) => b.soldInMonth - a.soldInMonth);
+        let topBooks = soldBooks.slice(0, 10); // Lấy top 10
+
+        // Lọc Sách chưa bán được (soldInMonth == 0)
+        let unsoldBooks = booksArray.filter(b => b.soldInMonth === 0);
+
+        res.json({
+            success: true,
+            data: {
+                totalSoldQty,
+                totalRevenue,
+                totalInventory,
+                topBooks,
+                unsoldBooks
+            }
+        });
+
+    } catch (error) {
+        console.error("Lỗi lấy thống kê Admin:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// ==========================================
+// TÍCH HỢP GEMINI AI - TÓM TẮT SÁCH
+// ==========================================
 app.post('/api/ai/summarize', async (req, res) => {
     try {
         const { title, description } = req.body;

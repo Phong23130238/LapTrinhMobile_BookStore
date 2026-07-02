@@ -236,13 +236,13 @@ public class ManageUsersActivity extends AppCompatActivity {
 
         // --- Badge Trạng thái + Dot ---
         if (user.isLocked()) {
-            tvStatus.setText("🔒 Đã bị khóa");
+            tvStatus.setText("Đã bị khóa");
             tvStatus.setTextColor(0xFF757575);
             tvStatus.setBackgroundColor(0xFFEEEEEE);
             tvStatusDot.setBackgroundColor(0xFF9E9E9E);
             tvStatusDot.setText("✕");
         } else {
-            tvStatus.setText("✓ Hoạt động");
+            tvStatus.setText("Hoạt động");
             tvStatus.setTextColor(0xFF388E3C);
             tvStatus.setBackgroundColor(0xFFC8E6C9);
             tvStatusDot.setBackgroundColor(0xFF388E3C);
@@ -251,10 +251,10 @@ public class ManageUsersActivity extends AppCompatActivity {
 
         // --- Nút Khóa / Mở khóa ---
         if (user.isLocked()) {
-            btnToggle.setText("🔓  Mở khóa tài khoản");
+            btnToggle.setText("Mở khóa tài khoản");
             btnToggle.setBackgroundColor(0xFF388E3C);
         } else {
-            btnToggle.setText("🔒  Khóa tài khoản");
+            btnToggle.setText("Khóa tài khoản");
             btnToggle.setBackgroundColor(0xFFD32F2F);
         }
         
@@ -352,7 +352,7 @@ public class ManageUsersActivity extends AppCompatActivity {
                                    Response<ApiResponse<Object>> response) {
                 progressBarUsers.setVisibility(View.GONE);
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
-                    String msg = newLockStatus ? "🔒 Đã khóa tài khoản" : "🔓 Đã mở khóa tài khoản";
+                    String msg = newLockStatus ? "Đã khóa tài khoản" : "Đã mở khóa tài khoản";
                     Toast.makeText(ManageUsersActivity.this, msg, Toast.LENGTH_SHORT).show();
                     loadUsersFromApi(); // Reload danh sách
                 } else {

@@ -109,7 +109,8 @@
         <activity android:name=".activity.AllBooksActivity"
             android:exported="false" />
 
-        <activity android:name=".activity.PaymentWebViewActivity"
+        <activity android:name=".activity.PaymentWebViewActivity" android:exported="false" />
+        <activity android:name=".activity.AdminStatisticsActivity"
             android:exported="false" />
 
     </application>
