@@ -11,9 +11,9 @@ const { initializeApp } = require('firebase/app');
 const { getFirestore, collection, query, where, getDocs, addDoc, updateDoc, doc, getDoc, setDoc } = require('firebase/firestore');
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAxkEKnqnAIX4FMWsb-jxmSkPLZLwf0wO4",
-  projectId: "bookstore-500314",
-  storageBucket: "bookstore-500314.firebasestorage.app"
+    apiKey: "AIzaSyAxkEKnqnAIX4FMWsb-jxmSkPLZLwf0wO4",
+    projectId: "bookstore-500314",
+    storageBucket: "bookstore-500314.firebasestorage.app"
 };
 
 // Khởi tạo Firebase
@@ -57,28 +57,28 @@ app.use(express.json());
 // CẤU HÌNH CLOUDINARY & MULTER
 // =============================================
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
 // 1. Storage cho Avatar User
 const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'bookstore_avatars',
-    allowedFormats: ['jpg', 'png', 'jpeg']
-  }
+    cloudinary: cloudinary,
+    params: {
+        folder: 'bookstore_avatars',
+        allowedFormats: ['jpg', 'png', 'jpeg']
+    }
 });
 const upload = multer({ storage: storage });
 
 // 2. Storage riêng cho Ảnh Bìa Sách (Bổ sung mới)
 const bookStorage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'bookstore_covers',
-    allowedFormats: ['jpg', 'png', 'jpeg']
-  }
+    cloudinary: cloudinary,
+    params: {
+        folder: 'bookstore_covers',
+        allowedFormats: ['jpg', 'png', 'jpeg']
+    }
 });
 const uploadBookCover = multer({ storage: bookStorage });
 
@@ -93,7 +93,15 @@ function hashMD5(password) {
 // AUTH APIs
 // =============================================
 
-// API: Đăng ký tài khoản thường
+/**
+ * @api {post} /api/auth/register Đăng ký tài khoản thường
+ * @description Xử lý luồng tạo tài khoản mới bằng Email/Password.
+ * 1. Nhận Name, Email, Password từ body. Validate đầu vào (rỗng, độ dài pass >= 6).
+ * 2. Query collection 'users' xem email đã tồn tại chưa. Nếu có -> trả về lỗi 400.
+ * 3. Băm mật khẩu (Hash) bằng thuật toán MD5 để bảo mật trước khi lưu.
+ * 4. Tạo document mới trong collection 'users', mặc định role = 'customer'.
+ * 5. Update document để lưu 'uid' bằng chính ID của document vừa tạo.
+ */
 app.post('/api/auth/register', async (req, res) => {
     try {
         const { name, email, password } = req.body;
@@ -158,7 +166,15 @@ app.post('/api/auth/register', async (req, res) => {
     }
 });
 
-// API: Đăng nhập thường (email + password)
+/**
+ * @api {post} /api/auth/login Đăng nhập thường
+ * @description Xử lý luồng đăng nhập bằng Email/Password.
+ * 1. Nhận Email, Password từ body.
+ * 2. Query collection 'users' để tìm user theo Email.
+ * 3. Kiểm tra trường 'password': nếu rỗng (null), tức là tài khoản này được tạo bởi Google -> Bắt buộc dùng Google Login.
+ * 4. Băm mật khẩu (MD5) nhập vào và so sánh với mật khẩu trong DB.
+ * 5. Trả về thông tin User (loại bỏ trường password) để Client lưu phiên đăng nhập.
+ */
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -215,7 +231,16 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
-// API: Đăng nhập bằng Google
+/**
+ * @api {post} /api/auth/google Đăng nhập bằng Google
+ * @description Xử lý luồng OAuth2 Google Sign-In.
+ * 1. Client truyền lên 'idToken' do Google cấp.
+ * 2. Dùng thư viện google-auth-library (googleClient.verifyIdToken) để verify token với ACCEPTED_CLIENT_IDS (Web & Android).
+ * 3. Giải mã lấy Payload (Email, Name, Picture).
+ * 4. Query Firestore theo Email. 
+ *    - Nếu có: Cho đăng nhập thẳng. Cập nhật avatar nếu trước đó chưa có.
+ *    - Nếu chưa có: Tạo mới User trong DB với trường 'password' là null.
+ */
 app.post('/api/auth/google', async (req, res) => {
     try {
         const { idToken } = req.body;
@@ -595,7 +620,7 @@ app.get('/api/orders/:orderId', async (req, res) => {
 // FORGOT PASSWORD APIs
 // =============================================
 
-// API 1: Gửi OTP qua email
+// Gửi OTP qua email
 app.post('/api/auth/forgot-password', async (req, res) => {
     try {
         const { email } = req.body;
@@ -615,7 +640,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 
         const userData = querySnapshot.docs[0].data();
 
-        // Kiểm tra tài khoản Google-only (không có password)
+        // Kiểm tra tài khoản Google
         if (!userData.password) {
             return res.status(400).json({
                 success: false,
@@ -660,7 +685,14 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     }
 });
 
-// API 2: Xác thực OTP
+/**
+ * @api {post} /api/auth/verify-otp Xác thực mã OTP (Bước 2 - Quên MK)
+ * @description 
+ * 1. Lấy thông tin (OTP, thời gian hết hạn) từ bộ nhớ 'otpStore' dựa vào email.
+ * 2. So khớp chuỗi OTP và kiểm tra thời gian (TTL 5 phút).
+ * 3. Nếu hợp lệ: Xóa OTP cũ, sinh 'resetToken' ngẫu nhiên 32 byte.
+ * 4. Lưu resetToken vào 'resetTokenStore' (TTL 10 phút) và trả về cho Client.
+ */
 app.post('/api/auth/verify-otp', async (req, res) => {
     try {
         const { email, otp } = req.body;
@@ -700,7 +732,14 @@ app.post('/api/auth/verify-otp', async (req, res) => {
     }
 });
 
-// API 3: Đặt lại mật khẩu mới
+/**
+ * @api {post} /api/auth/reset-password Đặt lại mật khẩu (Bước 3 - Quên MK)
+ * @description 
+ * 1. Nhận email, resetToken, newPassword. Validate pass >= 6 ký tự.
+ * 2. Kiểm tra tính hợp lệ và thời hạn (TTL 10 phút) của 'resetToken' trong 'resetTokenStore'.
+ * 3. Nếu token đúng, băm MD5 mật khẩu mới và update vào document user trong Firestore.
+ * 4. Xóa resetToken khỏi bộ nhớ để không bị dùng lại.
+ */
 app.post('/api/auth/reset-password', async (req, res) => {
     try {
         const { email, resetToken, newPassword } = req.body;
@@ -755,5 +794,5 @@ app.post('/api/auth/reset-password', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(3000, '0.0.0.0', () => {
-  console.log('Server is running on port 3000');
+    console.log('Server is running on port 3000');
 });

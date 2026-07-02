@@ -40,11 +40,9 @@ public class LoginActivity extends AppCompatActivity {
 
     private static final String TAG = "LoginActivity";
 
-    // Web Client ID cho Google Sign-In
-    private static final String WEB_CLIENT_ID =
-            "156167272606-ahuk0t1gr5biq7b69a24kh0i9so84vp4.apps.googleusercontent.com";
+    // Web Client ID
+    private static final String WEB_CLIENT_ID = "156167272606-ahuk0t1gr5biq7b69a24kh0i9so84vp4.apps.googleusercontent.com";
 
-    // UI Components
     private TextInputLayout tilEmail, tilPassword;
     private TextInputEditText etEmail, etPassword;
     private MaterialButton btnLogin, btnGoogleLogin;
@@ -55,7 +53,6 @@ public class LoginActivity extends AppCompatActivity {
     private GoogleSignInClient googleSignInClient;
     private ActivityResultLauncher<Intent> googleSignInLauncher;
 
-    // Network & Session
     private ApiService apiService;
     private SessionManager sessionManager;
 
@@ -64,11 +61,9 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        // Khởi tạo Network & Session
         apiService = RetrofitClient.getClient().create(ApiService.class);
         sessionManager = new SessionManager(this);
 
-        // Ánh xạ UI
         tilEmail = findViewById(R.id.tilEmail);
         tilPassword = findViewById(R.id.tilPassword);
         etEmail = findViewById(R.id.etEmail);
@@ -79,10 +74,8 @@ public class LoginActivity extends AppCompatActivity {
         tvForgotPassword = findViewById(R.id.tvForgotPassword);
         progressBar = findViewById(R.id.progressBar);
 
-        // Cấu hình Google Sign-In
         setupGoogleSignIn();
 
-        // Đăng ký launcher cho Google Sign-In (thay thế onActivityResult đã deprecated)
         googleSignInLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
@@ -93,54 +86,61 @@ public class LoginActivity extends AppCompatActivity {
                         hideLoading();
                         Log.w(TAG, "Google Sign-In bị hủy hoặc thất bại, resultCode=" + result.getResultCode());
                     }
-                }
-        );
+                });
 
         // ===== SỰ KIỆN =====
 
-        // 1. Nhấn "Đăng nhập" → Đăng nhập thường
+        // đăng nhập
         btnLogin.setOnClickListener(v -> performLogin());
 
-        // 2. Nhấn "Google" → Đăng nhập bằng Google
+        // đăng nhập bằng Google
         btnGoogleLogin.setOnClickListener(v -> performGoogleLogin());
 
-        // 3. Nhấn "Đăng ký ngay" → Mở màn hình Đăng ký
+        // đăng ký
         tvRegister.setOnClickListener(v -> {
             Intent intent = new Intent(LoginActivity.this, RegisterActivity.class);
             startActivity(intent);
         });
 
-        // 4. Nhấn "Quên mật khẩu?" → Mở màn hình Quên mật khẩu
+        // quên mật khẩu
         tvForgotPassword.setOnClickListener(v -> {
             Intent intent = new Intent(LoginActivity.this, ForgotPasswordActivity.class);
             startActivity(intent);
         });
     }
 
-    // =============================================
-    // CẤU HÌNH GOOGLE SIGN-IN
-    // =============================================
+    /**
+     * CẤU HÌNH GOOGLE SIGN-IN
+     * Khởi tạo GoogleSignInClient với cấu hình yêu cầu Email và ID Token.
+     * ID Token này do Google cấp cho Client, sau đó Client sẽ gửi lên Server
+     * Node.js
+     * để verify (đảm bảo tính bảo mật, tránh giả mạo token).
+     */
     private void setupGoogleSignIn() {
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken(WEB_CLIENT_ID) // Yêu cầu ID Token để gửi lên server verify
+                .requestIdToken(WEB_CLIENT_ID)
                 .requestEmail()
                 .build();
 
         googleSignInClient = GoogleSignIn.getClient(this, gso);
     }
 
-    // =============================================
-    // ĐĂNG NHẬP THƯỜNG (Email + Password)
-    // =============================================
+    /**
+     * ĐĂNG NHẬP THƯỜNG (đăng nhập bằng: Email + Password)
+     * 1. Validate email và password không được rỗng, email đúng định dạng.
+     * 2. Gọi API `apiService.login` truyền lên credentials.
+     * 3. Xử lý phản hồi từ server:
+     * - Thành công: Lưu thông tin User vào SessionManager, chuyển hướng đến Home
+     * (hoặc Admin).
+     * - Thất bại (401/400): Hiển thị Toast báo lỗi tương ứng.
+     */
     private void performLogin() {
-        // Xóa lỗi cũ
         tilEmail.setError(null);
         tilPassword.setError(null);
 
         String email = etEmail.getText() != null ? etEmail.getText().toString().trim() : "";
         String password = etPassword.getText() != null ? etPassword.getText().toString().trim() : "";
 
-        // Validate
         if (email.isEmpty()) {
             tilEmail.setError("Vui lòng nhập email");
             etEmail.requestFocus();
@@ -159,7 +159,6 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
-        // Gọi API đăng nhập
         showLoading();
 
         HashMap<String, Object> body = new HashMap<>();
@@ -175,21 +174,16 @@ public class LoginActivity extends AppCompatActivity {
                     ApiResponse<User> apiResponse = response.body();
 
                     if (apiResponse.isSuccess() && apiResponse.getData() != null) {
-                        // Đăng nhập thành công
                         User user = apiResponse.getData();
                         sessionManager.saveUser(user);
                         navigateToHome(user);
                     } else {
-                        // Server trả success=false (VD: tài khoản Google, sai mật khẩu)
                         Toast.makeText(LoginActivity.this,
                                 apiResponse.getMessage(), Toast.LENGTH_LONG).show();
                     }
                 } else {
-                    // HTTP error (401, 400, 500...)
                     try {
-                        // Thử parse error body
                         String errorBody = response.errorBody() != null ? response.errorBody().string() : "";
-                        // Parse JSON để lấy message
                         if (errorBody.contains("message")) {
                             String message = errorBody.split("\"message\":\"")[1].split("\"")[0];
                             Toast.makeText(LoginActivity.this, message, Toast.LENGTH_LONG).show();
@@ -219,8 +213,6 @@ public class LoginActivity extends AppCompatActivity {
     // =============================================
     private void performGoogleLogin() {
         showLoading();
-
-        // Đăng xuất Google cũ trước để người dùng luôn được chọn tài khoản
         googleSignInClient.signOut().addOnCompleteListener(task -> {
             Intent signInIntent = googleSignInClient.getSignInIntent();
             googleSignInLauncher.launch(signInIntent);
@@ -240,7 +232,6 @@ public class LoginActivity extends AppCompatActivity {
             String idToken = account.getIdToken();
             Log.d(TAG, "Google ID Token nhận được, gửi lên server để verify...");
 
-            // Gửi idToken lên server
             sendGoogleTokenToServer(idToken);
 
         } catch (ApiException e) {
@@ -264,7 +255,6 @@ public class LoginActivity extends AppCompatActivity {
                     ApiResponse<User> apiResponse = response.body();
 
                     if (apiResponse.isSuccess() && apiResponse.getData() != null) {
-                        // Đăng nhập Google thành công
                         User user = apiResponse.getData();
                         sessionManager.saveUser(user);
                         Toast.makeText(LoginActivity.this,
@@ -310,13 +300,15 @@ public class LoginActivity extends AppCompatActivity {
     // LOADING UI
     // =============================================
     private void showLoading() {
-        if (progressBar != null) progressBar.setVisibility(View.VISIBLE);
+        if (progressBar != null)
+            progressBar.setVisibility(View.VISIBLE);
         btnLogin.setEnabled(false);
         btnGoogleLogin.setEnabled(false);
     }
 
     private void hideLoading() {
-        if (progressBar != null) progressBar.setVisibility(View.GONE);
+        if (progressBar != null)
+            progressBar.setVisibility(View.GONE);
         btnLogin.setEnabled(true);
         btnGoogleLogin.setEnabled(true);
     }

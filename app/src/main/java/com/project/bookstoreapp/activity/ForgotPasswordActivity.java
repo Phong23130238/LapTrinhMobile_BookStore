@@ -30,14 +30,12 @@ public class ForgotPasswordActivity extends AppCompatActivity {
 
     private static final String TAG = "ForgotPasswordActivity";
 
-    // UI Components
     private TextInputLayout tilEmail;
     private TextInputEditText etEmail;
     private MaterialButton btnSendOtp;
     private ProgressBar progressBar;
     private TextView tvBackToLogin;
 
-    // Network
     private ApiService apiService;
 
     @Override
@@ -45,30 +43,24 @@ public class ForgotPasswordActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_forgot_password);
 
-        // Khởi tạo Network
         apiService = RetrofitClient.getClient().create(ApiService.class);
 
-        // Ánh xạ UI
         tilEmail = findViewById(R.id.tilEmail);
         etEmail = findViewById(R.id.etEmail);
         btnSendOtp = findViewById(R.id.btnSendOtp);
         progressBar = findViewById(R.id.progressBar);
         tvBackToLogin = findViewById(R.id.tvBackToLogin);
 
-        // Sự kiện
         btnSendOtp.setOnClickListener(v -> performSendOtp());
         tvBackToLogin.setOnClickListener(v -> finish());
     }
 
-    // =============================================
-    // GỬI OTP
-    // =============================================
+    // gửi OTP
     private void performSendOtp() {
         tilEmail.setError(null);
 
         String email = etEmail.getText() != null ? etEmail.getText().toString().trim() : "";
 
-        // Validate
         if (email.isEmpty()) {
             tilEmail.setError("Vui lòng nhập email");
             etEmail.requestFocus();
@@ -81,7 +73,6 @@ public class ForgotPasswordActivity extends AppCompatActivity {
             return;
         }
 
-        // Gọi API
         showLoading();
 
         HashMap<String, Object> body = new HashMap<>();
@@ -96,7 +87,7 @@ public class ForgotPasswordActivity extends AppCompatActivity {
                     ApiResponse<Void> apiResponse = response.body();
 
                     if (apiResponse.isSuccess()) {
-                        // Gửi OTP thành công → chuyển sang màn hình nhập OTP
+                        // gửi OTP thành công
                         Toast.makeText(ForgotPasswordActivity.this,
                                 apiResponse.getMessage(), Toast.LENGTH_SHORT).show();
 
@@ -139,12 +130,14 @@ public class ForgotPasswordActivity extends AppCompatActivity {
     // LOADING UI
     // =============================================
     private void showLoading() {
-        if (progressBar != null) progressBar.setVisibility(View.VISIBLE);
+        if (progressBar != null)
+            progressBar.setVisibility(View.VISIBLE);
         btnSendOtp.setEnabled(false);
     }
 
     private void hideLoading() {
-        if (progressBar != null) progressBar.setVisibility(View.GONE);
+        if (progressBar != null)
+            progressBar.setVisibility(View.GONE);
         btnSendOtp.setEnabled(true);
     }
 }

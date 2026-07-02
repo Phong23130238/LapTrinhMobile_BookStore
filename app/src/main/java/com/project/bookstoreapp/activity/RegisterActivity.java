@@ -30,13 +30,11 @@ public class RegisterActivity extends AppCompatActivity {
 
     private static final String TAG = "RegisterActivity";
 
-    // UI Components
     private TextInputLayout tilFullName, tilEmail, tilPassword, tilConfirmPassword;
     private TextInputEditText etFullName, etEmail, etPassword, etConfirmPassword;
     private MaterialButton btnRegister;
     private ProgressBar progressBar;
 
-    // Network
     private ApiService apiService;
 
     @Override
@@ -47,7 +45,6 @@ public class RegisterActivity extends AppCompatActivity {
         // Khởi tạo Network
         apiService = RetrofitClient.getClient().create(ApiService.class);
 
-        // Ánh xạ UI
         tilFullName = findViewById(R.id.tilFullName);
         tilEmail = findViewById(R.id.tilEmail);
         tilPassword = findViewById(R.id.tilPassword);
@@ -59,13 +56,12 @@ public class RegisterActivity extends AppCompatActivity {
         btnRegister = findViewById(R.id.btnRegister);
         progressBar = findViewById(R.id.progressBarRegister);
 
-        // Ánh xạ dòng chữ quay lại đăng nhập
         TextView tvBackToLogin = findViewById(R.id.tvBackToLogin);
 
-        // Khi nhấn vào, đóng màn hình hiện tại để quay về Login
+        // quay về Login
         tvBackToLogin.setOnClickListener(v -> finish());
 
-        // Nhấn "Tạo tài khoản" → Đăng ký
+        // form đăng ký
         btnRegister.setOnClickListener(v -> performRegister());
     }
 
@@ -73,7 +69,6 @@ public class RegisterActivity extends AppCompatActivity {
     // ĐĂNG KÝ TÀI KHOẢN
     // =============================================
     private void performRegister() {
-        // Xóa lỗi cũ
         tilFullName.setError(null);
         tilEmail.setError(null);
         tilPassword.setError(null);
@@ -82,9 +77,9 @@ public class RegisterActivity extends AppCompatActivity {
         String name = etFullName.getText() != null ? etFullName.getText().toString().trim() : "";
         String email = etEmail.getText() != null ? etEmail.getText().toString().trim() : "";
         String password = etPassword.getText() != null ? etPassword.getText().toString().trim() : "";
-        String confirmPassword = etConfirmPassword.getText() != null ? etConfirmPassword.getText().toString().trim() : "";
+        String confirmPassword = etConfirmPassword.getText() != null ? etConfirmPassword.getText().toString().trim()
+                : "";
 
-        // ===== VALIDATE =====
         if (name.isEmpty()) {
             tilFullName.setError("Vui lòng nhập họ và tên");
             etFullName.requestFocus();
@@ -144,12 +139,12 @@ public class RegisterActivity extends AppCompatActivity {
                     ApiResponse<User> apiResponse = response.body();
 
                     if (apiResponse.isSuccess()) {
-                        // Đăng ký thành công
+                        // thành công
                         Toast.makeText(RegisterActivity.this,
                                 "Đăng ký thành công! Vui lòng đăng nhập.", Toast.LENGTH_LONG).show();
-                        finish(); // Quay về màn hình Login
+                        finish();
                     } else {
-                        // Server trả success=false (VD: email đã tồn tại)
+                        // thất bại
                         Toast.makeText(RegisterActivity.this,
                                 apiResponse.getMessage(), Toast.LENGTH_LONG).show();
                     }
@@ -185,12 +180,14 @@ public class RegisterActivity extends AppCompatActivity {
     // LOADING UI
     // =============================================
     private void showLoading() {
-        if (progressBar != null) progressBar.setVisibility(View.VISIBLE);
+        if (progressBar != null)
+            progressBar.setVisibility(View.VISIBLE);
         btnRegister.setEnabled(false);
     }
 
     private void hideLoading() {
-        if (progressBar != null) progressBar.setVisibility(View.GONE);
+        if (progressBar != null)
+            progressBar.setVisibility(View.GONE);
         btnRegister.setEnabled(true);
     }
 }

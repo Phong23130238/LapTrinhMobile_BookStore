@@ -28,17 +28,14 @@ public class ResetPasswordActivity extends AppCompatActivity {
 
     private static final String TAG = "ResetPasswordActivity";
 
-    // UI Components
     private TextInputLayout tilNewPassword, tilConfirmPassword;
     private TextInputEditText etNewPassword, etConfirmPassword;
     private MaterialButton btnResetPassword;
     private ProgressBar progressBar;
 
-    // Data
     private String email;
     private String resetToken;
 
-    // Network
     private ApiService apiService;
 
     @Override
@@ -46,7 +43,6 @@ public class ResetPasswordActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_reset_password);
 
-        // Lấy dữ liệu từ Intent
         email = getIntent().getStringExtra("email");
         resetToken = getIntent().getStringExtra("resetToken");
 
@@ -56,10 +52,8 @@ public class ResetPasswordActivity extends AppCompatActivity {
             return;
         }
 
-        // Khởi tạo Network
         apiService = RetrofitClient.getClient().create(ApiService.class);
 
-        // Ánh xạ UI
         tilNewPassword = findViewById(R.id.tilNewPassword);
         tilConfirmPassword = findViewById(R.id.tilConfirmPassword);
         etNewPassword = findViewById(R.id.etNewPassword);
@@ -67,7 +61,6 @@ public class ResetPasswordActivity extends AppCompatActivity {
         btnResetPassword = findViewById(R.id.btnResetPassword);
         progressBar = findViewById(R.id.progressBar);
 
-        // Sự kiện
         btnResetPassword.setOnClickListener(v -> performResetPassword());
     }
 
@@ -75,14 +68,13 @@ public class ResetPasswordActivity extends AppCompatActivity {
     // ĐỔI MẬT KHẨU
     // =============================================
     private void performResetPassword() {
-        // Xóa lỗi cũ
         tilNewPassword.setError(null);
         tilConfirmPassword.setError(null);
 
         String newPassword = etNewPassword.getText() != null ? etNewPassword.getText().toString().trim() : "";
-        String confirmPassword = etConfirmPassword.getText() != null ? etConfirmPassword.getText().toString().trim() : "";
+        String confirmPassword = etConfirmPassword.getText() != null ? etConfirmPassword.getText().toString().trim()
+                : "";
 
-        // Validate
         if (newPassword.isEmpty()) {
             tilNewPassword.setError("Vui lòng nhập mật khẩu mới");
             etNewPassword.requestFocus();
@@ -124,11 +116,11 @@ public class ResetPasswordActivity extends AppCompatActivity {
                     ApiResponse<Void> apiResponse = response.body();
 
                     if (apiResponse.isSuccess()) {
-                        // Đổi mật khẩu thành công
+                        // đổi mật khẩu thành công
                         Toast.makeText(ResetPasswordActivity.this,
                                 apiResponse.getMessage(), Toast.LENGTH_LONG).show();
 
-                        // Quay về LoginActivity, xóa toàn bộ stack
+                        // quay về trang đăng nhập
                         Intent intent = new Intent(ResetPasswordActivity.this, LoginActivity.class);
                         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                         startActivity(intent);
@@ -168,12 +160,14 @@ public class ResetPasswordActivity extends AppCompatActivity {
     // LOADING UI
     // =============================================
     private void showLoading() {
-        if (progressBar != null) progressBar.setVisibility(View.VISIBLE);
+        if (progressBar != null)
+            progressBar.setVisibility(View.VISIBLE);
         btnResetPassword.setEnabled(false);
     }
 
     private void hideLoading() {
-        if (progressBar != null) progressBar.setVisibility(View.GONE);
+        if (progressBar != null)
+            progressBar.setVisibility(View.GONE);
         btnResetPassword.setEnabled(true);
     }
 }
