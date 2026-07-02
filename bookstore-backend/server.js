@@ -705,7 +705,8 @@ const querystring = require('querystring');
 const vnp_TmnCode = "5BNONW5M";
 const vnp_HashSecret = "C777AQAKMIXKG56BWNBE50H6CALW8IUR";
 const vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-const vnp_ReturnUrl = "http://10.0.2.2:3000/api/vnpay_return"; 
+// Tự động nhận diện URL đang chạy (Render hoặc Localhost) thông qua process.env.HOST_URL
+const vnp_ReturnUrl = (process.env.HOST_URL || "http://10.0.2.2:3000") + "/api/vnpay_return"; 
 
 function sortObject(obj) {
     let sorted = {};
@@ -1073,4 +1074,8 @@ Chỉ trả về 3 gạch đầu dòng này, tuyệt đối không dài dòng gi
         console.error("Lỗi AI Gemini:", error);
         res.status(500).json({ success: false, message: "Lỗi khi gọi AI: " + error.message });
     }
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server run http://localhost:${PORT}`);
 });

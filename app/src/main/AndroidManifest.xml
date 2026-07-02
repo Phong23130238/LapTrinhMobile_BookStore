@@ -109,5 +109,8 @@
         <activity android:name=".activity.AllBooksActivity"
             android:exported="false" />
 
+        <activity android:name=".activity.PaymentWebViewActivity"
+            android:exported="false" />
+
     </application>
 </manifest>
