@@ -40,7 +40,7 @@ public class OrdersActivity extends AppCompatActivity {
     private List<Order> orderList;
     private List<Order> originalOrderList;
     private SessionManager sessionManager;
-    
+
     private ChipGroup chipGroupStatus;
     private ImageButton btnSortTime;
     private TextView tvEmptyTitle, tvEmptyDesc;
@@ -95,10 +95,10 @@ public class OrdersActivity extends AppCompatActivity {
             startActivity(intent);
             finish();
         });
-        
+
         chipGroupStatus = findViewById(R.id.chipGroupStatus);
         btnSortTime = findViewById(R.id.btnSortTime);
-        
+
         chipGroupStatus.setOnCheckedChangeListener((group, checkedId) -> {
             if (checkedId == R.id.chipAll) currentStatusFilter = "all";
             else if (checkedId == R.id.chipPending) currentStatusFilter = "pending";
@@ -108,7 +108,7 @@ public class OrdersActivity extends AppCompatActivity {
             else if (checkedId == R.id.chipCancelled) currentStatusFilter = "cancelled";
             applyFilterAndSort();
         });
-        
+
         btnSortTime.setOnClickListener(v -> {
             isSortDesc = !isSortDesc;
             Toast.makeText(this, isSortDesc ? "Sắp xếp: Mới nhất" : "Sắp xếp: Cũ nhất", Toast.LENGTH_SHORT).show();
@@ -188,7 +188,7 @@ public class OrdersActivity extends AppCompatActivity {
                 orderList.add(order);
             }
         }
-        
+
         // 2.3.2 Sắp xếp orderList bằng Collections.sort() kết hợp Comparator, dựa trên trường chuỗi ngày tháng CreatedAt, hỗ trợ Ascending/Descending (isSortDesc).
         Collections.sort(orderList, new Comparator<Order>() {
             @Override
@@ -202,12 +202,12 @@ public class OrdersActivity extends AppCompatActivity {
                 }
             }
         });
-        
+
         // 2.3.3 Xử lý rỗng (isEmpty): Ẩn/hiện layoutEmpty với tiêu đề, text phù hợp tương ứng theo tab filter. Nếu có dữ liệu thì notifyDataSetChanged().
         if (orderList.isEmpty()) {
             rvOrders.setVisibility(View.GONE);
             layoutEmpty.setVisibility(View.VISIBLE);
-            
+
             if ("all".equals(currentStatusFilter)) {
                 tvEmptyTitle.setText("Bạn chưa có đơn hàng nào");
                 tvEmptyDesc.setVisibility(View.VISIBLE);
@@ -219,7 +219,7 @@ public class OrdersActivity extends AppCompatActivity {
                 else if ("shipping".equals(currentStatusFilter)) statusName = "đang giao";
                 else if ("delivered".equals(currentStatusFilter)) statusName = "đã giao";
                 else if ("cancelled".equals(currentStatusFilter)) statusName = "đã hủy";
-                
+
                 tvEmptyTitle.setText("Bạn chưa có đơn nào " + statusName);
                 tvEmptyDesc.setVisibility(View.GONE);
                 btnShopNow.setVisibility(View.GONE);

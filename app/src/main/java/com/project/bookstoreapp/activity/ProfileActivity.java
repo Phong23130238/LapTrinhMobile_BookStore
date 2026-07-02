@@ -22,6 +22,7 @@ import com.bumptech.glide.Glide;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.project.bookstoreapp.R;
 import com.project.bookstoreapp.model.User;
@@ -62,6 +63,7 @@ public class ProfileActivity extends AppCompatActivity {
     private CircleImageView ivAvatar;
     private FloatingActionButton fabChangeAvatar;
     private TextView tvEmail;
+    private TextInputLayout tilPhone;
     private EditText etName, etPhone, etAddress;
     private MaterialButton btnSaveProfile, btnChangePassword, btnLogout;
     private ProgressBar progressBarProfile;
@@ -80,6 +82,9 @@ public class ProfileActivity extends AppCompatActivity {
     private Ward selectedWard = null;
     private final String GHN_TOKEN = "dffec2e1-6725-11f1-a973-aee5264794df";
 
+    // 1. Khai báo Launcher để nhận kết quả từ Map
+    private ActivityResultLauncher<Intent> mapLauncher;
+
     // Trình chọn ảnh
     private final ActivityResultLauncher<String> getContentLauncher = registerForActivityResult(
             new ActivityResultContracts.GetContent(),
@@ -96,6 +101,24 @@ public class ProfileActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
+
+        // 2. Khởi tạo mapLauncher ngay trong onCreate
+        mapLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        // Nhận địa chỉ dạng chuỗi văn bản từ Map trả về
+                        String selectedAddress = result.getData().getStringExtra("SELECTED_ADDRESS");
+
+                        // Gán vào EditText địa chỉ
+                        if (etAddress != null) {
+                            etAddress.setText(selectedAddress);
+                            // Bạn có thể yêu cầu người dùng tự chọn lại Phường/Xã/Quận cho đúng chuẩn GHN
+                            Toast.makeText(this, "Vui lòng kiểm tra và chọn lại Tỉnh/Quận/Phường nếu cần", Toast.LENGTH_LONG).show();
+                        }
+                    }
+                }
+        );
 
         apiService = RetrofitClient.getClient().create(ApiService.class);
         // 5.1.1 Gọi SessionManager kiểm tra đăng nhập. Nếu OK, gọi initViews và loadUserData().
@@ -122,6 +145,7 @@ public class ProfileActivity extends AppCompatActivity {
         fabChangeAvatar = findViewById(R.id.fabChangeAvatar);
         tvEmail = findViewById(R.id.tvEmail);
         etName = findViewById(R.id.etName);
+        tilPhone = findViewById(R.id.tilPhone);
         etPhone = findViewById(R.id.etPhone);
         etAddress = findViewById(R.id.etAddress);
         spinProvince = findViewById(R.id.spinProvince);
@@ -146,7 +170,7 @@ public class ProfileActivity extends AppCompatActivity {
                     .placeholder(R.drawable.ic_launcher_background)
                     .into(ivAvatar);
         }
-        
+
         if (currentUser.getAddress() != null && !currentUser.getAddress().isEmpty()) {
             parseAndAutoFillAddress(currentUser.getAddress());
         }
@@ -155,7 +179,7 @@ public class ProfileActivity extends AppCompatActivity {
     private String targetProvinceName = null;
     private String targetDistrictName = null;
     private String targetWardName = null;
-    
+
     private void parseAndAutoFillAddress(String fullAddress) {
         if (fullAddress == null || fullAddress.isEmpty()) return;
         String[] parts = fullAddress.split(", ");
@@ -163,7 +187,7 @@ public class ProfileActivity extends AppCompatActivity {
             targetProvinceName = parts[parts.length - 1].trim();
             targetDistrictName = parts[parts.length - 2].trim();
             targetWardName = parts[parts.length - 3].trim();
-            
+
             StringBuilder street = new StringBuilder();
             for (int i = 0; i < parts.length - 3; i++) {
                 street.append(parts[i]);
@@ -176,6 +200,15 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
+        // 3. Ánh xạ TextInputLayout và bắt sự kiện bấm icon Bản đồ
+        TextInputLayout tilAddress = findViewById(R.id.tilAddress);
+        if (tilAddress != null) {
+            tilAddress.setEndIconOnClickListener(v -> {
+                Intent intent = new Intent(ProfileActivity.this, MapAddressActivity.class);
+                mapLauncher.launch(intent);
+            });
+        }
+
         // 5.2 Xử lý ảnh đại diện (setupListeners, getFileFromUri)
         // 5.2.1 Khởi tạo ActivityResultLauncher (GetContent) để mở thư viện, lọc MIME type 'image/*'. Lấy URI khi trả về.
         fabChangeAvatar.setOnClickListener(v -> {
@@ -231,6 +264,7 @@ public class ProfileActivity extends AppCompatActivity {
                     provinceList = response.body().data;
                     ArrayAdapter<Province> adapter = new ArrayAdapter<>(ProfileActivity.this, android.R.layout.simple_list_item_1, provinceList);
                     spinProvince.setAdapter(adapter);
+
                     
                     // 6.1.3 Quét mảng tìm Tỉnh trùng với targetProvinceName (được parse từ hàm parseAndAutoFillAddress). Gọi hàm loadDistricts().
                     if (targetProvinceName != null && !targetProvinceName.isEmpty()) {
@@ -266,7 +300,7 @@ public class ProfileActivity extends AppCompatActivity {
                     districtList = response.body().data;
                     ArrayAdapter<District> adapter = new ArrayAdapter<>(ProfileActivity.this, android.R.layout.simple_list_item_1, districtList);
                     spinDistrict.setAdapter(adapter);
-                    
+
                     if (targetDistrictName != null && !targetDistrictName.isEmpty()) {
                         for (District d : districtList) {
                             if (d.DistrictName != null && d.DistrictName.equalsIgnoreCase(targetDistrictName)) {
@@ -296,6 +330,7 @@ public class ProfileActivity extends AppCompatActivity {
                     wardList = response.body().data;
                     ArrayAdapter<Ward> adapter = new ArrayAdapter<>(ProfileActivity.this, android.R.layout.simple_list_item_1, wardList);
                     spinWard.setAdapter(adapter);
+
                     
                     // 6.3.2 Tự động match với targetWardName, nếu đúng cập nhật spinWard và chọn biến tham chiếu selectedWard.
                     if (targetWardName != null && !targetWardName.isEmpty()) {
@@ -327,6 +362,19 @@ public class ProfileActivity extends AppCompatActivity {
     private void saveProfile() {
         String name = etName.getText().toString().trim();
         String phone = etPhone.getText().toString().trim();
+        // Kiểm tra rỗng
+        if (phone.isEmpty()) {
+            tilPhone.setError("Vui lòng nhập số điện thoại");
+            return; // Dừng lại không gọi API nữa
+        }
+
+// Kiểm tra định dạng hợp lệ
+        if (!phone.matches("^0[35789][0-9]{8}$")) {
+            tilPhone.setError("Số điện thoại không hợp lệ (VD: 0912345678)");
+            return;
+        }
+
+        tilPhone.setError(null); // Xóa lỗi nếu đã nhập đúng
         String addressStreet = etAddress.getText().toString().trim();
 
         if (name.isEmpty()) {
@@ -338,12 +386,17 @@ public class ProfileActivity extends AppCompatActivity {
             Toast.makeText(this, "Vui lòng chọn đầy đủ địa chỉ", Toast.LENGTH_SHORT).show();
             return;
         }
-        
+
         String address = addressStreet + ", " + selectedWard.WardName + ", " + selectedDistrict.DistrictName + ", " + selectedProvince.ProvinceName;
 
         showLoading(true);
 
-        // 5.3.1 Khởi tạo các RequestBody dạng Multipart kiểu 'text/plain' chứa Name, Phone, Address.
+        if (currentUser.getUid() == null) {
+            Toast.makeText(this, "Lỗi dữ liệu người dùng, vui lòng đăng nhập lại", Toast.LENGTH_SHORT).show();
+            showLoading(false);
+            return;
+        }
+
         RequestBody uidPart = RequestBody.create(MediaType.parse("text/plain"), currentUser.getUid());
         RequestBody namePart = RequestBody.create(MediaType.parse("text/plain"), name);
         RequestBody phonePart = RequestBody.create(MediaType.parse("text/plain"), phone);
@@ -360,8 +413,14 @@ public class ProfileActivity extends AppCompatActivity {
             }
         }
 
-        apiService.updateProfile(uidPart, namePart, phonePart, addressPart, avatarPart)
-                .enqueue(new Callback<ApiResponse<User>>() {
+        Call<ApiResponse<User>> call;
+        if (avatarPart != null) {
+            call = apiService.updateProfile(uidPart, namePart, phonePart, addressPart, avatarPart);
+        } else {
+            call = apiService.updateProfileWithoutAvatar(uidPart, namePart, phonePart, addressPart);
+        }
+
+        call.enqueue(new Callback<ApiResponse<User>>() {
                     @Override
                     public void onResponse(Call<ApiResponse<User>> call, Response<ApiResponse<User>> response) {
                         showLoading(false);
@@ -372,7 +431,7 @@ public class ProfileActivity extends AppCompatActivity {
                                 User updatedUser = response.body().getData();
                                 sessionManager.saveUser(updatedUser);
                                 currentUser = updatedUser;
-                                selectedImageUri = null; // reset
+                                selectedImageUri = null;
                             } else {
                                 Toast.makeText(ProfileActivity.this, response.body().getMessage(), Toast.LENGTH_SHORT).show();
                             }
@@ -442,7 +501,7 @@ public class ProfileActivity extends AppCompatActivity {
                 public void onResponse(Call<ApiResponse<Void>> call, Response<ApiResponse<Void>> response) {
                     progressBar.setVisibility(View.GONE);
                     btnSubmit.setEnabled(true);
-                    
+
                     if (response.isSuccessful() && response.body() != null) {
                         if (response.body().isSuccess()) {
                             Toast.makeText(ProfileActivity.this, "Đổi mật khẩu thành công!", Toast.LENGTH_SHORT).show();
@@ -451,7 +510,6 @@ public class ProfileActivity extends AppCompatActivity {
                             Toast.makeText(ProfileActivity.this, response.body().getMessage(), Toast.LENGTH_SHORT).show();
                         }
                     } else {
-                        // Handle error body
                         try {
                             String err = response.errorBody().string();
                             if (err.contains("message")) {

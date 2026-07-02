@@ -20,6 +20,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.widget.NestedScrollView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.textfield.TextInputEditText;
@@ -36,6 +38,9 @@ import com.project.bookstoreapp.ghn.GHNResponse;
 import com.project.bookstoreapp.ghn.Province;
 import com.project.bookstoreapp.ghn.RetrofitClientGHN;
 import com.project.bookstoreapp.ghn.Ward;
+import com.project.bookstoreapp.ghn.GHNOrderRequest;
+import com.project.bookstoreapp.ghn.GHNItem;
+import com.project.bookstoreapp.ghn.GHNOrderData;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -92,9 +97,26 @@ public class CheckoutActivity extends AppCompatActivity {
     // ---- Firebase ----
     private FirebaseFirestore db;
 
+    private ActivityResultLauncher<Intent> mapLauncher;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Khởi tạo bộ nhận kết quả từ màn hình Map
+        mapLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        String selectedAddress = result.getData().getStringExtra("SELECTED_ADDRESS");
+                        if (etAddress != null) {
+                            etAddress.setText(selectedAddress);
+                            Toast.makeText(this, "Vui lòng kiểm tra và chọn lại Tỉnh/Quận/Phường nếu cần", Toast.LENGTH_LONG).show();
+                        }
+                    }
+                }
+        );
+
         setContentView(R.layout.activity_checkout);
 
         db = FirebaseFirestore.getInstance();
@@ -150,7 +172,13 @@ public class CheckoutActivity extends AppCompatActivity {
         btnApplyVoucher.setOnClickListener(v -> applyVoucher());
         btnPlaceOrder.setOnClickListener(v -> placeOrder());
         if (btnBackToCart != null) btnBackToCart.setOnClickListener(v -> finish());
-
+        // Bắt sự kiện bấm vào icon Bản đồ ở đuôi ô nhập địa chỉ
+        if (tilAddress != null) {
+            tilAddress.setEndIconOnClickListener(v -> {
+                Intent intent = new Intent(CheckoutActivity.this, MapAddressActivity.class);
+                mapLauncher.launch(intent);
+            });
+        }
         spinProvince.setOnItemClickListener((parent, view, position, id) -> {
             selectedProvince = provinceList.get(position);
             spinDistrict.setText("");
@@ -465,9 +493,12 @@ public class CheckoutActivity extends AppCompatActivity {
         String nowStr  = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
                 .format(new Date());
 
-        // Build danh sách items
+        // Build danh sách items cho Firestore và GHN
         List<Map<String, Object>> orderItems = new ArrayList<>();
         List<String> bookIds = new ArrayList<>();
+        List<GHNItem> ghnItems = new ArrayList<>();
+        int totalWeight = 0;
+        
         for (CartItem ci : selectedItems) {
             Map<String, Object> m = new HashMap<>();
             m.put("bookId",   ci.getBookId());
@@ -478,6 +509,11 @@ public class CheckoutActivity extends AppCompatActivity {
             m.put("subtotal", ci.getSubtotal());
             orderItems.add(m);
             bookIds.add(ci.getBookId());
+            
+            // 200g per book
+            int itemWeight = 200; 
+            totalWeight += (itemWeight * ci.getQuantity());
+            ghnItems.add(new GHNItem(ci.getTitle(), ci.getBookId(), ci.getQuantity(), (int)ci.getPrice(), itemWeight));
         }
 
         Map<String, Object> order = new HashMap<>();
@@ -492,36 +528,90 @@ public class CheckoutActivity extends AppCompatActivity {
         order.put("subtotal",        subtotal);
         order.put("shippingFee",     shipping);
         order.put("discountAmount",  discountAmount);
-        order.put("voucherCode",     appliedVoucherCode); // ← dùng field đúng
+        order.put("voucherCode",     appliedVoucherCode); 
         order.put("totalPrice",      total);
         order.put("items",           orderItems);
         order.put("bookIds",         bookIds);
         order.put("createdAt",       nowStr);
         order.put("updatedAt",       nowStr);
 
-        // Ghi vào Firestore collection "orders"
-        db.collection("orders")
-                .add(order)
-                .addOnSuccessListener(docRef -> {
-                    removeItemsFromCart();
-                    new androidx.appcompat.app.AlertDialog.Builder(this)
-                            .setTitle("Đặt hàng thành công")
-                            .setMessage("Cảm ơn bạn đã đặt hàng! Đơn hàng của bạn đang được xử lý.")
-                            .setPositiveButton("Về trang chủ", (dialog, which) -> {
-                                Intent intent = new Intent(this, HomeActivity.class);
-                                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-                                startActivity(intent);
-                                finish();
+        // Chuẩn bị payload gửi lên GHN
+        GHNOrderRequest ghnRequest = new GHNOrderRequest();
+        ghnRequest.paymentTypeId = paymentMethod.equals("vnpay") ? 1 : 2; // 1: Shop trả (nếu đã thanh toán), 2: Khách trả
+        ghnRequest.note = getEditText(etNote);
+        ghnRequest.requiredNote = "CHOXEMHANGKHONGTHU"; // Cấu hình mặc định
+        ghnRequest.toName = getEditText(etFullName);
+        ghnRequest.toPhone = getEditText(etPhone);
+        ghnRequest.toAddress = getEditText(etAddress); // Tên đường / số nhà
+        ghnRequest.toWardCode = selectedWard.WardCode;
+        ghnRequest.toDistrictId = selectedDistrict.DistrictID;
+        ghnRequest.codAmount = paymentMethod.equals("vnpay") ? 0 : total; // Thu hộ COD
+        ghnRequest.content = "Đơn hàng sách Bookstore";
+        ghnRequest.weight = totalWeight;
+        ghnRequest.length = 20; // Cấu hình kích thước 20x15x10
+        ghnRequest.width = 15;
+        ghnRequest.height = 10;
+        ghnRequest.serviceTypeId = 2; // Gói chuẩn
+        ghnRequest.items = ghnItems;
+
+        int SHOP_ID = 200948;
+
+        // Gọi API tạo đơn GHN trước
+        RetrofitClientGHN.getApiService().createOrder(GHN_TOKEN, SHOP_ID, ghnRequest).enqueue(new Callback<GHNResponse<GHNOrderData>>() {
+            @Override
+            public void onResponse(Call<GHNResponse<GHNOrderData>> call, Response<GHNResponse<GHNOrderData>> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().data != null) {
+                    // Thành công, lấy mã đơn hàng GHN
+                    String ghnOrderCode = response.body().data.orderCode;
+                    order.put("ghnOrderCode", ghnOrderCode);
+                    order.put("displayId", ghnOrderCode);
+                    
+                    // Ghi vào Firestore collection "orders"
+                    db.collection("orders")
+                            .document(ghnOrderCode)
+                            .set(order)
+                            .addOnSuccessListener(aVoid -> {
+                                removeItemsFromCart();
+                                new androidx.appcompat.app.AlertDialog.Builder(CheckoutActivity.this)
+                                        .setTitle("Đặt hàng thành công")
+                                        .setMessage("Mã vận đơn GHN: " + ghnOrderCode + "\nCảm ơn bạn đã đặt hàng! Đơn hàng của bạn đang được xử lý.")
+                                        .setPositiveButton("Về trang chủ", (dialog, which) -> {
+                                            Intent intent = new Intent(CheckoutActivity.this, HomeActivity.class);
+                                            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                                            startActivity(intent);
+                                            finish();
+                                        })
+                                        .setCancelable(false)
+                                        .show();
                             })
-                            .setCancelable(false)
-                            .show();
-                })
-                .addOnFailureListener(e -> {
+                            .addOnFailureListener(e -> {
+                                btnPlaceOrder.setEnabled(true);
+                                btnPlaceOrder.setText("ĐẶT HÀNG NGAY");
+                                Toast.makeText(CheckoutActivity.this, "Lưu Firestore thất bại: " + e.getMessage(),
+                                        Toast.LENGTH_SHORT).show();
+                            });
+                } else {
                     btnPlaceOrder.setEnabled(true);
                     btnPlaceOrder.setText("ĐẶT HÀNG NGAY");
-                    Toast.makeText(this, "Thất bại: " + e.getMessage(),
-                            Toast.LENGTH_SHORT).show();
-                });
+                    String errorMsg = "Lỗi từ hệ thống GHN, không thể tạo đơn";
+                    if (response.errorBody() != null) {
+                        try {
+                            errorMsg = response.errorBody().string();
+                        } catch (Exception ignored) {}
+                    }
+                    Log.e("CheckoutActivity", "GHN Error: " + errorMsg);
+                    Toast.makeText(CheckoutActivity.this, "Tạo đơn GHN thất bại. Thử lại sau.", Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<GHNResponse<GHNOrderData>> call, Throwable t) {
+                btnPlaceOrder.setEnabled(true);
+                btnPlaceOrder.setText("ĐẶT HÀNG NGAY");
+                Log.e("CheckoutActivity", "GHN Failure", t);
+                Toast.makeText(CheckoutActivity.this, "Lỗi kết nối GHN: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
     @SuppressLint("SetTextI18n")
     private void removeItemsFromCart() {

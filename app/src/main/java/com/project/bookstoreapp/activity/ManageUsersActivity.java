@@ -1,63 +1,270 @@
 package com.project.bookstoreapp.activity;
 
+import android.app.AlertDialog;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.RadioGroup;
+import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SearchView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.google.android.material.appbar.MaterialToolbar;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.android.material.button.MaterialButton;
 import com.project.bookstoreapp.R;
 import com.project.bookstoreapp.adapter.UserAdapter;
 import com.project.bookstoreapp.model.User;
+import com.project.bookstoreapp.model.UserStats;
+import com.project.bookstoreapp.network.ApiResponse;
+import com.project.bookstoreapp.network.ApiService;
+import com.project.bookstoreapp.network.RetrofitClient;
+
+import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class ManageUsersActivity extends AppCompatActivity {
 
     private RecyclerView rvAdminUsers;
+    private SearchView searchViewUsers;
+    private ProgressBar progressBarUsers;
     private UserAdapter userAdapter;
-    private List<User> userList;
+
+    private List<User> originalUserList;
+    private List<User> displayUserList;
+
+    private ApiService apiService;
+
+    private String currentSearchText = "";
+    private String currentRoleFilter = "All";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_manage_users);
 
-        rvAdminUsers = findViewById(R.id.rvAdminUsers);
-        MaterialToolbar toolbar = findViewById(R.id.toolbarManageUsers);
+        apiService = RetrofitClient.getClient().create(ApiService.class);
 
+        initViews();
+        setupSearchView();
+        loadUsersFromApi();
+    }
+
+    private void initViews() {
+        MaterialToolbar toolbar = findViewById(R.id.toolbarManageUsers);
         toolbar.setNavigationIcon(androidx.appcompat.R.drawable.abc_ic_ab_back_material);
         toolbar.setNavigationOnClickListener(v -> finish());
+
+        searchViewUsers = findViewById(R.id.searchViewUsers);
+        progressBarUsers = findViewById(R.id.progressBarUsers);
+        rvAdminUsers = findViewById(R.id.rvAdminUsers);
         rvAdminUsers.setLayoutManager(new LinearLayoutManager(this));
 
-        userList = new ArrayList<>();
-        userAdapter = new UserAdapter(userList, clickedUser -> {
-            String action = clickedUser.isLocked() ? "Mở khóa" : "Khóa";
-            Toast.makeText(ManageUsersActivity.this, action + " tài khoản: " + clickedUser.getName(), Toast.LENGTH_SHORT).show();
-            // Tương lai: Gọi lệnh db.collection("users").document(clickedUser.getUid()).update("isLocked", !clickedUser.isLocked())
+        originalUserList = new ArrayList<>();
+        displayUserList = new ArrayList<>();
+
+        // SỰ KIỆN CLICK VÀO USER -> MỞ DIALOG CHI TIẾT
+        userAdapter = new UserAdapter(displayUserList, clickedUser -> {
+            showUserDetailsDialog(clickedUser);
         });
         rvAdminUsers.setAdapter(userAdapter);
 
-        loadUsersFromFirebase();
+        RadioGroup rgRoleFilter = findViewById(R.id.rgRoleFilter);
+        rgRoleFilter.setOnCheckedChangeListener((group, checkedId) -> {
+            if (checkedId == R.id.rbAdmin) currentRoleFilter = "Admin";
+            else if (checkedId == R.id.rbCustomer) currentRoleFilter = "Customer";
+            else currentRoleFilter = "All";
+            applyFilters();
+        });
     }
 
-    private void loadUsersFromFirebase() {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
+    private void setupSearchView() {
+        searchViewUsers.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) { return false; }
 
-        db.collection("users").get().addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                userList.clear();
-                for (QueryDocumentSnapshot document : task.getResult()) {
-                    User user = document.toObject(User.class);
-                    userList.add(user);
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                currentSearchText = newText.toLowerCase().trim();
+                applyFilters();
+                return true;
+            }
+        });
+    }
+
+    private void applyFilters() {
+        List<User> filteredList = new ArrayList<>();
+
+        for (User user : originalUserList) {
+            boolean matchText = true;
+            boolean matchRole = true;
+
+            if (!currentSearchText.isEmpty()) {
+                String name = user.getName() != null ? user.getName().toLowerCase() : "";
+                String email = user.getEmail() != null ? user.getEmail().toLowerCase() : "";
+                if (!name.contains(currentSearchText) && !email.contains(currentSearchText)) {
+                    matchText = false;
                 }
-                userAdapter.notifyDataSetChanged();
-            } else {
-                Toast.makeText(ManageUsersActivity.this, "Lỗi tải Người dùng", Toast.LENGTH_SHORT).show();
-                Log.e("Firebase_Error", "Error getting users: ", task.getException());
+            }
+
+            if (!currentRoleFilter.equals("All")) {
+                String role = user.getRole() != null ? user.getRole() : "";
+                if (currentRoleFilter.equals("Admin") && !role.equalsIgnoreCase("admin")) matchRole = false;
+                if (currentRoleFilter.equals("Customer") && role.equalsIgnoreCase("admin")) matchRole = false;
+            }
+
+            if (matchText && matchRole) filteredList.add(user);
+        }
+        userAdapter.updateList(filteredList);
+    }
+
+    private void loadUsersFromApi() {
+        progressBarUsers.setVisibility(View.VISIBLE);
+
+        apiService.getAllUsers().enqueue(new Callback<ApiResponse<List<User>>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<List<User>>> call, Response<ApiResponse<List<User>>> response) {
+                progressBarUsers.setVisibility(View.GONE);
+
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    originalUserList.clear();
+                    displayUserList.clear();
+                    originalUserList.addAll(response.body().getData());
+                    applyFilters();
+                } else {
+                    Toast.makeText(ManageUsersActivity.this, "Không thể tải danh sách", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<List<User>>> call, Throwable t) {
+                progressBarUsers.setVisibility(View.GONE);
+                Toast.makeText(ManageUsersActivity.this, "Lỗi kết nối Server", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    // ==================================================
+    // DIALOG HIỂN THỊ CHI TIẾT NGƯỜI DÙNG VÀ GỌI API THỐNG KÊ
+    // ==================================================
+    private void showUserDetailsDialog(User user) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_user_details, null);
+        builder.setView(dialogView);
+        AlertDialog dialog = builder.create();
+
+        // Đảm bảo nền dialog trong suốt để thấy được góc bo tròn của layout
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        // Ánh xạ View
+        TextView tvName = dialogView.findViewById(R.id.tvDialogName);
+        TextView tvEmail = dialogView.findViewById(R.id.tvDialogEmail);
+        ProgressBar pbStats = dialogView.findViewById(R.id.pbDialogStats);
+        LinearLayout layoutStats = dialogView.findViewById(R.id.layoutDialogStats);
+        TextView tvTotalOrders = dialogView.findViewById(R.id.tvTotalOrders);
+        TextView tvTotalSpent = dialogView.findViewById(R.id.tvTotalSpent);
+        MaterialButton btnToggleLock = dialogView.findViewById(R.id.btnDialogToggleLock);
+        MaterialButton btnClose = dialogView.findViewById(R.id.btnDialogClose);
+
+        // Gán data cơ bản
+        tvName.setText(user.getName() != null ? user.getName() : "Không có tên");
+        tvEmail.setText(user.getEmail() != null ? user.getEmail() : "Không có email");
+
+        if (user.isLocked()) {
+            btnToggleLock.setText("Mở khóa tài khoản");
+            btnToggleLock.setBackgroundColor(0xFF388E3C); // Xanh lá
+        } else {
+            btnToggleLock.setText("Khóa tài khoản");
+            btnToggleLock.setBackgroundColor(0xFFD32F2F); // Đỏ
+        }
+
+        // Gọi API lấy thống kê
+        if (user.getUid() != null) {
+            pbStats.setVisibility(View.VISIBLE);
+            layoutStats.setVisibility(View.GONE);
+
+            apiService.getUserStats(user.getUid()).enqueue(new Callback<ApiResponse<UserStats>>() {
+                @Override
+                public void onResponse(Call<ApiResponse<UserStats>> call, Response<ApiResponse<UserStats>> response) {
+                    pbStats.setVisibility(View.GONE);
+                    layoutStats.setVisibility(View.VISIBLE);
+
+                    if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                        UserStats stats = response.body().getData();
+                        if (stats != null) {
+                            tvTotalOrders.setText(String.valueOf(stats.getTotalOrders()));
+                            DecimalFormat formatter = new DecimalFormat("###,###,###");
+                            tvTotalSpent.setText(formatter.format(stats.getTotalSpent()) + " đ");
+                        }
+                    } else {
+                        tvTotalOrders.setText("Lỗi");
+                        tvTotalSpent.setText("Lỗi");
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<ApiResponse<UserStats>> call, Throwable t) {
+                    pbStats.setVisibility(View.GONE);
+                    layoutStats.setVisibility(View.VISIBLE);
+                    tvTotalOrders.setText("Lỗi mạng");
+                    tvTotalSpent.setText("Lỗi mạng");
+                }
+            });
+        }
+
+        btnClose.setOnClickListener(v -> dialog.dismiss());
+
+        btnToggleLock.setOnClickListener(v -> {
+            dialog.dismiss();
+            toggleUserLockStatus(user);
+        });
+
+        dialog.show();
+    }
+
+    private void toggleUserLockStatus(User user) {
+        if (user.getUid() == null) {
+            Toast.makeText(this, "Lỗi: Không tìm thấy ID", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        boolean newLockStatus = !user.isLocked();
+        progressBarUsers.setVisibility(View.VISIBLE);
+
+        Map<String, Boolean> body = new HashMap<>();
+        body.put("isLocked", newLockStatus);
+
+        apiService.toggleUserLock(user.getUid(), body).enqueue(new Callback<ApiResponse<Object>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<Object>> call, Response<ApiResponse<Object>> response) {
+                progressBarUsers.setVisibility(View.GONE);
+
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    Toast.makeText(ManageUsersActivity.this, response.body().getMessage(), Toast.LENGTH_SHORT).show();
+                    loadUsersFromApi();
+                } else {
+                    Toast.makeText(ManageUsersActivity.this, "Lỗi cập nhật trên Server", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<Object>> call, Throwable t) {
+                progressBarUsers.setVisibility(View.GONE);
+                Toast.makeText(ManageUsersActivity.this, "Lỗi mạng", Toast.LENGTH_SHORT).show();
             }
         });
     }

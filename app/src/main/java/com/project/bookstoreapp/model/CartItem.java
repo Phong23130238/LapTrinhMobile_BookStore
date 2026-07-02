@@ -5,6 +5,7 @@ import android.os.Parcelable;
 
 public class CartItem implements Parcelable {
 
+    private String cartItemId; // THÊM MỚI: Lưu Document ID của Firebase
     private String bookId;
     private String title;
     private String author;
@@ -31,6 +32,7 @@ public class CartItem implements Parcelable {
     }
 
     protected CartItem(Parcel in) {
+        cartItemId    = in.readString(); // THÊM MỚI
         bookId        = in.readString();
         title         = in.readString();
         author        = in.readString();
@@ -44,6 +46,7 @@ public class CartItem implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(cartItemId); // THÊM MỚI
         dest.writeString(bookId);
         dest.writeString(title);
         dest.writeString(author);
@@ -64,6 +67,10 @@ public class CartItem implements Parcelable {
         @Override
         public CartItem[] newArray(int size) { return new CartItem[size]; }
     };
+
+    // THÊM GETTER & SETTER CHO cartItemId
+    public String getCartItemId()            { return cartItemId; }
+    public void   setCartItemId(String v)    { this.cartItemId = v; }
 
     public String getBookId()            { return bookId; }
     public void   setBookId(String v)    { this.bookId = v; }
