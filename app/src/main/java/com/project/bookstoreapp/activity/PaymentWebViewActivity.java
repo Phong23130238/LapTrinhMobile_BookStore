@@ -8,6 +8,9 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.WebChromeClient;
+import android.webkit.SslErrorHandler;
+import android.net.http.SslError;
 import android.view.MenuItem;
 
 import androidx.annotation.NonNull;
@@ -19,7 +22,6 @@ import com.project.bookstoreapp.R;
 public class PaymentWebViewActivity extends AppCompatActivity {
 
     public static final String EXTRA_PAYMENT_URL = "extra_payment_url";
-    private static final String RETURN_URL_PREFIX = "http://10.0.2.2:3000/api/vnpay_return";
 
     private WebView webViewPayment;
 
@@ -47,8 +49,8 @@ public class PaymentWebViewActivity extends AppCompatActivity {
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
                 
-                // Nếu URL chuyển hướng về Return URL của hệ thống
-                if (url.startsWith(RETURN_URL_PREFIX)) {
+                // Nếu URL chuyển hướng về Return URL của hệ thống (bất kể Local IP hay Render Public)
+                if (url.contains("/api/vnpay_return")) {
                     Uri uri = Uri.parse(url);
                     String responseCode = uri.getQueryParameter("vnp_ResponseCode");
 
@@ -65,7 +67,15 @@ public class PaymentWebViewActivity extends AppCompatActivity {
                 }
                 return super.shouldOverrideUrlLoading(view, request);
             }
+
+            @Override
+            public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+                // Bỏ qua lỗi chứng chỉ SSL trên máy ảo Emulator cho VNPAY Sandbox
+                handler.proceed();
+            }
         });
+
+        webViewPayment.setWebChromeClient(new WebChromeClient());
 
         String paymentUrl = getIntent().getStringExtra(EXTRA_PAYMENT_URL);
         if (paymentUrl != null && !paymentUrl.isEmpty()) {
