@@ -20,6 +20,6 @@
     "google-auth-library": "^9.0.0",
     "multer": "^2.2.0",
     "multer-storage-cloudinary": "^4.0.0",
-    "nodemailer": "^9.0.3"
+    "nodemailer": "^6.10.1"
   }
 }
