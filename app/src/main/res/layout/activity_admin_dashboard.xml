@@ -31,7 +31,7 @@
         android:text="Quản lý Sản phẩm (Sách)"
         android:textSize="16sp"
         app:cornerRadius="28dp"
-        app:backgroundTint="@color/violet_light"
+        app:backgroundTint="@color/violet_primary"
         android:layout_marginBottom="16dp"/>
 
     <com.google.android.material.button.MaterialButton
@@ -41,7 +41,7 @@
         android:text="Quản lý Đơn hàng"
         android:textSize="16sp"
         app:cornerRadius="28dp"
-        app:backgroundTint="@color/violet_light"
+        app:backgroundTint="@color/violet_primary"
         android:layout_marginBottom="16dp"/>
 
     <com.google.android.material.button.MaterialButton
@@ -50,8 +50,8 @@
         android:layout_height="60dp"
         android:text="Quản lý Kho (Nhập / Xuất)"
         android:textSize="16sp"
-        app:cornerRadius="8dp"
-        app:backgroundTint="@color/navy_medium"
+        app:cornerRadius="28dp"
+        app:backgroundTint="@color/violet_primary"
         android:layout_marginBottom="16dp"/>
 
     <com.google.android.material.button.MaterialButton
@@ -61,7 +61,17 @@
         android:text="Quản lý Người dùng"
         android:textSize="16sp"
         app:cornerRadius="28dp"
-        app:backgroundTint="@color/violet_light"
+        app:backgroundTint="@color/violet_primary"
+        android:layout_marginBottom="16dp"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnAdminStats"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Thống kê Kinh doanh"
+        android:textSize="16sp"
+        app:cornerRadius="28dp"
+        app:backgroundTint="@color/violet_primary"
         android:layout_marginBottom="32dp"/>
 
     <Button

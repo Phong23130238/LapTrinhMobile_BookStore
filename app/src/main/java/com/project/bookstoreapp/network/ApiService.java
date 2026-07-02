@@ -1,5 +1,6 @@
 package com.project.bookstoreapp.network;
 
+import com.project.bookstoreapp.model.AdminStatsResponse;
 import com.project.bookstoreapp.model.Order;
 import com.project.bookstoreapp.model.PaymentResponse;
 import com.project.bookstoreapp.model.Review;
@@ -113,6 +114,11 @@ public interface ApiService {
 
 
     // ===== MANAGE USERS APIs =====
+    
+    // API lấy thống kê Admin
+    @GET("api/admin/stats")
+    Call<ApiResponse<AdminStatsResponse>> getAdminStats(@retrofit2.http.Query("fromDate") String fromDate, @retrofit2.http.Query("toDate") String toDate);
+
     // Lấy danh sách người dùng
     @GET("/api/users")
     Call<ApiResponse<List<User>>> getAllUsers();

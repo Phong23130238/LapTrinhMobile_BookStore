@@ -110,13 +110,13 @@
                         android:id="@+id/tvDialogStatus"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Đang hoạt động"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:textColor="#388E3C"
                         android:background="#C8E6C9"
                         android:paddingHorizontal="14dp"
-                        android:paddingVertical="5dp"/>
+                        android:paddingVertical="5dp"
+                        android:text="Đang hoạt động"
+                        android:textColor="#388E3C"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -319,7 +319,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="🛒"
+                                android:text=""
                                 android:textSize="22sp"/>
                             <TextView
                                 android:id="@+id/tvTotalOrders"
@@ -358,7 +358,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="💰"
+                                android:text=""
                                 android:textSize="22sp"/>
                             <TextView
                                 android:id="@+id/tvTotalSpent"
