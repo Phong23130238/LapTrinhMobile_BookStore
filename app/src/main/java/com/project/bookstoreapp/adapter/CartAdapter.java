@@ -1,7 +1,6 @@
 package com.project.bookstoreapp.adapter;
 
 import android.content.Context;
-import android.text.format.Formatter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,11 +8,13 @@ import android.widget.CheckBox;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.project.bookstoreapp.R;
 import com.project.bookstoreapp.model.CartItem;
 
@@ -48,19 +49,20 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
 
     @Override
     public void onBindViewHolder(@NonNull CartViewHolder holder, int position) {
-        CartItem item = cartItems.get(position);
+        // Khai báo biến item ở đây và sử dụng thống nhất
+        final CartItem currentItem = cartItems.get(position);
 
         // Tên & tác giả
-        holder.tvTitle.setText(item.getTitle());
-        holder.tvAuthor.setText(item.getAuthor());
+        holder.tvTitle.setText(currentItem.getTitle());
+        holder.tvAuthor.setText(currentItem.getAuthor());
 
         // Giá bán
-        holder.tvPrice.setText(formatPrice(item.getPrice()));
+        holder.tvPrice.setText(formatPrice(currentItem.getPrice()));
 
-        // Giá gốc (chỉ hiện khi có giảm giá)
-        if (item.getOriginalPrice() > item.getPrice()) {
+        // Giá gốc
+        if (currentItem.getOriginalPrice() > currentItem.getPrice()) {
             holder.tvOriginalPrice.setVisibility(View.VISIBLE);
-            holder.tvOriginalPrice.setText(formatPrice(item.getOriginalPrice()));
+            holder.tvOriginalPrice.setText(formatPrice(currentItem.getOriginalPrice()));
             holder.tvOriginalPrice.setPaintFlags(
                     holder.tvOriginalPrice.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG
             );
@@ -69,12 +71,11 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
         }
 
         // Số lượng
-        holder.tvQuantity.setText(String.valueOf(item.getQuantity()));
+        holder.tvQuantity.setText(String.valueOf(currentItem.getQuantity()));
 
-        // Ảnh bìa bằng Glide
-        if (item.getImageUrl() != null && !item.getImageUrl().isEmpty()) {
-            Glide.with(context)
-                    .load(item.getImageUrl())
+        // Ảnh bìa
+        if (currentItem.getImageUrl() != null && !currentItem.getImageUrl().isEmpty()) {
+            Glide.with(context).load(currentItem.getImageUrl())
                     .placeholder(R.drawable.ic_book_placeholder)
                     .error(R.drawable.ic_book_placeholder)
                     .into(holder.ivCover);
@@ -82,36 +83,49 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
             holder.ivCover.setImageResource(R.drawable.ic_book_placeholder);
         }
 
-        // Trạng thái checkbox (ngăn trigger listener khi bind)
+        // Checkbox
         holder.cbSelect.setOnCheckedChangeListener(null);
-        holder.cbSelect.setChecked(item.isSelected());
+        holder.cbSelect.setChecked(currentItem.isSelected());
         holder.cbSelect.setOnCheckedChangeListener((btn, isChecked) -> {
-            item.setSelected(isChecked);
+            currentItem.setSelected(isChecked);
             if (listener != null) listener.onCartChanged();
         });
 
-        // Nút giảm số lượng
+        // Nút giảm
         holder.btnDecrease.setOnClickListener(v -> {
-            int current = item.getQuantity();
-            if (current > 1) {
-                int newQty = current - 1;
-                item.setQuantity(newQty);
+            if (currentItem.getQuantity() > 1) {
+                int newQty = currentItem.getQuantity() - 1;
+                currentItem.setQuantity(newQty);
                 holder.tvQuantity.setText(String.valueOf(newQty));
                 if (listener != null) {
-                    listener.onQuantityChanged(item, newQty);
-                    if (item.isSelected()) listener.onCartChanged();
+                    listener.onQuantityChanged(currentItem, newQty);
+                    if (currentItem.isSelected()) listener.onCartChanged();
                 }
             }
         });
 
-        // Nút tăng số lượng
+        // Nút tăng
         holder.btnIncrease.setOnClickListener(v -> {
-            int newQty = item.getQuantity() + 1;
-            item.setQuantity(newQty);
+            int newQty = currentItem.getQuantity() + 1;
+            currentItem.setQuantity(newQty);
             holder.tvQuantity.setText(String.valueOf(newQty));
             if (listener != null) {
-                listener.onQuantityChanged(item, newQty);
-                if (item.isSelected()) listener.onCartChanged();
+                listener.onQuantityChanged(currentItem, newQty);
+                if (currentItem.isSelected()) listener.onCartChanged();
+            }
+        });
+
+        // Nút Xóa (Đã fix lỗi IndexOutOfBounds)
+        holder.btnDeleteCartItem.setOnClickListener(v -> {
+            String documentId = currentItem.getCartItemId();
+            if (documentId != null && !documentId.isEmpty()) {
+                FirebaseFirestore.getInstance().collection("carts")
+                        .document(documentId)
+                        .delete()
+                        .addOnSuccessListener(aVoid ->
+                                Toast.makeText(context, "Đã xóa sản phẩm", Toast.LENGTH_SHORT).show())
+                        .addOnFailureListener(e ->
+                                Toast.makeText(context, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
             }
         });
     }
@@ -148,19 +162,20 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
         CheckBox cbSelect;
         ImageView ivCover;
         TextView tvTitle, tvAuthor, tvPrice, tvOriginalPrice, tvQuantity;
-        ImageButton btnDecrease, btnIncrease;
+        ImageButton btnDecrease, btnIncrease, btnDeleteCartItem; // Khai báo thêm btnDeleteCartItem
 
         CartViewHolder(@NonNull View itemView) {
             super(itemView);
-            cbSelect       = itemView.findViewById(R.id.cbSelectItem);
-            ivCover        = itemView.findViewById(R.id.ivBookCover);
-            tvTitle        = itemView.findViewById(R.id.tvBookTitle);
-            tvAuthor       = itemView.findViewById(R.id.tvBookAuthor);
-            tvPrice        = itemView.findViewById(R.id.tvBookPrice);
-            tvOriginalPrice = itemView.findViewById(R.id.tvOriginalPrice);
-            tvQuantity     = itemView.findViewById(R.id.tvQuantity);
-            btnDecrease    = itemView.findViewById(R.id.btnDecrease);
-            btnIncrease    = itemView.findViewById(R.id.btnIncrease);
+            cbSelect           = itemView.findViewById(R.id.cbSelectItem);
+            ivCover            = itemView.findViewById(R.id.ivBookCover);
+            tvTitle            = itemView.findViewById(R.id.tvBookTitle);
+            tvAuthor           = itemView.findViewById(R.id.tvBookAuthor);
+            tvPrice            = itemView.findViewById(R.id.tvBookPrice);
+            tvOriginalPrice    = itemView.findViewById(R.id.tvOriginalPrice);
+            tvQuantity         = itemView.findViewById(R.id.tvQuantity);
+            btnDecrease        = itemView.findViewById(R.id.btnDecrease);
+            btnIncrease        = itemView.findViewById(R.id.btnIncrease);
+            btnDeleteCartItem  = itemView.findViewById(R.id.btnDeleteCartItem); // Ánh xạ nút xóa
         }
     }
 }

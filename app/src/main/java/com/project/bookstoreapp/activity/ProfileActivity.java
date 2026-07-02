@@ -63,6 +63,7 @@ public class ProfileActivity extends AppCompatActivity {
     private CircleImageView ivAvatar;
     private FloatingActionButton fabChangeAvatar;
     private TextView tvEmail;
+    private TextInputLayout tilPhone;
     private EditText etName, etPhone, etAddress;
     private MaterialButton btnSaveProfile, btnChangePassword, btnLogout;
     private ProgressBar progressBarProfile;
@@ -144,6 +145,7 @@ public class ProfileActivity extends AppCompatActivity {
         fabChangeAvatar = findViewById(R.id.fabChangeAvatar);
         tvEmail = findViewById(R.id.tvEmail);
         etName = findViewById(R.id.etName);
+        tilPhone = findViewById(R.id.tilPhone);
         etPhone = findViewById(R.id.etPhone);
         etAddress = findViewById(R.id.etAddress);
         spinProvince = findViewById(R.id.spinProvince);
@@ -360,6 +362,19 @@ public class ProfileActivity extends AppCompatActivity {
     private void saveProfile() {
         String name = etName.getText().toString().trim();
         String phone = etPhone.getText().toString().trim();
+        // Kiểm tra rỗng
+        if (phone.isEmpty()) {
+            tilPhone.setError("Vui lòng nhập số điện thoại");
+            return; // Dừng lại không gọi API nữa
+        }
+
+// Kiểm tra định dạng hợp lệ
+        if (!phone.matches("^0[35789][0-9]{8}$")) {
+            tilPhone.setError("Số điện thoại không hợp lệ (VD: 0912345678)");
+            return;
+        }
+
+        tilPhone.setError(null); // Xóa lỗi nếu đã nhập đúng
         String addressStreet = etAddress.getText().toString().trim();
 
         if (name.isEmpty()) {

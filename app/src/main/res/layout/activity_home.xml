@@ -135,7 +135,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="16dp"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="8dp"
                 android:hint="Tìm kiếm sách..."
                 app:startIconDrawable="@android:drawable/ic_menu_search"
                 app:startIconTint="@color/navy_medium"
@@ -152,81 +152,41 @@
                     android:textColorHint="@color/navy_medium" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <HorizontalScrollView
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvCategories"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
                 android:layout_marginBottom="16dp"
-                android:paddingHorizontal="16dp"
-                android:scrollbars="none">
+                android:clipToPadding="false"
+                android:paddingHorizontal="16dp" />
 
-                <com.google.android.material.chip.ChipGroup
-                    android:id="@+id/chipGroup"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    app:singleSelection="true">
-
-                    <com.google.android.material.chip.Chip
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Tất cả"
-                        android:checked="true"
-                        app:chipBackgroundColor="@color/navy_medium"
-                        android:textColor="@color/white"
-                        style="@style/Widget.MaterialComponents.Chip.Filter" />
-
-                    <com.google.android.material.chip.Chip
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Văn học"
-                        style="@style/Widget.MaterialComponents.Chip.Filter" />
-
-                    <com.google.android.material.chip.Chip
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Khoa học"
-                        style="@style/Widget.MaterialComponents.Chip.Filter" />
-
-                    <com.google.android.material.chip.Chip
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Kinh tế"
-                        style="@style/Widget.MaterialComponents.Chip.Filter" />
-
-                    <com.google.android.material.chip.Chip
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Kỹ năng"
-                        style="@style/Widget.MaterialComponents.Chip.Filter" />
-                </com.google.android.material.chip.ChipGroup>
-            </HorizontalScrollView>
-
-            <LinearLayout
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
                 android:paddingHorizontal="16dp"
-                android:layout_marginBottom="12dp"
-                android:gravity="center_vertical">
+                android:layout_marginBottom="12dp">
 
                 <TextView
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="📖 Sách nổi bật"
-                    android:textColor="@color/navy_dark"
-                    android:textSize="17sp"
+                    android:layout_alignParentStart="true"
+                    android:layout_centerVertical="true"
+                    android:text="📖 Sách bán chạy"
+                    android:textColor="#333333"
+                    android:textSize="18sp"
                     android:textStyle="bold" />
 
                 <TextView
-                    android:id="@+id/tvSeeAll"
+                    android:id="@+id/tvViewAll"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
                     android:text="Xem tất cả →"
-                    android:textColor="@color/gold"
-                    android:textSize="13sp"
-                    android:clickable="true"
-                    android:focusable="true" />
-            </LinearLayout>
+                    android:textColor="#F57C00"
+                    android:textSize="14sp" />
+            </RelativeLayout>
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvBooks"
