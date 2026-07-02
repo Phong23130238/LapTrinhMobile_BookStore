@@ -7,7 +7,6 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const { OAuth2Client } = require('google-auth-library');
-const nodemailer = require('nodemailer');
 const { initializeApp } = require('firebase/app');
 const { getFirestore, collection, query, where, getDocs, addDoc, updateDoc, doc, getDoc, setDoc, deleteDoc } = require('firebase/firestore');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
@@ -780,6 +779,9 @@ app.post('/api/create_payment_url', (req, res) => {
                                            .join('&');
 
     res.json({ success: true, paymentUrl: paymentUrl });
+});
+
+// =============================================
 // FORGOT PASSWORD APIs
 // =============================================
 
