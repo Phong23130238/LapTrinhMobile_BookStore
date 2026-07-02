@@ -13,7 +13,28 @@
           "package_name": "com.bookstore.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "608811292447-43krqjdjv691ek78nc990i4mk7r762ae.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bookstore.app",
+            "certificate_hash": "a04658f35d61bc0c56f177faaf0f3c03ac11996f"
+          }
+        },
+        {
+          "client_id": "608811292447-8dc06lokqk957m29al19po638gmlfdb7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bookstore.app",
+            "certificate_hash": "4fda0c9d3cdd7099c629bed5c29e0c6db129c6da"
+          }
+        },
+        {
+          "client_id": "608811292447-d9cncbpmdbuf07npas15ack1o3cmdtsm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAxkEKnqnAIX4FMWsb-jxmSkPLZLwf0wO4"
@@ -21,7 +42,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "608811292447-d9cncbpmdbuf07npas15ack1o3cmdtsm.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     },
@@ -32,7 +58,20 @@
           "package_name": "com.project.bookstoreapp"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "608811292447-cje2a9lmp75pieq6g2l8la04lriq5npg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.project.bookstoreapp",
+            "certificate_hash": "a04658f35d61bc0c56f177faaf0f3c03ac11996f"
+          }
+        },
+        {
+          "client_id": "608811292447-d9cncbpmdbuf07npas15ack1o3cmdtsm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAxkEKnqnAIX4FMWsb-jxmSkPLZLwf0wO4"
@@ -40,7 +79,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "608811292447-d9cncbpmdbuf07npas15ack1o3cmdtsm.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
