@@ -36,20 +36,19 @@ const otpStore = new Map();      // email -> { otp, expiresAt }
 const resetTokenStore = new Map(); // email -> { token, expiresAt }
 
 // Cấu hình Nodemailer - Gmail SMTP
+// Bypass DNS resolver (bị ETIMEOUT trên mạng nội bộ) bằng cách kết nối trực tiếp IP
 const emailTransporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // Dùng STARTTLS thay vì SSL trực tiếp
+    host: '64.233.170.108',  // IP của smtp.gmail.com (nslookup)
+    port: 465,
+    secure: true,             // SSL trực tiếp trên port 465
     auth: {
         user: 'aurasound.contact@gmail.com',
         pass: 'vssg ofwa bqcw yjll'
     },
     tls: {
+        servername: 'smtp.gmail.com',  // Để SSL xác thực đúng tên miền
         rejectUnauthorized: false
-    },
-    connectionTimeout: 5000, // Timeout 5s để không làm treo Android app
-    greetingTimeout: 5000,
-    socketTimeout: 5000
+    }
 });
 app.use(express.json());
 
@@ -91,6 +90,57 @@ function hashMD5(password) {
 // =============================================
 
 /**
+ * @api {post} /api/auth/send-otp Gửi OTP đăng ký
+ */
+app.post('/api/auth/send-otp', async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ success: false, message: "Vui lòng nhập email" });
+        }
+
+        // Kiểm tra email đã tồn tại chưa
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("email", "==", email));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            return res.status(400).json({ success: false, message: "Email đã được sử dụng" });
+        }
+
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = Date.now() + 5 * 60 * 1000; // 5 phút
+
+        otpStore.set(email, { otp, expiresAt });
+
+        const mailOptions = {
+            from: '"BookStore App" <aurasound.contact@gmail.com>',
+            to: email,
+            subject: 'Mã xác thực đăng ký tài khoản - BookStore',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 30px; background: #f8fafc; border-radius: 12px;">
+                    <h2 style="color: #0F172A; text-align: center;">📚 BookStore</h2>
+                    <p style="color: #334155;">Xin chào,</p>
+                    <p style="color: #334155;">Bạn đang đăng ký tài khoản mới. Dưới đây là mã xác thực của bạn:</p>
+                    <div style="text-align: center; margin: 24px 0;">
+                        <span style="display: inline-block; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0F172A; background: #E2E8F0; padding: 16px 32px; border-radius: 8px;">${otp}</span>
+                    </div>
+                    <p style="color: #64748B; font-size: 14px; text-align: center;">Mã có hiệu lực trong <strong>5 phút</strong>.</p>
+                </div>
+            `
+        };
+
+        await emailTransporter.sendMail(mailOptions);
+        console.log(`OTP đăng ký ${otp} đã gửi đến ${email}`);
+        res.json({ success: true, message: "Mã xác thực đã được gửi đến email của bạn" });
+
+    } catch (error) {
+        console.error("Lỗi gửi OTP đăng ký:", error);
+        res.status(500).json({ success: false, message: "Không thể gửi email. Vui lòng thử lại sau." });
+    }
+});
+
+/**
  * @api {post} /api/auth/register Đăng ký tài khoản thường
  * @description Xử lý luồng tạo tài khoản mới bằng Email/Password.
  * 1. Nhận Name, Email, Password từ body. Validate đầu vào (rỗng, độ dài pass >= 6).
@@ -112,21 +162,19 @@ app.post('/api/auth/register', async (req, res) => {
             return res.status(400).json({ success: false, message: "Mật khẩu phải có ít nhất 6 ký tự" });
         }
 
-        // Kiểm tra mã OTP
-        const otpDocRef = doc(db, "otps", email);
-        const otpDocSnap = await getDoc(otpDocRef);
+        // Kiểm tra mã OTP từ in-memory store
+        const storedData = otpStore.get(email);
 
-        if (!otpDocSnap.exists()) {
-            return res.status(400).json({ success: false, message: "Chưa gửi mã OTP cho email này" });
+        if (!storedData) {
+            return res.status(400).json({ success: false, message: "Chưa gửi mã OTP cho email này hoặc mã đã hết hạn" });
         }
 
-        const otpData = otpDocSnap.data();
-        
-        if (otpData.otp !== otp) {
+        if (storedData.otp !== otp) {
             return res.status(400).json({ success: false, message: "Mã OTP không chính xác" });
         }
 
-        if (Date.now() > otpData.expiresAt) {
+        if (Date.now() > storedData.expiresAt) {
+            otpStore.delete(email);
             return res.status(400).json({ success: false, message: "Mã OTP đã hết hạn" });
         }
 
@@ -161,7 +209,7 @@ app.post('/api/auth/register', async (req, res) => {
         await updateDoc(docRef, { uid: docRef.id });
 
         // Xóa mã OTP sau khi đăng ký thành công
-        await deleteDoc(otpDocRef);
+        otpStore.delete(email);
 
         // Trả về user data (không trả password)
         res.json({
@@ -222,7 +270,8 @@ app.post('/api/auth/login', async (req, res) => {
             });
         }
 
-        // Kiểm tra tài khoản có bị khóa không                if (userData.isLocked === true || String(userData.isLocked).toLowerCase() === "true") {
+        // Kiểm tra tài khoản có bị khóa không
+        if (userData.isLocked === true || String(userData.isLocked).toLowerCase() === "true") {
             return res.status(403).json({
                 success: false,
                 message: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên."
