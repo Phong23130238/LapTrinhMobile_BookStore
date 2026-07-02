@@ -23,115 +23,115 @@ import retrofit2.http.Path;
 
 public interface ApiService {
 
-    // ===== AUTH APIs =====
+        // ===== AUTH APIs =====
 
-    @Headers("Bypass-Tunnel-Reminder: true")
-    @POST("api/auth/register")
-    Call<ApiResponse<User>> register(@Body HashMap<String, Object> body);
+        @Headers("Bypass-Tunnel-Reminder: true")
+        @POST("api/auth/register")
+        Call<ApiResponse<User>> register(@Body HashMap<String, Object> body);
 
-    @Headers("Bypass-Tunnel-Reminder: true")
-    @POST("api/auth/login")
-    Call<ApiResponse<User>> login(@Body HashMap<String, Object> body);
+        @Headers("Bypass-Tunnel-Reminder: true")
+        @POST("api/auth/login")
+        Call<ApiResponse<User>> login(@Body HashMap<String, Object> body);
 
-    @Headers("Bypass-Tunnel-Reminder: true")
-    @POST("api/auth/google")
-    Call<ApiResponse<User>> googleLogin(@Body HashMap<String, Object> body);
+        @Headers("Bypass-Tunnel-Reminder: true")
+        @POST("api/auth/google")
+        Call<ApiResponse<User>> googleLogin(@Body HashMap<String, Object> body);
 
-    // ===== FORGOT PASSWORD APIs =====
+        // ===== FORGOT PASSWORD APIs =====
 
-    @Headers("Bypass-Tunnel-Reminder: true")
-    @POST("api/auth/forgot-password")
-    Call<ApiResponse<Void>> forgotPassword(@Body HashMap<String, Object> body);
+        @Headers("Bypass-Tunnel-Reminder: true")
+        @POST("api/auth/forgot-password")
+        Call<ApiResponse<Void>> forgotPassword(@Body HashMap<String, Object> body);
 
-    @Headers("Bypass-Tunnel-Reminder: true")
-    @POST("api/auth/verify-otp")
-    Call<ApiResponse<Void>> verifyOtp(@Body HashMap<String, Object> body);
+        @Headers("Bypass-Tunnel-Reminder: true")
+        @POST("api/auth/verify-otp")
+        Call<ApiResponse<Void>> verifyOtp(@Body HashMap<String, Object> body);
 
-    @Headers("Bypass-Tunnel-Reminder: true")
-    @POST("api/auth/reset-password")
-    Call<ApiResponse<Void>> resetPassword(@Body HashMap<String, Object> body);
-    @POST("/api/auth/send-otp")
-    Call<ApiResponse<Void>> sendOtp(@Body HashMap<String, Object> body);
+        @Headers("Bypass-Tunnel-Reminder: true")
+        @POST("api/auth/reset-password")
+        Call<ApiResponse<Void>> resetPassword(@Body HashMap<String, Object> body);
 
-    // ===== USER PROFILE APIs =====
+        @Headers("Bypass-Tunnel-Reminder: true")
+        @POST("api/auth/send-otp")
+        Call<ApiResponse<Void>> sendOtp(@Body HashMap<String, Object> body);
 
-    @Multipart
-    @Headers("Bypass-Tunnel-Reminder: true")
-    @PUT("api/users/profile")
-    Call<ApiResponse<User>> updateProfile(
-            @Part("uid") RequestBody uid,
-            @Part("name") RequestBody name,
-            @Part("phone") RequestBody phone,
-            @Part("address") RequestBody address,
-            @Part MultipartBody.Part avatar);
+        // ===== USER PROFILE APIs =====
 
-    @Multipart
-    @Headers("Bypass-Tunnel-Reminder: true")
-    @PUT("api/users/profile")
-    Call<ApiResponse<User>> updateProfileWithoutAvatar(
-            @Part("uid") RequestBody uid,
-            @Part("name") RequestBody name,
-            @Part("phone") RequestBody phone,
-            @Part("address") RequestBody address);
+        @Multipart
+        @Headers("Bypass-Tunnel-Reminder: true")
+        @PUT("api/users/profile")
+        Call<ApiResponse<User>> updateProfile(
+                        @Part("uid") RequestBody uid,
+                        @Part("name") RequestBody name,
+                        @Part("phone") RequestBody phone,
+                        @Part("address") RequestBody address,
+                        @Part MultipartBody.Part avatar);
 
+        @Multipart
+        @Headers("Bypass-Tunnel-Reminder: true")
+        @PUT("api/users/profile")
+        Call<ApiResponse<User>> updateProfileWithoutAvatar(
+                        @Part("uid") RequestBody uid,
+                        @Part("name") RequestBody name,
+                        @Part("phone") RequestBody phone,
+                        @Part("address") RequestBody address);
 
-    @Multipart
-    @Headers("Bypass-Tunnel-Reminder: true")
-    @POST("api/books/upload-cover")
-    Call<UploadResponse> uploadBookCover(
-            @Part MultipartBody.Part bookCover,
-            @Part("bookId") RequestBody bookId
-    );
+        @Multipart
+        @Headers("Bypass-Tunnel-Reminder: true")
+        @POST("api/books/upload-cover")
+        Call<UploadResponse> uploadBookCover(
+                        @Part MultipartBody.Part bookCover,
+                        @Part("bookId") RequestBody bookId);
 
-    @Headers("Bypass-Tunnel-Reminder: true")
-    @PUT("api/users/password")
-    Call<ApiResponse<Void>> updatePassword(@Body HashMap<String, Object> body);
+        @Headers("Bypass-Tunnel-Reminder: true")
+        @PUT("api/users/password")
+        Call<ApiResponse<Void>> updatePassword(@Body HashMap<String, Object> body);
 
-    // ===== REVIEW APIs =====
+        // ===== REVIEW APIs =====
 
-    @Headers("Bypass-Tunnel-Reminder: true")
-    @GET("api/reviews/{bookId}")
-    Call<ApiResponse<List<Review>>> getReviews(@Path("bookId") String bookId);
+        @Headers("Bypass-Tunnel-Reminder: true")
+        @GET("api/reviews/{bookId}")
+        Call<ApiResponse<List<Review>>> getReviews(@Path("bookId") String bookId);
 
-    @Headers("Bypass-Tunnel-Reminder: true")
-    @POST("api/reviews/check-purchase")
-    Call<ApiResponse<Void>> checkPurchase(@Body HashMap<String, Object> body);
+        @Headers("Bypass-Tunnel-Reminder: true")
+        @POST("api/reviews/check-purchase")
+        Call<ApiResponse<Void>> checkPurchase(@Body HashMap<String, Object> body);
 
-    @Headers("Bypass-Tunnel-Reminder: true")
-    @POST("api/reviews")
-    Call<ApiResponse<Void>> submitReview(@Body HashMap<String, Object> body);
+        @Headers("Bypass-Tunnel-Reminder: true")
+        @POST("api/reviews")
+        Call<ApiResponse<Void>> submitReview(@Body HashMap<String, Object> body);
 
-    // ===== ORDER & PAYMENT APIs =====
+        // ===== ORDER & PAYMENT APIs =====
 
-    @Headers("Bypass-Tunnel-Reminder: true")
-    @GET("api/orders/{orderId}")
-    Call<ApiResponse<Order>> getOrderDetails(@Path("orderId") String orderId);
+        @Headers("Bypass-Tunnel-Reminder: true")
+        @GET("api/orders/{orderId}")
+        Call<ApiResponse<Order>> getOrderDetails(@Path("orderId") String orderId);
 
-    @Headers("Bypass-Tunnel-Reminder: true")
-    @POST("api/create_payment_url")
-    Call<PaymentResponse> createPaymentUrl(@Body HashMap<String, Object> body);
+        @Headers("Bypass-Tunnel-Reminder: true")
+        @POST("api/create_payment_url")
+        Call<PaymentResponse> createPaymentUrl(@Body HashMap<String, Object> body);
 
+        // ===== MANAGE USERS APIs =====
 
-    // ===== MANAGE USERS APIs =====
-    
-    // API lấy thống kê Admin
-    @GET("api/admin/stats")
-    Call<ApiResponse<AdminStatsResponse>> getAdminStats(@retrofit2.http.Query("fromDate") String fromDate, @retrofit2.http.Query("toDate") String toDate);
+        // API lấy thống kê Admin
+        @GET("api/admin/stats")
+        Call<ApiResponse<AdminStatsResponse>> getAdminStats(@retrofit2.http.Query("fromDate") String fromDate,
+                        @retrofit2.http.Query("toDate") String toDate);
 
-    // Lấy danh sách người dùng
-    @GET("/api/users")
-    Call<ApiResponse<List<User>>> getAllUsers();
+        // Lấy danh sách người dùng
+        @GET("/api/users")
+        Call<ApiResponse<List<User>>> getAllUsers();
 
-    // Khóa/Mở khóa tài khoản (Truyền UID vào đường dẫn, isLocked vào body)
-    @PUT("/api/users/{uid}/lock")
-    Call<ApiResponse<Object>> toggleUserLock(@Path("uid") String uid, @Body java.util.Map<String, Boolean> body);
+        // Khóa/Mở khóa tài khoản (Truyền UID vào đường dẫn, isLocked vào body)
+        @PUT("/api/users/{uid}/lock")
+        Call<ApiResponse<Object>> toggleUserLock(@Path("uid") String uid, @Body java.util.Map<String, Boolean> body);
 
-    // Lấy thống kê đơn hàng của người dùng
-    @GET("/api/users/{uid}/stats")
-    Call<ApiResponse<UserStats>> getUserStats(@Path("uid") String uid);
+        // Lấy thống kê đơn hàng của người dùng
+        @GET("/api/users/{uid}/stats")
+        Call<ApiResponse<UserStats>> getUserStats(@Path("uid") String uid);
 
-    // ===== AI APIs =====
-    @Headers("Bypass-Tunnel-Reminder: true")
-    @POST("api/ai/summarize")
-    Call<ApiResponse<String>> summarizeBook(@Body HashMap<String, String> body);
+        // ===== AI APIs =====
+        @Headers("Bypass-Tunnel-Reminder: true")
+        @POST("api/ai/summarize")
+        Call<ApiResponse<String>> summarizeBook(@Body HashMap<String, String> body);
 }

@@ -21,8 +21,15 @@ public class RetrofitClient {
                     .setLenient()
                     .create();
 
+            okhttp3.OkHttpClient okHttpClient = new okhttp3.OkHttpClient.Builder()
+                    .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                    .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                    .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                    .build();
+
             retrofit = new Retrofit.Builder()
                     .baseUrl(BASE_URL)
+                    .client(okHttpClient)
                     .addConverterFactory(GsonConverterFactory.create(gson))
                     .build();
         }

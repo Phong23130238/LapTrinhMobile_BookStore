@@ -80,8 +80,7 @@ public class LoginActivity extends AppCompatActivity {
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getData() != null) {
-                        Task<GoogleSignInAccount> task =
-                                GoogleSignIn.getSignedInAccountFromIntent(result.getData());
+                        Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(result.getData());
                         handleGoogleSignInResult(task);
                     } else {
                         hideLoading();
@@ -112,10 +111,6 @@ public class LoginActivity extends AppCompatActivity {
 
     /**
      * CẤU HÌNH GOOGLE SIGN-IN
-     * Khởi tạo GoogleSignInClient với cấu hình yêu cầu Email và ID Token.
-     * ID Token này do Google cấp cho Client, sau đó Client sẽ gửi lên Server
-     * Node.js
-     * để verify (đảm bảo tính bảo mật, tránh giả mạo token).
      */
     private void setupGoogleSignIn() {
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -126,15 +121,7 @@ public class LoginActivity extends AppCompatActivity {
         googleSignInClient = GoogleSignIn.getClient(this, gso);
     }
 
-    /**
-     * ĐĂNG NHẬP THƯỜNG (đăng nhập bằng: Email + Password)
-     * 1. Validate email và password không được rỗng, email đúng định dạng.
-     * 2. Gọi API `apiService.login` truyền lên credentials.
-     * 3. Xử lý phản hồi từ server:
-     * - Thành công: Lưu thông tin User vào SessionManager, chuyển hướng đến Home
-     * (hoặc Admin).
-     * - Thất bại (401/400): Hiển thị Toast báo lỗi tương ứng.
-     */
+    // đăng nhập bằng password
     private void performLogin() {
         tilEmail.setError(null);
         tilPassword.setError(null);
