@@ -48,6 +48,9 @@ public class HomeActivity extends AppCompatActivity {
     private List<Category> categoryList;
 
     private FirebaseFirestore db;
+    
+    private com.google.firebase.firestore.ListenerRegistration userListener;
+    private com.google.firebase.firestore.ListenerRegistration cartListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -130,7 +133,11 @@ public class HomeActivity extends AppCompatActivity {
             }
             return false;
         });
+    }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
         setupHeader();
     }
 
@@ -250,11 +257,15 @@ public class HomeActivity extends AppCompatActivity {
                 Glide.with(this).load(user.getAvatarUrl()).into(ivAvatar);
             }
             if (user != null && user.getUid() != null) {
-                db.collection("users")
+                if (userListener != null) userListener.remove();
+                userListener = db.collection("users")
                         .document(user.getUid())
-                        .addSnapshotListener((snapshot, error) -> {
+                        .addSnapshotListener(HomeActivity.this, (snapshot, error) -> {
+                            if (error != null) return;
                             if (snapshot != null && snapshot.exists() && snapshot.getString("avatarUrl") != null) {
-                                Glide.with(this).load(snapshot.getString("avatarUrl")).into(ivAvatar);
+                                if (!isDestroyed() && !isFinishing()) {
+                                    Glide.with(HomeActivity.this).load(snapshot.getString("avatarUrl")).into(ivAvatar);
+                                }
                             }
                         });
             }
@@ -283,9 +294,11 @@ public class HomeActivity extends AppCompatActivity {
         }
 
         if (tvBadge != null && user != null && user.getUid() != null) {
-            db.collection("carts")
+            if (cartListener != null) cartListener.remove();
+            cartListener = db.collection("carts")
                     .whereEqualTo("userId", user.getUid())
-                    .addSnapshotListener((value, error) -> {
+                    .addSnapshotListener(HomeActivity.this, (value, error) -> {
+                        if (error != null) return;
                         if (value != null && !value.isEmpty()) {
                             tvBadge.setText(String.valueOf(value.size()));
                             tvBadge.setVisibility(View.VISIBLE);
