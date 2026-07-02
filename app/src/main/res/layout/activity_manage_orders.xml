@@ -14,9 +14,9 @@
             android:id="@+id/toolbarManageOrders"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@color/bg_light"
+            
             app:title="Quản lý Đơn hàng"
-            app:titleTextColor="@color/white" />
+             />
     </com.google.android.material.appbar.AppBarLayout>
 
     <!-- Khung chứa Tìm kiếm và Bộ lọc -->

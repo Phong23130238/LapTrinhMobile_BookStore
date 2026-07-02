@@ -14,9 +14,9 @@
             android:id="@+id/toolbarManageUsers"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@color/bg_light"
+            
             app:title="Quản lý Người dùng"
-            app:titleTextColor="@color/white" />
+             />
     </com.google.android.material.appbar.AppBarLayout>
 
     <!-- THANH TÌM KIẾM MỚI -->

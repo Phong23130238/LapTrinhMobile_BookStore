@@ -10,10 +10,10 @@
         android:id="@+id/toolbarAdminStats"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="@color/white"
+        
         app:title="Thống Kê Kinh Doanh"
-        app:titleTextColor="@color/charcoal_dark"
-        app:navigationIconTint="@color/charcoal_dark" />
+        
+         />
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
@@ -263,3 +263,4 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </LinearLayout>
+

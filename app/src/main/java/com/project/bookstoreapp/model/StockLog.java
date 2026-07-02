@@ -26,7 +26,9 @@ public class StockLog implements Serializable {
         this.sourceType    = sourceType;
         this.sourceId      = sourceId;
         this.sourceDisplay = sourceDisplay;
-        this.createdAt     = new java.util.Date().toInstant().toString();
+        
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.getDefault());
+        this.createdAt = sdf.format(new java.util.Date());
     }
 
     // Getters & Setters

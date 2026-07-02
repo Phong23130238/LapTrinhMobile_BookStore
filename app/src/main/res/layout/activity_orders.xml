@@ -12,9 +12,9 @@
         <com.google.android.material.appbar.MaterialToolbar
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@color/bg_light"
+            
             app:title="Đơn hàng của tôi"
-            app:titleTextColor="@color/cream_dark" />
+             />
     </com.google.android.material.appbar.AppBarLayout>
 
     <LinearLayout

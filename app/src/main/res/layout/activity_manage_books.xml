@@ -14,9 +14,9 @@
             android:id="@+id/toolbarManageBooks"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@color/bg_light"
+            
             app:title="Quản lý Sản phẩm"
-            app:titleTextColor="@color/white" />
+             />
     </com.google.android.material.appbar.AppBarLayout>
 
     <!-- THÊM MỚI: Khung chứa thanh tìm kiếm -->
