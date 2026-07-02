@@ -80,6 +80,7 @@ public class RegisterActivity extends AppCompatActivity {
         String confirmPassword = etConfirmPassword.getText() != null ? etConfirmPassword.getText().toString().trim()
                 : "";
 
+        // ===== VALIDATE =====
         if (name.isEmpty()) {
             tilFullName.setError("Vui lòng nhập họ và tên");
             etFullName.requestFocus();

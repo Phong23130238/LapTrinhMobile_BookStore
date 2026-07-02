@@ -81,6 +81,13 @@ dependencies {
     // --- THƯ VIỆN GIẢI QUYẾT LỖI CANNOT RESOLVE CỦA BẠN ---
     implementation("com.google.firebase:firebase-database")
 
+    // Thư viện Google Maps và Định vị
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+
+    // Thư viện Google Places để gợi ý tìm kiếm
+    implementation("com.google.android.libraries.places:places:3.3.0")
+
     // Testing Libraries
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)

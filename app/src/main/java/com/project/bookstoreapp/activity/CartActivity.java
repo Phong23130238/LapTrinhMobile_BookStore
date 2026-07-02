@@ -77,7 +77,13 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.CartA
         layoutEmptyCart = findViewById(R.id.layoutEmptyCart);
 
         btnCheckout.setOnClickListener(v -> proceedToCheckout());
-        btnShopNow.setOnClickListener(v -> finish());
+        // SỬA ĐỔI TẠI ĐÂY: Chuyển hướng về trang chủ
+        btnShopNow.setOnClickListener(v -> {
+            Intent intent = new Intent(CartActivity.this, HomeActivity.class);
+            // Xóa sạch các activity cũ để khi quay lại Home là trang đầu tiên
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+        });
     }
 
     private void setupToolbar() {
@@ -153,12 +159,17 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.CartA
                                 bookId, title, author, imageUrl,
                                 price, origPrice, quantity, addedAt
                         );
-                        
+
+                        // ==========================================
+                        // BỔ SUNG DÒNG NÀY ĐỂ NÚT XÓA HOẠT ĐỘNG
+                        item.setCartItemId(doc.getId());
+                        // ==========================================
+
                         // Phục hồi trạng thái tick chọn
                         if (selectedBookIds.contains(bookId)) {
                             item.setSelected(true);
                         }
-                        
+
                         cartItemList.add(item);
                         docIdList.add(doc.getId()); // lưu doc ID để update sau
                     }

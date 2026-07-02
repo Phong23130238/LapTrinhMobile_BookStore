@@ -72,6 +72,8 @@ public class OrderDetailAdapter extends RecyclerView.Adapter<OrderDetailAdapter.
         if (!imageUrl.isEmpty()) {
             Glide.with(context)
                 .load(imageUrl)
+                .override(200, 300)
+                .thumbnail(0.2f)
                 .placeholder(R.drawable.ic_book_placeholder)
                 .error(R.drawable.ic_book_placeholder)
                 .into(holder.ivBookCover);
@@ -98,6 +100,8 @@ public class OrderDetailAdapter extends RecyclerView.Adapter<OrderDetailAdapter.
                             item.put("imageUrl", fetchedImage);
                             Glide.with(context)
                                 .load(fetchedImage)
+                                .override(200, 300)
+                                .thumbnail(0.2f)
                                 .placeholder(R.drawable.ic_book_placeholder)
                                 .error(R.drawable.ic_book_placeholder)
                                 .into(holder.ivBookCover);

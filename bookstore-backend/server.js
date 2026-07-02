@@ -104,15 +104,33 @@ function hashMD5(password) {
  */
 app.post('/api/auth/register', async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        const { name, email, password, otp } = req.body;
 
         // Validate dữ liệu đầu vào
-        if (!name || !email || !password) {
-            return res.status(400).json({ success: false, message: "Vui lòng điền đầy đủ thông tin" });
+        if (!name || !email || !password || !otp) {
+            return res.status(400).json({ success: false, message: "Vui lòng điền đầy đủ thông tin và mã OTP" });
         }
 
         if (password.length < 6) {
             return res.status(400).json({ success: false, message: "Mật khẩu phải có ít nhất 6 ký tự" });
+        }
+
+        // Kiểm tra mã OTP
+        const otpDocRef = doc(db, "otps", email);
+        const otpDocSnap = await getDoc(otpDocRef);
+
+        if (!otpDocSnap.exists()) {
+            return res.status(400).json({ success: false, message: "Chưa gửi mã OTP cho email này" });
+        }
+
+        const otpData = otpDocSnap.data();
+
+        if (otpData.otp !== otp) {
+            return res.status(400).json({ success: false, message: "Mã OTP không chính xác" });
+        }
+
+        if (Date.now() > otpData.expiresAt) {
+            return res.status(400).json({ success: false, message: "Mã OTP đã hết hạn" });
         }
 
         // Kiểm tra email đã tồn tại chưa
@@ -129,20 +147,24 @@ app.post('/api/auth/register', async (req, res) => {
 
         // Tạo user mới
         const newUser = {
-            name,
-            email,
-            password: hashedPassword,
-            phone: "",
-            address: "",
-            avatarUrl: "",
-            role: "customer",
-            createdAt: new Date().toISOString()
-        };
+                    name,
+                    email,
+                    password: hashedPassword, // (hoặc null đối với Google)
+                    phone: "",
+                    address: "",
+                    avatarUrl: "", // (hoặc googleAvatar)
+                    role: "customer",
+                    isLocked: false, // THÊM DÒNG NÀY
+                    createdAt: new Date().toISOString()
+                };
 
         const docRef = await addDoc(usersRef, newUser);
 
         // Cập nhật uid = document ID
         await updateDoc(docRef, { uid: docRef.id });
+
+        // Xóa mã OTP sau khi đăng ký thành công
+        await deleteDoc(otpDocRef);
 
         // Trả về user data (không trả password)
         res.json({
@@ -203,6 +225,15 @@ app.post('/api/auth/login', async (req, res) => {
             });
         }
 
+        // Kiểm tra tài khoản có bị khóa không                if (userData.isLocked === true || String(userData.isLocked).toLowerCase() === "true") {
+            return res.status(403).json({
+                success: false,
+                message: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên."
+            });
+        }
+
+
+
         // So sánh password đã hash
         const hashedPassword = hashMD5(password);
         if (userData.password !== hashedPassword) {
@@ -237,7 +268,7 @@ app.post('/api/auth/login', async (req, res) => {
  * 1. Client truyền lên 'idToken' do Google cấp.
  * 2. Dùng thư viện google-auth-library (googleClient.verifyIdToken) để verify token với ACCEPTED_CLIENT_IDS (Web & Android).
  * 3. Giải mã lấy Payload (Email, Name, Picture).
- * 4. Query Firestore theo Email. 
+ * 4. Query Firestore theo Email.
  *    - Nếu có: Cho đăng nhập thẳng. Cập nhật avatar nếu trước đó chưa có.
  *    - Nếu chưa có: Tạo mới User trong DB với trường 'password' là null.
  */
@@ -367,11 +398,15 @@ app.put('/api/users/profile', upload.single('avatar'), async (req, res) => {
 
         // Lấy dữ liệu mới nhất trả về
         const updatedSnap = await getDoc(userRef);
+        let updatedData = updatedSnap.data();
+        if (updatedData && !updatedData.uid) {
+            updatedData.uid = uid;
+        }
 
         res.json({
             success: true,
             message: "Cập nhật hồ sơ thành công",
-            data: updatedSnap.data()
+            data: updatedData
         });
 
     } catch (error) {
@@ -430,28 +465,35 @@ app.put('/api/users/password', async (req, res) => {
 // Cập nhật hoặc Thêm mới Sách (có hỗ trợ upload ảnh bìa)
 app.post('/api/books/upload-cover', uploadBookCover.single('bookCover'), async (req, res) => {
     try {
-        const { bookId } = req.body;
-
-        if (!bookId) {
-            return res.status(400).json({ success: false, message: "Thiếu ID của sách" });
-        }
-
+        // 1. Kiểm tra file ảnh trước tiên
         if (!req.file) {
             return res.status(400).json({ success: false, message: "Không tìm thấy file ảnh" });
         }
 
         // Lấy đường dẫn ảnh từ Cloudinary
         const imageUrl = req.file.path;
+        const { bookId } = req.body;
 
-        // Cập nhật url ảnh vào Firestore
+        // 2. TRƯỜNG HỢP: THÊM SÁCH MỚI
+        // Nếu không truyền bookId, hoặc bookId rỗng/null, chỉ trả về Link ảnh
+        if (!bookId || bookId === "null" || bookId === "") {
+            return res.json({
+                success: true,
+                message: "Upload ảnh thành công (Chế độ tạo mới)",
+                imageUrl: imageUrl
+            });
+        }
+
+        // 3. TRƯỜNG HỢP: CẬP NHẬT SÁCH
+        // Chỉ chạy đoạn này khi client gửi kèm bookId hợp lệ
         const bookRef = doc(db, "books", bookId);
         const bookSnap = await getDoc(bookRef);
 
         if (!bookSnap.exists()) {
-            // Nếu chưa tồn tại document (đang tạo mới sách chưa lưu), ta sẽ trả về URL để Client tự gắn vào object Book và lưu sau.
+            // Sách không tồn tại nhưng vẫn trả về link ảnh để Client tự xử lý nếu cần
             return res.json({
                 success: true,
-                message: "Upload ảnh tạm thời thành công",
+                message: "Upload ảnh thành công (Không tìm thấy ID sách trên database)",
                 imageUrl: imageUrl
             });
         }
@@ -459,7 +501,7 @@ app.post('/api/books/upload-cover', uploadBookCover.single('bookCover'), async (
         // Nếu sách đã tồn tại, cập nhật trực tiếp vào Firestore
         await updateDoc(bookRef, { imageUrl: imageUrl });
 
-        res.json({
+        return res.json({
             success: true,
             message: "Upload và cập nhật ảnh sách thành công",
             imageUrl: imageUrl
@@ -467,7 +509,7 @@ app.post('/api/books/upload-cover', uploadBookCover.single('bookCover'), async (
 
     } catch (error) {
         console.error("Lỗi upload ảnh sách:", error);
-        res.status(500).json({ success: false, message: error.message });
+        return res.status(500).json({ success: false, message: error.message });
     }
 });
 
@@ -482,19 +524,35 @@ app.get('/api/reviews/:bookId', async (req, res) => {
         const bookId = req.params.bookId;
         const reviewsRef = collection(db, "reviews");
 
-        // Không dùng orderBy để tránh lỗi thiếu Index trên Firestore, ta sẽ sort ở backend
-        const q = query(reviewsRef, where("bookId", "==", bookId));
-        const querySnapshot = await getDocs(q);
+        // Hỗ trợ query cả string và number để tránh lỗi không đồng nhất kiểu dữ liệu trên Firestore
+        const qStr = query(reviewsRef, where("bookId", "==", bookId));
+        const querySnapshotStr = await getDocs(qStr);
 
         let reviews = [];
-        querySnapshot.forEach((docSnap) => {
+        querySnapshotStr.forEach((docSnap) => {
             let data = docSnap.data();
-            // Xử lý timestamp để trả về dạng string/number
             if (data.createdAt && data.createdAt.toDate) {
                 data.createdAt = data.createdAt.toDate().toISOString();
             }
             reviews.push(data);
         });
+
+        // Query thêm theo số nguyên
+        const bookIdNum = Number(bookId);
+        if (!isNaN(bookIdNum)) {
+            const qNum = query(reviewsRef, where("bookId", "==", bookIdNum));
+            const querySnapshotNum = await getDocs(qNum);
+            querySnapshotNum.forEach((docSnap) => {
+                let data = docSnap.data();
+                if (data.createdAt && data.createdAt.toDate) {
+                    data.createdAt = data.createdAt.toDate().toISOString();
+                }
+                // Tránh trùng lặp
+                if (!reviews.find(r => r.reviewId === data.reviewId)) {
+                    reviews.push(data);
+                }
+            });
+        }
 
         // Sort mới nhất lên đầu
         reviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -620,7 +678,7 @@ app.get('/api/orders/:orderId', async (req, res) => {
 // FORGOT PASSWORD APIs
 // =============================================
 
-// Gửi OTP qua email
+// API 1: Gửi OTP qua email
 app.post('/api/auth/forgot-password', async (req, res) => {
     try {
         const { email } = req.body;
@@ -640,7 +698,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 
         const userData = querySnapshot.docs[0].data();
 
-        // Kiểm tra tài khoản Google
+        // Kiểm tra tài khoản Google-only (không có password)
         if (!userData.password) {
             return res.status(400).json({
                 success: false,
@@ -687,7 +745,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 
 /**
  * @api {post} /api/auth/verify-otp Xác thực mã OTP (Bước 2 - Quên MK)
- * @description 
+ * @description
  * 1. Lấy thông tin (OTP, thời gian hết hạn) từ bộ nhớ 'otpStore' dựa vào email.
  * 2. So khớp chuỗi OTP và kiểm tra thời gian (TTL 5 phút).
  * 3. Nếu hợp lệ: Xóa OTP cũ, sinh 'resetToken' ngẫu nhiên 32 byte.
@@ -734,7 +792,7 @@ app.post('/api/auth/verify-otp', async (req, res) => {
 
 /**
  * @api {post} /api/auth/reset-password Đặt lại mật khẩu (Bước 3 - Quên MK)
- * @description 
+ * @description
  * 1. Nhận email, resetToken, newPassword. Validate pass >= 6 ký tự.
  * 2. Kiểm tra tính hợp lệ và thời hạn (TTL 10 phút) của 'resetToken' trong 'resetTokenStore'.
  * 3. Nếu token đúng, băm MD5 mật khẩu mới và update vào document user trong Firestore.
@@ -795,4 +853,88 @@ app.post('/api/auth/reset-password', async (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(3000, '0.0.0.0', () => {
     console.log('Server is running on port 3000');
+});
+
+// =============================================
+// ADMIN: QUẢN LÝ NGƯỜI DÙNG
+// =============================================
+
+// 1. Lấy danh sách toàn bộ người dùng
+app.get('/api/users', async (req, res) => {
+    try {
+        const usersRef = collection(db, "users");
+        const querySnapshot = await getDocs(usersRef);
+
+        let users = [];
+        querySnapshot.forEach((docSnap) => {
+            let data = docSnap.data();
+            // Đảm bảo luôn có uid trả về
+            data.uid = docSnap.id;
+            users.push(data);
+        });
+
+        res.json({ success: true, data: users });
+    } catch (error) {
+        console.error("Lỗi lấy danh sách user:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// 2. Cập nhật trạng thái Khóa/Mở khóa tài khoản
+app.put('/api/users/:uid/lock', async (req, res) => {
+    try {
+        const uid = req.params.uid;
+        const { isLocked } = req.body;
+
+        if (uid === undefined || isLocked === undefined) {
+            return res.status(400).json({ success: false, message: "Thiếu thông tin cập nhật" });
+        }
+
+        const userRef = doc(db, "users", uid);
+        await updateDoc(userRef, { isLocked: isLocked });
+
+        res.json({
+            success: true,
+            message: isLocked ? "Đã khóa tài khoản" : "Đã mở khóa tài khoản"
+        });
+    } catch (error) {
+        console.error("Lỗi cập nhật trạng thái khóa:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// 3. Lấy thống kê mua hàng của 1 user
+app.get('/api/users/:uid/stats', async (req, res) => {
+    try {
+        const uid = req.params.uid;
+
+        // Tìm các đơn hàng của user này
+        const ordersRef = collection(db, "orders");
+        const q = query(ordersRef, where("userId", "==", uid));
+        const querySnapshot = await getDocs(q);
+
+        let totalOrders = 0;
+        let totalSpent = 0;
+
+        querySnapshot.forEach((docSnap) => {
+            const orderData = docSnap.data();
+            // Không tính các đơn hàng đã bị hủy (nếu có trường status)
+            if (orderData.status !== "cancelled") {
+                totalOrders++;
+                // Giả sử tổng tiền đơn hàng được lưu trong biến totalPrice
+                totalSpent += (orderData.totalPrice || 0);
+            }
+        });
+
+        res.json({
+            success: true,
+            data: {
+                totalOrders: totalOrders,
+                totalSpent: totalSpent
+            }
+        });
+    } catch (error) {
+        console.error("Lỗi lấy thống kê user:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
 });

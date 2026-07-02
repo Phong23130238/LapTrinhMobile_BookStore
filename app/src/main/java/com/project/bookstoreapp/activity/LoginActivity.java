@@ -79,12 +79,13 @@ public class LoginActivity extends AppCompatActivity {
         googleSignInLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
-                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                        Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(result.getData());
+                    if (result.getData() != null) {
+                        Task<GoogleSignInAccount> task =
+                                GoogleSignIn.getSignedInAccountFromIntent(result.getData());
                         handleGoogleSignInResult(task);
                     } else {
                         hideLoading();
-                        Log.w(TAG, "Google Sign-In bị hủy hoặc thất bại, resultCode=" + result.getResultCode());
+                        Log.w(TAG, "Google Sign-In: không nhận được data, resultCode=" + result.getResultCode());
                     }
                 });
 

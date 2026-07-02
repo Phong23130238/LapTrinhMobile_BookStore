@@ -11,6 +11,7 @@ public class Order implements Serializable {
     private String status;
     private double totalPrice;
     private double shippingFee;
+    private String ghnOrderCode;
     private String shippingAddress;
     private String paymentMethod;
     private String note;
@@ -22,13 +23,14 @@ public class Order implements Serializable {
 
     public Order() {}
 
-    public Order(String orderId, String displayId, String userId, String status, double totalPrice, double shippingFee, String shippingAddress, String paymentMethod, String note, String createdAt, String updatedAt) {
+    public Order(String orderId, String displayId, String userId, String status, double totalPrice, double shippingFee, String ghnOrderCode, String shippingAddress, String paymentMethod, String note, String createdAt, String updatedAt) {
         this.orderId = orderId;
         this.displayId = displayId;
         this.userId = userId;
         this.status = status;
         this.totalPrice = totalPrice;
         this.shippingFee = shippingFee;
+        this.ghnOrderCode = ghnOrderCode;
         this.shippingAddress = shippingAddress;
         this.paymentMethod = paymentMethod;
         this.note = note;
@@ -138,5 +140,13 @@ public class Order implements Serializable {
 
     public void setItems(List<Map<String, Object>> items) {
         this.items = items;
+    }
+
+    public String getGhnOrderCode() {
+        return ghnOrderCode;
+    }
+
+    public void setGhnOrderCode(String ghnOrderCode) {
+        this.ghnOrderCode = ghnOrderCode;
     }
 }

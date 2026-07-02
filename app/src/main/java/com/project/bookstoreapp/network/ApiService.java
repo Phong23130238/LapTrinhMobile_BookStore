@@ -2,7 +2,9 @@ package com.project.bookstoreapp.network;
 
 import com.project.bookstoreapp.model.Order;
 import com.project.bookstoreapp.model.Review;
+import com.project.bookstoreapp.model.UploadResponse;
 import com.project.bookstoreapp.model.User;
+import com.project.bookstoreapp.model.UserStats;
 import java.util.HashMap;
 import java.util.List;
 import okhttp3.MultipartBody;
@@ -46,6 +48,9 @@ public interface ApiService {
     @Headers("Bypass-Tunnel-Reminder: true")
     @POST("api/auth/reset-password")
     Call<ApiResponse<Void>> resetPassword(@Body HashMap<String, Object> body);
+    @POST("/api/auth/send-otp")
+    Call<ApiResponse<Void>> sendOtp(@Body HashMap<String, Object> body);
+
     // ===== USER PROFILE APIs =====
 
     @Multipart
@@ -57,6 +62,24 @@ public interface ApiService {
             @Part("phone") RequestBody phone,
             @Part("address") RequestBody address,
             @Part MultipartBody.Part avatar);
+
+    @Multipart
+    @Headers("Bypass-Tunnel-Reminder: true")
+    @PUT("api/users/profile")
+    Call<ApiResponse<User>> updateProfileWithoutAvatar(
+            @Part("uid") RequestBody uid,
+            @Part("name") RequestBody name,
+            @Part("phone") RequestBody phone,
+            @Part("address") RequestBody address);
+
+
+    @Multipart
+    @Headers("Bypass-Tunnel-Reminder: true")
+    @POST("api/books/upload-cover")
+    Call<UploadResponse> uploadBookCover(
+            @Part MultipartBody.Part bookCover,
+            @Part("bookId") RequestBody bookId
+    );
 
     @Headers("Bypass-Tunnel-Reminder: true")
     @PUT("api/users/password")
@@ -81,4 +104,18 @@ public interface ApiService {
     @Headers("Bypass-Tunnel-Reminder: true")
     @GET("api/orders/{orderId}")
     Call<ApiResponse<Order>> getOrderDetails(@Path("orderId") String orderId);
+
+
+    // ===== MANAGE USERS APIs =====
+    // Lấy danh sách người dùng
+    @GET("/api/users")
+    Call<ApiResponse<List<User>>> getAllUsers();
+
+    // Khóa/Mở khóa tài khoản (Truyền UID vào đường dẫn, isLocked vào body)
+    @PUT("/api/users/{uid}/lock")
+    Call<ApiResponse<Object>> toggleUserLock(@Path("uid") String uid, @Body java.util.Map<String, Boolean> body);
+
+    // Lấy thống kê đơn hàng của người dùng
+    @GET("/api/users/{uid}/stats")
+    Call<ApiResponse<UserStats>> getUserStats(@Path("uid") String uid);
 }

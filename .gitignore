@@ -21,3 +21,16 @@ node_modules/
 # Android Studio IDE
 .idea/
 *.iml
+app/src/main/assets/db_firebase.json
+app/build.gradle.kts
+app/google-services.json
+app/proguard-rules.pro
+app/src/androidTest/java/com/project/bookstoreapp/ExampleInstrumentedTest.java
+app/src/main/AndroidManifest.xml
+app/src/main/assets/db_firebase.json
+app/src/main/res/xml/backup_rules.xml
+app/src/main/res/xml/data_extraction_rules.xml
+app/src/main/res/xml/network_security_config.xml
+app/src/test/java/com/project/bookstoreapp/ExampleUnitTest.java
+local.properties.example
+package-lock.json
