@@ -73,6 +73,12 @@
                 android:text="Quản lý Người dùng"
                 android:layout_marginBottom="12dp"/>
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnManageVouchers"
+                style="@style/NavyButton"
+                android:text="Quản lý Voucher"
+                android:layout_marginBottom="12dp"/>
+
             <!-- Nút mới lấy từ nhánh Phat, đã được chuẩn hóa Style -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnAdminStats"

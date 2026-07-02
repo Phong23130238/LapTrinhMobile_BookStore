@@ -94,7 +94,7 @@ public class CheckoutActivity extends AppCompatActivity {
     private CheckoutAdapter     checkoutAdapter;
     private long                subtotal           = 0L;
     private long                discountAmount     = 0L;
-    private String              appliedVoucherCode = ""; 
+    private String              appliedVoucherCode = "";
     private String              currentUserId;
 
     // ---- Firebase ----
@@ -115,13 +115,11 @@ public class CheckoutActivity extends AppCompatActivity {
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == RESULT_OK) {
-                        // Thành công
                         if (pendingOrder != null) {
                             pendingOrder.put("paymentStatus", "paid");
                             saveOrderToFirestoreAndShowPopup("Thanh toán VNPAY thành công!");
                         }
                     } else {
-                        // Thất bại
                         btnPlaceOrder.setEnabled(true);
                         btnPlaceOrder.setText("ĐẶT HÀNG NGAY");
                         Toast.makeText(this, "Thanh toán VNPAY thất bại hoặc bị hủy!", Toast.LENGTH_SHORT).show();
@@ -423,10 +421,35 @@ public class CheckoutActivity extends AppCompatActivity {
                     }
 
                     Boolean isActive = doc.getBoolean("isActive");
+                    if (isActive == null) isActive = doc.getBoolean("active");
+                    
                     if (isActive == null || !isActive) {
                         tilVoucher.setError("Mã voucher đã hết hiệu lực");
                         resetDiscount();
                         return;
+                    }
+
+                    String expiredAt = doc.getString("expiredAt");
+                    if (expiredAt != null && !expiredAt.isEmpty()) {
+                        try {
+                            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+                            Date expiryDate = sdf.parse(expiredAt);
+                            Date today = new Date();
+                            java.util.Calendar calExp = java.util.Calendar.getInstance();
+                            if (expiryDate != null) {
+                                calExp.setTime(expiryDate);
+                                calExp.set(java.util.Calendar.HOUR_OF_DAY, 23);
+                                calExp.set(java.util.Calendar.MINUTE, 59);
+                                calExp.set(java.util.Calendar.SECOND, 59);
+                                if (today.after(calExp.getTime())) {
+                                    tilVoucher.setError("Mã voucher đã hết hạn");
+                                    resetDiscount();
+                                    return;
+                                }
+                            }
+                        } catch (Exception e) {
+                            Log.e("CheckoutActivity", "Lỗi parse ngày hết hạn: " + e.getMessage());
+                        }
                     }
 
                     long minOrder    = doc.getLong("minOrderValue")   != null ? doc.getLong("minOrderValue")   : 0L;
@@ -443,7 +466,7 @@ public class CheckoutActivity extends AppCompatActivity {
                     if (discount > maxDisc) discount = maxDisc;
 
                     discountAmount     = discount;
-                    appliedVoucherCode = code; 
+                    appliedVoucherCode = code;
                     updateOrderSummary();
                     tilVoucher.setError(null);
                     Toast.makeText(this, "Giảm thành công " + fmt(discountAmount),
