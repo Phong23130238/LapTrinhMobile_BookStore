@@ -30,4 +30,11 @@ public interface GHNApiService {
         @Header("ShopId") int shopId,
         @retrofit2.http.Body GHNFeeRequest request
     );
+
+    @POST("v2/shipping-order/create")
+    Call<GHNResponse<GHNOrderData>> createOrder(
+        @Header("Token") String token,
+        @Header("ShopId") int shopId,
+        @retrofit2.http.Body GHNOrderRequest request
+    );
 }
