@@ -111,6 +111,7 @@ public class CheckoutActivity extends AppCompatActivity {
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private Map<String, Object> pendingOrder = null;
+    private com.project.bookstoreapp.ghn.GHNOrderRequest pendingGhnRequest = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
