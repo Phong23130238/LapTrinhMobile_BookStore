@@ -100,7 +100,7 @@ public class CheckoutActivity extends AppCompatActivity {
     private CheckoutAdapter     checkoutAdapter;
     private long                subtotal           = 0L;
     private long                discountAmount     = 0L;
-    private String              appliedVoucherCode = ""; // ← field lưu mã voucher đã áp dụng
+    private String              appliedVoucherCode = "";
     private String              currentUserId;
 
     // ---- Firebase ----
@@ -122,13 +122,11 @@ public class CheckoutActivity extends AppCompatActivity {
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == RESULT_OK) {
-                        // Thành công
                         if (pendingOrder != null) {
                             pendingOrder.put("paymentStatus", "paid");
                             saveOrderToFirestoreAndShowPopup("Thanh toán VNPAY thành công!", true);
                         }
                     } else {
-                        // Thất bại
                         if (pendingOrder != null) {
                             pendingOrder.put("paymentStatus", "failed");
                             saveOrderToFirestoreAndShowPopup("Thanh toán VNPAY thất bại hoặc bị hủy!", false);
@@ -431,10 +429,35 @@ public class CheckoutActivity extends AppCompatActivity {
                     }
 
                     Boolean isActive = doc.getBoolean("isActive");
+                    if (isActive == null) isActive = doc.getBoolean("active");
+                    
                     if (isActive == null || !isActive) {
                         tilVoucher.setError("Mã voucher đã hết hiệu lực");
                         resetDiscount();
                         return;
+                    }
+
+                    String expiredAt = doc.getString("expiredAt");
+                    if (expiredAt != null && !expiredAt.isEmpty()) {
+                        try {
+                            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+                            Date expiryDate = sdf.parse(expiredAt);
+                            Date today = new Date();
+                            java.util.Calendar calExp = java.util.Calendar.getInstance();
+                            if (expiryDate != null) {
+                                calExp.setTime(expiryDate);
+                                calExp.set(java.util.Calendar.HOUR_OF_DAY, 23);
+                                calExp.set(java.util.Calendar.MINUTE, 59);
+                                calExp.set(java.util.Calendar.SECOND, 59);
+                                if (today.after(calExp.getTime())) {
+                                    tilVoucher.setError("Mã voucher đã hết hạn");
+                                    resetDiscount();
+                                    return;
+                                }
+                            }
+                        } catch (Exception e) {
+                            Log.e("CheckoutActivity", "Lỗi parse ngày hết hạn: " + e.getMessage());
+                        }
                     }
 
                     long minOrder    = doc.getLong("minOrderValue")   != null ? doc.getLong("minOrderValue")   : 0L;
@@ -451,7 +474,7 @@ public class CheckoutActivity extends AppCompatActivity {
                     if (discount > maxDisc) discount = maxDisc;
 
                     discountAmount     = discount;
-                    appliedVoucherCode = code; // lưu để ghi vào order
+                    appliedVoucherCode = code;
                     updateOrderSummary();
                     tilVoucher.setError(null);
                     Toast.makeText(this, "Giảm thành công " + fmt(discountAmount),
@@ -542,7 +565,6 @@ public class CheckoutActivity extends AppCompatActivity {
         this.pendingOrder = order;
 
         if ("vnpay".equals(paymentMethod)) {
-            // Gọi API lấy link thanh toán VNPAY
             executorService.execute(() -> {
                 try {
                     URL url = new URL("http://10.0.2.2:3000/api/create_payment_url");
@@ -592,7 +614,6 @@ public class CheckoutActivity extends AppCompatActivity {
                 }
             });
         } else {
-            // Thanh toán COD, lưu luôn
             saveOrderToFirestoreAndShowPopup("Đặt hàng thành công! Đơn hàng của bạn đang được xử lý.", true);
         }
     }
@@ -658,7 +679,6 @@ public class CheckoutActivity extends AppCompatActivity {
                 .setCancelable(false)
                 .show();
 
-        // Chờ 3 giây rồi chuyển hướng
         mainHandler.postDelayed(() -> {
             Intent intent = new Intent(this, HomeActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);

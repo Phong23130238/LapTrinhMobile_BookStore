@@ -17,6 +17,7 @@ public class AdminDashboardActivity extends AppCompatActivity {
         MaterialButton btnManageBooks = findViewById(R.id.btnManageBooks);
         MaterialButton btnManageOrders = findViewById(R.id.btnManageOrders);
         MaterialButton btnManageUsers = findViewById(R.id.btnManageUsers);
+        MaterialButton btnManageVouchers = findViewById(R.id.btnManageVouchers);
         Button btnAdminLogout = findViewById(R.id.btnAdminLogout);
 
         // Chuyển sang trang Quản lý sách
@@ -30,6 +31,10 @@ public class AdminDashboardActivity extends AppCompatActivity {
 
          btnManageUsers.setOnClickListener(v -> {
              startActivity(new Intent(AdminDashboardActivity.this, ManageUsersActivity.class));
+        });
+
+        btnManageVouchers.setOnClickListener(v -> {
+             startActivity(new Intent(AdminDashboardActivity.this, ManageVouchersActivity.class));
         });
 
         // Đăng xuất quay về Login

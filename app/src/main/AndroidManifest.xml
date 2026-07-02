@@ -106,5 +106,12 @@
         <activity android:name=".activity.AllBooksActivity"
             android:exported="false" />
 
+        <activity android:name=".activity.ManageVouchersActivity"
+            android:exported="false" />
+
+        <activity android:name=".activity.AddEditVoucherActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
     </application>
 </manifest>
