@@ -13,7 +13,7 @@
             android:id="@+id/toolbarAddEdit"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@color/navy_dark"
+            android:background="@color/bg_light"
             app:title="Thêm/Sửa Sản Phẩm"
             app:titleTextColor="@color/white" />
     </com.google.android.material.appbar.AppBarLayout>
@@ -33,7 +33,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Thể loại sách"
-                android:textColor="@color/navy_dark"
+                android:textColor="@color/charcoal_dark"
                 android:textStyle="bold"
                 android:layout_marginStart="4dp" />
 
@@ -68,47 +68,47 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="CHỌN ẢNH BÌA"
-                    app:strokeColor="@color/navy_dark"
-                    android:textColor="@color/navy_dark" />
+                    app:strokeColor="@color/violet_primary"
+                    android:textColor="@color/charcoal_dark" />
             </LinearLayout>
 
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                app:boxStrokeColor="@color/navy_medium"
+                app:boxStrokeColor="@color/violet_light"
                 android:hint="Tên sách">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtBookTitle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/navy_dark" />
+                    android:textColor="@color/charcoal_dark" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                app:boxStrokeColor="@color/navy_medium"
+                app:boxStrokeColor="@color/violet_light"
                 android:hint="Tác giả">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtBookAuthor"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/navy_dark" />
+                    android:textColor="@color/charcoal_dark" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                app:boxStrokeColor="@color/navy_medium"
+                app:boxStrokeColor="@color/violet_light"
                 android:hint="Nhà xuất bản">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtPublisher"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/navy_dark" />
+                    android:textColor="@color/charcoal_dark" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <LinearLayout
@@ -123,14 +123,14 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginEnd="8dp"
-                    app:boxStrokeColor="@color/navy_medium"
+                    app:boxStrokeColor="@color/violet_light"
                     android:hint="Giá bán (VNĐ)">
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/edtBookPrice"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="number"
-                        android:textColor="@color/navy_dark" />
+                        android:textColor="@color/charcoal_dark" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -138,14 +138,14 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="8dp"
-                    app:boxStrokeColor="@color/navy_medium"
+                    app:boxStrokeColor="@color/violet_light"
                     android:hint="Giá gốc (VNĐ)">
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/edtOriginalPrice"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="number"
-                        android:textColor="@color/navy_dark" />
+                        android:textColor="@color/charcoal_dark" />
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
 
@@ -153,21 +153,21 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                app:boxStrokeColor="@color/navy_medium"
+                app:boxStrokeColor="@color/violet_light"
                 android:hint="Số lượng trong kho">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtStock"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="number"
-                    android:textColor="@color/navy_dark" />
+                    android:textColor="@color/charcoal_dark" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
-                app:boxStrokeColor="@color/navy_medium"
+                app:boxStrokeColor="@color/violet_light"
                 android:hint="Mô tả sách">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtDescription"
@@ -176,7 +176,7 @@
                     android:inputType="textMultiLine"
                     android:lines="4"
                     android:gravity="top"
-                    android:textColor="@color/navy_dark" />
+                    android:textColor="@color/charcoal_dark" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.switchmaterial.SwitchMaterial
@@ -195,9 +195,9 @@
                 android:text="LƯU THÔNG TIN"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                app:cornerRadius="8dp"
-                app:backgroundTint="@color/gold"
-                android:textColor="@color/navy_dark"/>
+                app:cornerRadius="28dp"
+                app:backgroundTint="@color/peach_accent"
+                android:textColor="@color/charcoal_dark"/>
         </LinearLayout>
     </ScrollView>
 </LinearLayout>
