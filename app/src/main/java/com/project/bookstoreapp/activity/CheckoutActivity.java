@@ -20,6 +20,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.widget.NestedScrollView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.textfield.TextInputEditText;
@@ -92,9 +94,26 @@ public class CheckoutActivity extends AppCompatActivity {
     // ---- Firebase ----
     private FirebaseFirestore db;
 
+    private ActivityResultLauncher<Intent> mapLauncher;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Khởi tạo bộ nhận kết quả từ màn hình Map
+        mapLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        String selectedAddress = result.getData().getStringExtra("SELECTED_ADDRESS");
+                        if (etAddress != null) {
+                            etAddress.setText(selectedAddress);
+                            Toast.makeText(this, "Vui lòng kiểm tra và chọn lại Tỉnh/Quận/Phường nếu cần", Toast.LENGTH_LONG).show();
+                        }
+                    }
+                }
+        );
+
         setContentView(R.layout.activity_checkout);
 
         db = FirebaseFirestore.getInstance();
@@ -150,7 +169,13 @@ public class CheckoutActivity extends AppCompatActivity {
         btnApplyVoucher.setOnClickListener(v -> applyVoucher());
         btnPlaceOrder.setOnClickListener(v -> placeOrder());
         if (btnBackToCart != null) btnBackToCart.setOnClickListener(v -> finish());
-
+        // Bắt sự kiện bấm vào icon Bản đồ ở đuôi ô nhập địa chỉ
+        if (tilAddress != null) {
+            tilAddress.setEndIconOnClickListener(v -> {
+                Intent intent = new Intent(CheckoutActivity.this, MapAddressActivity.class);
+                mapLauncher.launch(intent);
+            });
+        }
         spinProvince.setOnItemClickListener((parent, view, position, id) -> {
             selectedProvince = provinceList.get(position);
             spinDistrict.setText("");

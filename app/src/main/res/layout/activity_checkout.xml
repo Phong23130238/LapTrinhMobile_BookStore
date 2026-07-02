@@ -197,6 +197,9 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                app:endIconMode="custom"
+                app:endIconDrawable="@android:drawable/ic_dialog_map"
+                app:endIconContentDescription="Chọn từ bản đồ"
                 app:errorEnabled="true">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etAddress"
