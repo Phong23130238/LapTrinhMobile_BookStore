@@ -22,8 +22,8 @@ const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 
 // Google OAuth2 Client để verify idToken
-const GOOGLE_CLIENT_ID = "156167272606-ahuk0t1gr5biq7b69a24kh0i9so84vp4.apps.googleusercontent.com";
-const GOOGLE_ANDROID_CLIENT_ID = "156167272606-ftq1ike17ekmorja3trn0bbot04btoh6.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = "608811292447-d9cncbpmdbuf07npas15ack1o3cmdtsm.apps.googleusercontent.com"; // Web Client ID
+const GOOGLE_ANDROID_CLIENT_ID = "608811292447-d9cncbpmdbuf07npas15ack1o3cmdtsm.apps.googleusercontent.com"; // Thường trùng với Web Client ID khi verify
 const ACCEPTED_CLIENT_IDS = [GOOGLE_CLIENT_ID, GOOGLE_ANDROID_CLIENT_ID];
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 

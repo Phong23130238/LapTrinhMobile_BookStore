@@ -241,7 +241,7 @@ public class OrderDetailActivity extends AppCompatActivity {
         if (dateStr != null && !dateStr.isEmpty()) {
             if (tvPaymentMethod != null) {
                 String paymentMethod = order.getPaymentMethod();
-                if ("banking".equalsIgnoreCase(paymentMethod)) {
+                if ("vnpay".equalsIgnoreCase(paymentMethod)) {
                     tvPaymentMethod.setText("Chuyển khoản (VNPay)");
                 } else {
                     tvPaymentMethod.setText("Trả tiền mặt (COD)");
