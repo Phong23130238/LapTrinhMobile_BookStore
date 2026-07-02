@@ -1,6 +1,7 @@
 package com.project.bookstoreapp.network;
 
 import com.project.bookstoreapp.model.Order;
+import com.project.bookstoreapp.model.PaymentResponse;
 import com.project.bookstoreapp.model.Review;
 import com.project.bookstoreapp.model.UploadResponse;
 import com.project.bookstoreapp.model.User;
@@ -100,11 +101,15 @@ public interface ApiService {
     @POST("api/reviews")
     Call<ApiResponse<Void>> submitReview(@Body HashMap<String, Object> body);
 
-    // ===== ORDER APIs =====
+    // ===== ORDER & PAYMENT APIs =====
 
     @Headers("Bypass-Tunnel-Reminder: true")
     @GET("api/orders/{orderId}")
     Call<ApiResponse<Order>> getOrderDetails(@Path("orderId") String orderId);
+
+    @Headers("Bypass-Tunnel-Reminder: true")
+    @POST("api/create_payment_url")
+    Call<PaymentResponse> createPaymentUrl(@Body HashMap<String, Object> body);
 
 
     // ===== MANAGE USERS APIs =====

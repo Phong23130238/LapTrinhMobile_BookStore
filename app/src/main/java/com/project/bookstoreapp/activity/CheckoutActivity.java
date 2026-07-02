@@ -2,6 +2,7 @@ package com.project.bookstoreapp.activity;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.MenuItem;
@@ -32,6 +33,9 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.project.bookstoreapp.R;
 import com.project.bookstoreapp.adapter.CheckoutAdapter;
 import com.project.bookstoreapp.model.CartItem;
+import com.project.bookstoreapp.model.PaymentResponse;
+import com.project.bookstoreapp.network.ApiService;
+import com.project.bookstoreapp.network.RetrofitClient;
 import com.project.bookstoreapp.ghn.District;
 import com.project.bookstoreapp.ghn.GHNApiService;
 import com.project.bookstoreapp.ghn.GHNResponse;
@@ -572,17 +576,11 @@ public class CheckoutActivity extends AppCompatActivity {
                             .set(order)
                             .addOnSuccessListener(aVoid -> {
                                 removeItemsFromCart();
-                                new androidx.appcompat.app.AlertDialog.Builder(CheckoutActivity.this)
-                                        .setTitle("Đặt hàng thành công")
-                                        .setMessage("Mã vận đơn GHN: " + ghnOrderCode + "\nCảm ơn bạn đã đặt hàng! Đơn hàng của bạn đang được xử lý.")
-                                        .setPositiveButton("Về trang chủ", (dialog, which) -> {
-                                            Intent intent = new Intent(CheckoutActivity.this, HomeActivity.class);
-                                            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-                                            startActivity(intent);
-                                            finish();
-                                        })
-                                        .setCancelable(false)
-                                        .show();
+                                if (paymentMethod.equals("vnpay")) {
+                                    processVnPayPayment(ghnOrderCode, total);
+                                } else {
+                                    showSuccessDialog(ghnOrderCode, "Cảm ơn bạn đã đặt hàng! Đơn hàng của bạn đang được xử lý.");
+                                }
                             })
                             .addOnFailureListener(e -> {
                                 btnPlaceOrder.setEnabled(true);
@@ -613,6 +611,60 @@ public class CheckoutActivity extends AppCompatActivity {
             }
         });
     }
+
+    private void showSuccessDialog(String ghnOrderCode, String extraMessage) {
+        new androidx.appcompat.app.AlertDialog.Builder(CheckoutActivity.this)
+                .setTitle("Đặt hàng thành công")
+                .setMessage("Mã vận đơn GHN: " + ghnOrderCode + "\n" + extraMessage)
+                .setPositiveButton("Về trang chủ", (dialog, which) -> {
+                    Intent intent = new Intent(CheckoutActivity.this, HomeActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                    finish();
+                })
+                .setCancelable(false)
+                .show();
+    }
+
+    private void processVnPayPayment(String orderId, long amount) {
+        btnPlaceOrder.setText("Đang chuyển hướng VNPAY...");
+        
+        HashMap<String, Object> body = new HashMap<>();
+        body.put("orderId", orderId);
+        body.put("amount", amount);
+        body.put("orderDescription", "Thanh toan don hang " + orderId);
+
+        ApiService apiService = RetrofitClient.getClient().create(ApiService.class);
+        apiService.createPaymentUrl(body).enqueue(new Callback<PaymentResponse>() {
+            @Override
+            public void onResponse(Call<PaymentResponse> call, Response<PaymentResponse> response) {
+                btnPlaceOrder.setEnabled(true);
+                btnPlaceOrder.setText("ĐẶT HÀNG NGAY");
+                
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    String paymentUrl = response.body().getPaymentUrl();
+                    // Mở trình duyệt web để thanh toán
+                    Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(paymentUrl));
+                    startActivity(browserIntent);
+                    
+                    // Hiển thị dialog báo thành công (trên màn hình checkout)
+                    showSuccessDialog(orderId, "Vui lòng hoàn tất thanh toán trên trình duyệt VNPAY. Đơn hàng của bạn đã được ghi nhận.");
+                } else {
+                    Toast.makeText(CheckoutActivity.this, "Không thể tạo link thanh toán VNPAY", Toast.LENGTH_SHORT).show();
+                    showSuccessDialog(orderId, "Đã lưu đơn hàng nhưng lỗi tạo link VNPay. Vui lòng liên hệ shop.");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<PaymentResponse> call, Throwable t) {
+                btnPlaceOrder.setEnabled(true);
+                btnPlaceOrder.setText("ĐẶT HÀNG NGAY");
+                Toast.makeText(CheckoutActivity.this, "Lỗi kết nối Server", Toast.LENGTH_SHORT).show();
+                showSuccessDialog(orderId, "Đã lưu đơn hàng nhưng lỗi tạo link VNPay do mạng.");
+            }
+        });
+    }
+
     @SuppressLint("SetTextI18n")
     private void removeItemsFromCart() {
         if (currentUserId == null) return;
