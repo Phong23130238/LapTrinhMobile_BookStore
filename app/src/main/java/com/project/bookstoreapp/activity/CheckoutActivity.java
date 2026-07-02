@@ -3,18 +3,21 @@ package com.project.bookstoreapp.activity;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
-import android.text.TextUtils;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.ArrayAdapter;
-import android.widget.AutoCompleteTextView;
-import android.util.Log;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -22,37 +25,24 @@ import androidx.core.widget.NestedScrollView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-import android.os.Handler;
-import android.os.Looper;
-import org.json.JSONObject;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.project.bookstoreapp.R;
 import com.project.bookstoreapp.adapter.CheckoutAdapter;
-import com.project.bookstoreapp.model.CartItem;
 import com.project.bookstoreapp.ghn.District;
-import com.project.bookstoreapp.ghn.GHNApiService;
+import com.project.bookstoreapp.ghn.GHNItem;
+import com.project.bookstoreapp.ghn.GHNOrderData;
+import com.project.bookstoreapp.ghn.GHNOrderRequest;
 import com.project.bookstoreapp.ghn.GHNResponse;
 import com.project.bookstoreapp.ghn.Province;
 import com.project.bookstoreapp.ghn.RetrofitClientGHN;
 import com.project.bookstoreapp.ghn.Ward;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import com.project.bookstoreapp.model.CartItem;
+import com.project.bookstoreapp.model.PaymentResponse;
+import com.project.bookstoreapp.network.ApiService;
+import com.project.bookstoreapp.network.RetrofitClient;
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -63,6 +53,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class CheckoutActivity extends AppCompatActivity {
 
@@ -100,18 +94,17 @@ public class CheckoutActivity extends AppCompatActivity {
     private CheckoutAdapter     checkoutAdapter;
     private long                subtotal           = 0L;
     private long                discountAmount     = 0L;
-    private String              appliedVoucherCode = ""; // ← field lưu mã voucher đã áp dụng
+    private String              appliedVoucherCode = ""; 
     private String              currentUserId;
 
     // ---- Firebase ----
     private FirebaseFirestore db;
 
-    // ---- VNPay ----
+    // ---- Orders Logic ----
     private ActivityResultLauncher<Intent> vnpayLauncher;
-    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private Map<String, Object> pendingOrder = null;
-    private com.project.bookstoreapp.ghn.GHNOrderRequest pendingGhnRequest = null;
+    private GHNOrderRequest pendingGhnRequest = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -125,14 +118,13 @@ public class CheckoutActivity extends AppCompatActivity {
                         // Thành công
                         if (pendingOrder != null) {
                             pendingOrder.put("paymentStatus", "paid");
-                            saveOrderToFirestoreAndShowPopup("Thanh toán VNPAY thành công!", true);
+                            saveOrderToFirestoreAndShowPopup("Thanh toán VNPAY thành công!");
                         }
                     } else {
                         // Thất bại
-                        if (pendingOrder != null) {
-                            pendingOrder.put("paymentStatus", "failed");
-                            saveOrderToFirestoreAndShowPopup("Thanh toán VNPAY thất bại hoặc bị hủy!", false);
-                        }
+                        btnPlaceOrder.setEnabled(true);
+                        btnPlaceOrder.setText("ĐẶT HÀNG NGAY");
+                        Toast.makeText(this, "Thanh toán VNPAY thất bại hoặc bị hủy!", Toast.LENGTH_SHORT).show();
                     }
                 }
         );
@@ -451,7 +443,7 @@ public class CheckoutActivity extends AppCompatActivity {
                     if (discount > maxDisc) discount = maxDisc;
 
                     discountAmount     = discount;
-                    appliedVoucherCode = code; // lưu để ghi vào order
+                    appliedVoucherCode = code; 
                     updateOrderSummary();
                     tilVoucher.setError(null);
                     Toast.makeText(this, "Giảm thành công " + fmt(discountAmount),
@@ -507,6 +499,9 @@ public class CheckoutActivity extends AppCompatActivity {
 
         List<Map<String, Object>> orderItems = new ArrayList<>();
         List<String> bookIds = new ArrayList<>();
+        List<GHNItem> ghnItems = new ArrayList<>();
+        int totalWeight = 0;
+
         for (CartItem ci : selectedItems) {
             Map<String, Object> m = new HashMap<>();
             m.put("bookId",   ci.getBookId());
@@ -517,6 +512,10 @@ public class CheckoutActivity extends AppCompatActivity {
             m.put("subtotal", ci.getSubtotal());
             orderItems.add(m);
             bookIds.add(ci.getBookId());
+
+            int itemWeight = 200; 
+            totalWeight += (itemWeight * ci.getQuantity());
+            ghnItems.add(new GHNItem(ci.getTitle(), ci.getBookId(), ci.getQuantity(), (int)ci.getPrice(), itemWeight));
         }
 
         Map<String, Object> order = new HashMap<>();
@@ -527,7 +526,6 @@ public class CheckoutActivity extends AppCompatActivity {
         order.put("shippingAddress", fullAddress);
         order.put("note",            getEditText(etNote));
         order.put("paymentMethod",   paymentMethod);
-        order.put("paymentStatus",   "pending");
         order.put("status",          "pending");
         order.put("subtotal",        subtotal);
         order.put("shippingFee",     shipping);
@@ -539,116 +537,107 @@ public class CheckoutActivity extends AppCompatActivity {
         order.put("createdAt",       nowStr);
         order.put("updatedAt",       nowStr);
 
+        GHNOrderRequest ghnRequest = new GHNOrderRequest();
+        ghnRequest.paymentTypeId = paymentMethod.equals("vnpay") ? 1 : 2; 
+        ghnRequest.note = getEditText(etNote);
+        ghnRequest.requiredNote = "CHOXEMHANGKHONGTHU"; 
+        ghnRequest.toName = getEditText(etFullName);
+        ghnRequest.toPhone = getEditText(etPhone);
+        ghnRequest.toAddress = getEditText(etAddress); 
+        ghnRequest.toWardCode = selectedWard.WardCode;
+        ghnRequest.toDistrictId = selectedDistrict.DistrictID;
+        ghnRequest.codAmount = paymentMethod.equals("vnpay") ? 0 : total; 
+        ghnRequest.content = "Đơn hàng sách Bookstore";
+        ghnRequest.weight = totalWeight;
+        ghnRequest.length = 20; 
+        ghnRequest.width = 15;
+        ghnRequest.height = 10;
+        ghnRequest.serviceTypeId = 2; 
+        ghnRequest.items = ghnItems;
+
         this.pendingOrder = order;
+        this.pendingGhnRequest = ghnRequest;
 
         if ("vnpay".equals(paymentMethod)) {
-            // Gọi API lấy link thanh toán VNPAY
-            executorService.execute(() -> {
-                try {
-                    URL url = new URL("http://10.0.2.2:3000/api/create_payment_url");
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                    conn.setRequestMethod("POST");
-                    conn.setRequestProperty("Content-Type", "application/json");
-                    conn.setDoOutput(true);
-
-                    JSONObject jsonBody = new JSONObject();
-                    jsonBody.put("amount", total);
-                    jsonBody.put("orderId", String.valueOf(System.currentTimeMillis()));
-
-                    try (OutputStream os = conn.getOutputStream()) {
-                        byte[] input = jsonBody.toString().getBytes("utf-8");
-                        os.write(input, 0, input.length);
-                    }
-
-                    BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"));
-                    StringBuilder response = new StringBuilder();
-                    String responseLine;
-                    while ((responseLine = br.readLine()) != null) {
-                        response.append(responseLine.trim());
-                    }
-
-                    JSONObject jsonRes = new JSONObject(response.toString());
-                    if (jsonRes.getBoolean("success")) {
-                        String paymentUrl = jsonRes.getString("paymentUrl");
-                        mainHandler.post(() -> {
-                            Intent intent = new Intent(CheckoutActivity.this, PaymentWebViewActivity.class);
-                            intent.putExtra(PaymentWebViewActivity.EXTRA_PAYMENT_URL, paymentUrl);
-                            vnpayLauncher.launch(intent);
-                        });
-                    } else {
-                        mainHandler.post(() -> {
-                            btnPlaceOrder.setEnabled(true);
-                            btnPlaceOrder.setText("ĐẶT HÀNG NGAY");
-                            Toast.makeText(CheckoutActivity.this, "Không thể tạo URL thanh toán", Toast.LENGTH_SHORT).show();
-                        });
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    mainHandler.post(() -> {
-                        btnPlaceOrder.setEnabled(true);
-                        btnPlaceOrder.setText("ĐẶT HÀNG NGAY");
-                        Toast.makeText(CheckoutActivity.this, "Lỗi kết nối Server", Toast.LENGTH_SHORT).show();
-                    });
-                }
-            });
+            String orderId = String.valueOf(System.currentTimeMillis());
+            processVnPayPayment(orderId, total);
         } else {
-            // Thanh toán COD, lưu luôn
-            saveOrderToFirestoreAndShowPopup("Đặt hàng thành công! Đơn hàng của bạn đang được xử lý.", true);
+            pendingOrder.put("paymentStatus", "pending");
+            saveOrderToFirestoreAndShowPopup("Đặt hàng thành công! Đơn hàng của bạn đang được xử lý.");
         }
     }
 
-    private void saveOrderToFirestoreAndShowPopup(String message, boolean isSuccess) {
-        if (pendingOrder == null) return;
+    private void processVnPayPayment(String orderId, long amount) {
+        btnPlaceOrder.setText("Đang kết nối VNPAY...");
         
-        if (isSuccess && pendingGhnRequest != null) {
-            int SHOP_ID = 200948;
-            RetrofitClientGHN.getApiService().createOrder(GHN_TOKEN, SHOP_ID, pendingGhnRequest).enqueue(new Callback<GHNResponse<com.project.bookstoreapp.ghn.GHNOrderData>>() {
-                @Override
-                public void onResponse(Call<GHNResponse<com.project.bookstoreapp.ghn.GHNOrderData>> call, Response<GHNResponse<com.project.bookstoreapp.ghn.GHNOrderData>> response) {
-                    if (response.isSuccessful() && response.body() != null && response.body().data != null) {
-                        String ghnOrderCode = response.body().data.orderCode;
-                        pendingOrder.put("ghnOrderCode", ghnOrderCode);
-                        pendingOrder.put("displayId", ghnOrderCode);
-                        
-                        db.collection("orders")
-                                .document(ghnOrderCode)
-                                .set(pendingOrder)
-                                .addOnSuccessListener(aVoid -> {
-                                    removeItemsFromCart();
-                                    showPopupAndRedirect(message + "\nMã vận đơn GHN: " + ghnOrderCode);
-                                })
-                                .addOnFailureListener(e -> {
-                                    btnPlaceOrder.setEnabled(true);
-                                    btnPlaceOrder.setText("ĐẶT HÀNG NGAY");
-                                    Toast.makeText(CheckoutActivity.this, "Lưu Firestore thất bại: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                                });
-                    } else {
-                        btnPlaceOrder.setEnabled(true);
-                        btnPlaceOrder.setText("ĐẶT HÀNG NGAY");
-                        Toast.makeText(CheckoutActivity.this, "Tạo đơn GHN thất bại. Thử lại sau.", Toast.LENGTH_LONG).show();
-                    }
-                }
+        HashMap<String, Object> body = new HashMap<>();
+        body.put("orderId", orderId);
+        body.put("amount", amount);
+        body.put("orderDescription", "Thanh toan don hang " + orderId);
 
-                @Override
-                public void onFailure(Call<GHNResponse<com.project.bookstoreapp.ghn.GHNOrderData>> call, Throwable t) {
+        ApiService apiService = RetrofitClient.getClient().create(ApiService.class);
+        apiService.createPaymentUrl(body).enqueue(new Callback<PaymentResponse>() {
+            @Override
+            public void onResponse(Call<PaymentResponse> call, Response<PaymentResponse> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    String paymentUrl = response.body().getPaymentUrl();
+                    Intent intent = new Intent(CheckoutActivity.this, PaymentWebViewActivity.class);
+                    intent.putExtra(PaymentWebViewActivity.EXTRA_PAYMENT_URL, paymentUrl);
+                    vnpayLauncher.launch(intent);
+                } else {
                     btnPlaceOrder.setEnabled(true);
                     btnPlaceOrder.setText("ĐẶT HÀNG NGAY");
-                    Toast.makeText(CheckoutActivity.this, "Lỗi kết nối GHN: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(CheckoutActivity.this, "Không thể tạo link thanh toán VNPAY", Toast.LENGTH_SHORT).show();
                 }
-            });
-        } else {
-            db.collection("orders")
-                    .add(pendingOrder)
-                    .addOnSuccessListener(docRef -> {
-                        removeItemsFromCart();
-                        showPopupAndRedirect(message);
-                    })
-                    .addOnFailureListener(e -> {
-                        btnPlaceOrder.setEnabled(true);
-                        btnPlaceOrder.setText("ĐẶT HÀNG NGAY");
-                        Toast.makeText(this, "Thất bại: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    });
-        }
+            }
+
+            @Override
+            public void onFailure(Call<PaymentResponse> call, Throwable t) {
+                btnPlaceOrder.setEnabled(true);
+                btnPlaceOrder.setText("ĐẶT HÀNG NGAY");
+                Toast.makeText(CheckoutActivity.this, "Lỗi mạng khi kết nối VNPAY", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void saveOrderToFirestoreAndShowPopup(String message) {
+        if (pendingOrder == null || pendingGhnRequest == null) return;
+        
+        int SHOP_ID = 200948;
+        RetrofitClientGHN.getApiService().createOrder(GHN_TOKEN, SHOP_ID, pendingGhnRequest).enqueue(new Callback<GHNResponse<GHNOrderData>>() {
+            @Override
+            public void onResponse(Call<GHNResponse<GHNOrderData>> call, Response<GHNResponse<GHNOrderData>> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().data != null) {
+                    String ghnOrderCode = response.body().data.orderCode;
+                    pendingOrder.put("ghnOrderCode", ghnOrderCode);
+                    pendingOrder.put("displayId", ghnOrderCode);
+                    
+                    db.collection("orders")
+                            .document(ghnOrderCode)
+                            .set(pendingOrder)
+                            .addOnSuccessListener(aVoid -> {
+                                removeItemsFromCart();
+                                showPopupAndRedirect(message + "\nMã vận đơn GHN: " + ghnOrderCode);
+                            })
+                            .addOnFailureListener(e -> {
+                                btnPlaceOrder.setEnabled(true);
+                                btnPlaceOrder.setText("ĐẶT HÀNG NGAY");
+                                Toast.makeText(CheckoutActivity.this, "Lưu đơn hàng thất bại: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            });
+                } else {
+                    btnPlaceOrder.setEnabled(true);
+                    btnPlaceOrder.setText("ĐẶT HÀNG NGAY");
+                    Toast.makeText(CheckoutActivity.this, "Lỗi tạo đơn GHN. Vui lòng thử lại.", Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<GHNResponse<GHNOrderData>> call, Throwable t) {
+                btnPlaceOrder.setEnabled(true);
+                btnPlaceOrder.setText("ĐẶT HÀNG NGAY");
+                Toast.makeText(CheckoutActivity.this, "Lỗi kết nối GHN", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void showPopupAndRedirect(String message) {
@@ -658,7 +647,6 @@ public class CheckoutActivity extends AppCompatActivity {
                 .setCancelable(false)
                 .show();
 
-        // Chờ 3 giây rồi chuyển hướng
         mainHandler.postDelayed(() -> {
             Intent intent = new Intent(this, HomeActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -666,6 +654,7 @@ public class CheckoutActivity extends AppCompatActivity {
             finish();
         }, 3000);
     }
+
     @SuppressLint("SetTextI18n")
     private void removeItemsFromCart() {
         if (currentUserId == null) return;

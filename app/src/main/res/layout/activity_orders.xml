@@ -14,7 +14,7 @@
             android:layout_height="?attr/actionBarSize"
             android:background="@color/bg_light"
             app:title="Đơn hàng của tôi"
-            app:titleTextColor="@color/white" />
+            app:titleTextColor="@color/cream_dark" />
     </com.google.android.material.appbar.AppBarLayout>
 
     <LinearLayout

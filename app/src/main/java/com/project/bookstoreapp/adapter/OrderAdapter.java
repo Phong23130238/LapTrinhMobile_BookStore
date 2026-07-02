@@ -39,15 +39,12 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
     public void onBindViewHolder(@NonNull OrderViewHolder holder, int position) {
         Order order = orderList.get(position);
 
-        // Kiểm tra xem đơn hàng đã có mã GHN chưa
-        String ghnCode = order.getGhnOrderCode(); // Tên hàm tùy thuộc vào model Order của bạn
-
-        if (ghnCode != null && !ghnCode.trim().isEmpty()) {
-            // Nếu đã có mã GHN, hiển thị mã GHN
-            holder.tvItemDisplayId.setText(ghnCode);
-        } else {
-            // Nếu chưa có (đơn mới tạo chưa đẩy sang GHN), hiển thị mã mặc định để dự phòng
+        // Vì bạn đã gán ghnOrderCode vào displayId từ bước Checkout,
+        // đơn giản chỉ cần hiển thị displayId là người dùng sẽ thấy mã GHN.
+        if (order.getDisplayId() != null) {
             holder.tvItemDisplayId.setText(order.getDisplayId());
+        } else {
+            holder.tvItemDisplayId.setText("Đơn chưa có mã vận đơn");
         }
 
         // 1. BẢO VỆ LỖI NULL NGÀY THÁNG

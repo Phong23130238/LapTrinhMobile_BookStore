@@ -118,7 +118,7 @@
                     android:layout_marginTop="24dp"
                     android:text="ĐĂNG NHẬP"
                     android:textSize="15sp"
-                    style="@style/NavyButton" />
+                    style="@style/GoldButton" />
 
                 <!-- Divider -->
                 <LinearLayout

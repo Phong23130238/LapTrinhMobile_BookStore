@@ -40,9 +40,10 @@ public class LoginActivity extends AppCompatActivity {
 
     private static final String TAG = "LoginActivity";
 
-    // Web Client ID cho Google Sign-In
-    private static final String WEB_CLIENT_ID =
-            "156167272606-ahuk0t1gr5biq7b69a24kh0i9so84vp4.apps.googleusercontent.com";
+    // Sử dụng string mặc định từ google-services.json
+    private String getWebClientId() {
+        return getString(R.string.default_web_client_id);
+    }
 
     // UI Components
     private TextInputLayout tilEmail, tilPassword;
@@ -123,7 +124,7 @@ public class LoginActivity extends AppCompatActivity {
     // =============================================
     private void setupGoogleSignIn() {
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken(WEB_CLIENT_ID) // Yêu cầu ID Token để gửi lên server verify
+                .requestIdToken(getWebClientId()) // Yêu cầu ID Token để gửi lên server verify
                 .requestEmail()
                 .build();
 
