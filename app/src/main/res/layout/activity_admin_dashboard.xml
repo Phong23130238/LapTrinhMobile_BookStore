@@ -20,7 +20,7 @@
         android:text="Trang Quản Trị Hệ Thống"
         android:textSize="24sp"
         android:textStyle="bold"
-        android:textColor="@color/navy_dark"
+        android:textColor="@color/charcoal_dark"
         android:layout_marginTop="16dp"
         android:layout_marginBottom="40dp"/>
 
@@ -30,8 +30,8 @@
         android:layout_height="60dp"
         android:text="Quản lý Sản phẩm (Sách)"
         android:textSize="16sp"
-        app:cornerRadius="8dp"
-        app:backgroundTint="@color/navy_medium"
+        app:cornerRadius="28dp"
+        app:backgroundTint="@color/violet_light"
         android:layout_marginBottom="16dp"/>
 
     <com.google.android.material.button.MaterialButton
@@ -40,8 +40,8 @@
         android:layout_height="60dp"
         android:text="Quản lý Đơn hàng"
         android:textSize="16sp"
-        app:cornerRadius="8dp"
-        app:backgroundTint="@color/navy_medium"
+        app:cornerRadius="28dp"
+        app:backgroundTint="@color/violet_light"
         android:layout_marginBottom="16dp"/>
 
     <com.google.android.material.button.MaterialButton
@@ -60,8 +60,8 @@
         android:layout_height="60dp"
         android:text="Quản lý Người dùng"
         android:textSize="16sp"
-        app:cornerRadius="8dp"
-        app:backgroundTint="@color/navy_medium"
+        app:cornerRadius="28dp"
+        app:backgroundTint="@color/violet_light"
         android:layout_marginBottom="32dp"/>
 
     <Button

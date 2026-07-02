@@ -92,6 +92,20 @@
             android:name=".activity.InventoryActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".activity.ForgotPasswordActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".activity.VerifyOtpActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".activity.ResetPasswordActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
         <activity android:name=".activity.AllBooksActivity"
             android:exported="false" />
 

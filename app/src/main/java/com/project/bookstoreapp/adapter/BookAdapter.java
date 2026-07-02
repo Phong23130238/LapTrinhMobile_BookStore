@@ -67,6 +67,8 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
 
             Glide.with(holder.itemView.getContext())
                     .load(urlAnh.trim())
+                    .override(300, 450)
+                    .thumbnail(0.2f)
                     .placeholder(imagePlaceholder) // Ảnh hiển thị tạm lúc đang tải
                     .error(imagePlaceholder)       // Ảnh hiển thị nếu link hỏng (Ngăn robot xanh xuất hiện)
                     .diskCacheStrategy(DiskCacheStrategy.ALL) // Tối ưu bộ nhớ đệm khi cuộn

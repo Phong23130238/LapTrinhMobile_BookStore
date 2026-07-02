@@ -35,6 +35,22 @@ public interface ApiService {
     @POST("api/auth/google")
     Call<ApiResponse<User>> googleLogin(@Body HashMap<String, Object> body);
 
+    // ===== FORGOT PASSWORD APIs =====
+
+    @Headers("Bypass-Tunnel-Reminder: true")
+    @POST("api/auth/forgot-password")
+    Call<ApiResponse<Void>> forgotPassword(@Body HashMap<String, Object> body);
+
+    @Headers("Bypass-Tunnel-Reminder: true")
+    @POST("api/auth/verify-otp")
+    Call<ApiResponse<Void>> verifyOtp(@Body HashMap<String, Object> body);
+
+    @Headers("Bypass-Tunnel-Reminder: true")
+    @POST("api/auth/reset-password")
+    Call<ApiResponse<Void>> resetPassword(@Body HashMap<String, Object> body);
+    @POST("/api/auth/send-otp")
+    Call<ApiResponse<Void>> sendOtp(@Body HashMap<String, Object> body);
+
     // ===== USER PROFILE APIs =====
 
     @Multipart
@@ -49,6 +65,17 @@ public interface ApiService {
     );
 
     @Multipart
+    @Headers("Bypass-Tunnel-Reminder: true")
+    @PUT("api/users/profile")
+    Call<ApiResponse<User>> updateProfileWithoutAvatar(
+            @Part("uid") RequestBody uid,
+            @Part("name") RequestBody name,
+            @Part("phone") RequestBody phone,
+            @Part("address") RequestBody address);
+
+
+    @Multipart
+    @Headers("Bypass-Tunnel-Reminder: true")
     @POST("api/books/upload-cover")
     Call<UploadResponse> uploadBookCover(
             @Part MultipartBody.Part bookCover,

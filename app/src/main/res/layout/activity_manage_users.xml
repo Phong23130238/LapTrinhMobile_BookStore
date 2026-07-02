@@ -14,7 +14,7 @@
             android:id="@+id/toolbarManageUsers"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@color/navy_dark"
+            android:background="@color/bg_light"
             app:title="Quản lý Người dùng"
             app:titleTextColor="@color/white" />
     </com.google.android.material.appbar.AppBarLayout>
@@ -27,7 +27,7 @@
         android:layout_below="@id/appBarManageUsers"
         android:layout_marginHorizontal="16dp"
         android:layout_marginTop="12dp"
-        app:cardCornerRadius="8dp"
+        app:cardCornerRadius="28dp"
         app:cardElevation="2dp">
 
         <androidx.appcompat.widget.SearchView

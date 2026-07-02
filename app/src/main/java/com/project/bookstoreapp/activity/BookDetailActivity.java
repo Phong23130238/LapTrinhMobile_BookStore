@@ -65,16 +65,13 @@ public class BookDetailActivity extends AppCompatActivity {
             btnBack.setOnClickListener(v -> finish());
         }
 
-        // 3.1.1 Lấy bookIdStr thông qua getIntent().getStringExtra("BOOK_ID").
         String bookIdStr = getIntent().getStringExtra("BOOK_ID");
         if (bookIdStr != null && !bookIdStr.isEmpty()) {
             currentBookId = bookIdStr;
-            // 3.1.2 Cố gắng parse int biến currentBookIdInt (Dự phòng cho ID dạng số cũ).
             try {
                 currentBookIdInt = Integer.parseInt(bookIdStr);
             } catch (NumberFormatException e) {
-                // Document ID không phải số nguyên — vẫn dùng được như String
-                currentBookIdInt = -2; // Déo fail, chỉ đánh dấu không parse được số
+                currentBookIdInt = -2;
             }
         }
 
@@ -136,16 +133,14 @@ public class BookDetailActivity extends AppCompatActivity {
 
     // 3.2 Truy vấn sách từ Firestore (loadBookData)
     private void loadBookData(String bookId) {
-        android.util.Log.d("FIRESTORE", "==> Đang query books/" + bookId);
-
-        // Cách 1: Dùng document ID trực tiếp
+        android.util.Log.d("FIRESTORE", "Đang querry books" + bookId);
         // 3.2.1 Gọi truy vấn mặc định db.collection("books").document(bookId).get() tìm trực tiếp theo ID Document Firestore.
         FirebaseFirestore.getInstance()
                 .collection("books")
                 .document(bookId)
                 .get()
                 .addOnSuccessListener(documentSnapshot -> {
-                    android.util.Log.d("FIRESTORE", "==> exists=" + documentSnapshot.exists() + " | data=" + documentSnapshot.getData());
+                    android.util.Log.d("FIRESTORE", "exists=" + documentSnapshot.exists() + " + data=" + documentSnapshot.getData());
                     if (documentSnapshot.exists()) {
                         bindBookData(documentSnapshot);
                     } else {
@@ -180,7 +175,7 @@ public class BookDetailActivity extends AppCompatActivity {
                                         Toast.makeText(BookDetailActivity.this, "Lỗi mạng: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                                     });
                         } else {
-                            // bookId không phải số, thử String
+                            // bookId không phải số, check String
                             q.whereEqualTo("bookId", bookId)
                                     .limit(1).get()
                                     .addOnSuccessListener(qs -> {
@@ -224,8 +219,39 @@ public class BookDetailActivity extends AppCompatActivity {
         if (author != null) tvAuthor.setText(author);
         if (description != null) tvDescription.setText(description);
 
-        String catId = documentSnapshot.getString("categoryId");
-        if (catId != null && tvCategory != null) tvCategory.setText(" #" + catId + " ");
+        String categoryIdValue = "";
+        try {
+            // Cố gắng lấy dưới dạng String trước
+            String catIdStr = documentSnapshot.getString("categoryId");
+            if (catIdStr != null) categoryIdValue = catIdStr;
+        } catch (Exception e) {
+            // Nếu bị lỗi (do dữ liệu cũ lưu là Number), tự động chuyển đổi
+            Double catIdDouble = documentSnapshot.getDouble("categoryId");
+            if (catIdDouble != null) categoryIdValue = String.valueOf(catIdDouble.intValue());
+        }
+        
+        if (!categoryIdValue.isEmpty() && tvCategory != null) {
+            tvCategory.setVisibility(android.view.View.VISIBLE);
+            tvCategory.setText(" Đang tải... ");
+            
+            // Lấy tên thật của thể loại từ collection "categories"
+            FirebaseFirestore.getInstance().collection("categories")
+                    .document(categoryIdValue)
+                    .get()
+                    .addOnSuccessListener(catDoc -> {
+                        if (catDoc.exists() && catDoc.contains("name")) {
+                            // Kết hợp giao diện dấu # của nhánh Phat và dữ liệu của nhánh main
+                            tvCategory.setText(" #" + catDoc.getString("name") + " ");
+                        } else {
+                            tvCategory.setVisibility(android.view.View.GONE);
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        tvCategory.setVisibility(android.view.View.GONE);
+                    });
+        } else if (tvCategory != null) {
+            tvCategory.setVisibility(android.view.View.GONE);
+        }
 
         java.text.DecimalFormat formatter = new java.text.DecimalFormat("###,###,###");
 
@@ -285,14 +311,17 @@ public class BookDetailActivity extends AppCompatActivity {
                         reviewAdapter.notifyDataSetChanged();
                     }
                     if (reviewList.isEmpty()) {
+                        android.util.Log.d("REVIEW_DEBUG", "Review list is empty!");
                         tvNoReview.setVisibility(android.view.View.VISIBLE);
                         rvReviews.setVisibility(android.view.View.GONE);
                     } else {
+                        android.util.Log.d("REVIEW_DEBUG", "Loaded " + reviewList.size() + " reviews.");
                         tvNoReview.setVisibility(android.view.View.GONE);
                         rvReviews.setVisibility(android.view.View.VISIBLE);
                     }
                 } else {
-                    Toast.makeText(BookDetailActivity.this, "Lỗi API tải đánh giá", Toast.LENGTH_SHORT).show();
+                    android.util.Log.e("REVIEW_DEBUG", "API failed: " + (response.body() != null ? response.body().getMessage() : "null body"));
+                    Toast.makeText(BookDetailActivity.this, "Lỗi API tải đánh giá: " + (response.body() != null ? response.body().getMessage() : ""), Toast.LENGTH_SHORT).show();
                 }
             }
 
