@@ -15,7 +15,7 @@
             android:id="@+id/toolbarAllBooks"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@color/navy_dark"
+            android:background="@color/bg_light"
             app:title="Tất cả sách"
             app:titleTextColor="@android:color/white" />
     </com.google.android.material.appbar.AppBarLayout>
@@ -24,7 +24,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="12dp"
-        app:cardCornerRadius="8dp"
+        app:cardCornerRadius="28dp"
         app:cardElevation="2dp">
 
         <androidx.appcompat.widget.SearchView
@@ -54,7 +54,7 @@
                 android:id="@+id/spinCategoryFilter"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:backgroundTint="@color/navy_dark"
+                android:backgroundTint="@color/violet_primary"
                 android:paddingHorizontal="8dp" />
         </androidx.cardview.widget.CardView>
 
@@ -69,7 +69,7 @@
                 android:id="@+id/spinPriceFilter"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:backgroundTint="@color/navy_dark"
+                android:backgroundTint="@color/violet_primary"
                 android:paddingHorizontal="8dp" />
         </androidx.cardview.widget.CardView>
     </LinearLayout>

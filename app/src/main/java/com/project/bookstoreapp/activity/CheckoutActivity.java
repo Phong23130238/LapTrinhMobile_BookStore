@@ -600,7 +600,7 @@ public class CheckoutActivity extends AppCompatActivity {
                         } catch (Exception ignored) {}
                     }
                     Log.e("CheckoutActivity", "GHN Error: " + errorMsg);
-                    Toast.makeText(CheckoutActivity.this, "Tạo đơn GHN thất bại. Thử lại sau.", Toast.LENGTH_LONG).show();
+                    Toast.makeText(CheckoutActivity.this, "GHN Error: " + errorMsg, Toast.LENGTH_LONG).show();
                 }
             }
 

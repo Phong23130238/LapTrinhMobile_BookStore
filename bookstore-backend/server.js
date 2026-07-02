@@ -520,19 +520,35 @@ app.get('/api/reviews/:bookId', async (req, res) => {
         const bookId = req.params.bookId;
         const reviewsRef = collection(db, "reviews");
 
-        // Không dùng orderBy để tránh lỗi thiếu Index trên Firestore, ta sẽ sort ở backend
-        const q = query(reviewsRef, where("bookId", "==", bookId));
-        const querySnapshot = await getDocs(q);
+        // Hỗ trợ query cả string và number để tránh lỗi không đồng nhất kiểu dữ liệu trên Firestore
+        const qStr = query(reviewsRef, where("bookId", "==", bookId));
+        const querySnapshotStr = await getDocs(qStr);
 
         let reviews = [];
-        querySnapshot.forEach((docSnap) => {
+        querySnapshotStr.forEach((docSnap) => {
             let data = docSnap.data();
-            // Xử lý timestamp để trả về dạng string/number
             if (data.createdAt && data.createdAt.toDate) {
                 data.createdAt = data.createdAt.toDate().toISOString();
             }
             reviews.push(data);
         });
+
+        // Query thêm theo số nguyên
+        const bookIdNum = Number(bookId);
+        if (!isNaN(bookIdNum)) {
+            const qNum = query(reviewsRef, where("bookId", "==", bookIdNum));
+            const querySnapshotNum = await getDocs(qNum);
+            querySnapshotNum.forEach((docSnap) => {
+                let data = docSnap.data();
+                if (data.createdAt && data.createdAt.toDate) {
+                    data.createdAt = data.createdAt.toDate().toISOString();
+                }
+                // Tránh trùng lặp
+                if (!reviews.find(r => r.reviewId === data.reviewId)) {
+                    reviews.push(data);
+                }
+            });
+        }
 
         // Sort mới nhất lên đầu
         reviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));

@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/navy_dark"
+    android:background="@color/bg_light"
     android:fillViewport="true">
 
     <LinearLayout
@@ -24,7 +24,7 @@
             android:layout_marginTop="6dp"
             android:layout_marginBottom="28dp"
             android:text="Tạo tài khoản mới"
-            android:textColor="@color/gold"
+            android:textColor="@color/violet_primary"
             android:textSize="24sp"
             android:textStyle="bold" />
 
@@ -32,7 +32,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:cardBackgroundColor="@color/cream"
-            app:cardCornerRadius="20dp"
+            app:cardCornerRadius="28dp"
             app:cardElevation="16dp">
 
             <LinearLayout
@@ -86,8 +86,8 @@
                         android:layout_marginStart="8dp"
                         android:text="Gửi mã"
                         android:textSize="13sp"
-                        app:cornerRadius="8dp"
-                        android:backgroundTint="@color/navy_medium" />
+                        app:cornerRadius="28dp"
+                        android:backgroundTint="@color/violet_light" />
                 </LinearLayout>
 
                 <!-- OTP -->
@@ -159,7 +159,7 @@
                     android:layout_gravity="center"
                     android:layout_marginTop="16dp"
                     android:visibility="gone"
-                    android:indeterminateTint="@color/navy_medium" />
+                    android:indeterminateTint="@color/violet_light" />
 
                 <!-- Back to login -->
                 <LinearLayout
@@ -178,7 +178,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Đăng nhập"
-                        android:textColor="@color/navy_medium"
+                        android:textColor="@color/violet_primary"
                         android:textSize="14sp"
                         android:textStyle="bold"
                         android:clickable="true"

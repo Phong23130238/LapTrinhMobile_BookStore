@@ -16,7 +16,7 @@
             android:id="@+id/toolbarCart"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@color/navy_dark"
+            android:background="@color/bg_light"
             app:title="Giỏ hàng của bạn"
             app:titleTextColor="@color/white"
             app:navigationIcon="@android:drawable/ic_menu_revert" />
